@@ -1,0 +1,8 @@
+# Only the steward-owned paths are code-owned.
+# listings/ and packs/ are deliberately not, so the checks alone gate them and a
+# validated listing can merge itself without a human (RFC 0033).
+#
+# CODEOWNERS itself lives under .github/, so the second line covers it.
+
+/index-status.toml @KSAModding/content-manager-stewards
+/.github/          @KSAModding/content-manager-stewards
