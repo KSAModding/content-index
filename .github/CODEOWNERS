@@ -3,6 +3,12 @@
 # validated listing can merge itself without a human (RFC 0033).
 #
 # CODEOWNERS itself lives under .github/, so the second line covers it.
+#
+# The checks are code-owned wherever they live. A pull request runs the workflow
+# and the tools as they exist on its own merge ref, so a listing that could also
+# edit the schema or the checker would be arriving with its own gate.
 
 /index-status.toml @KSAModding/content-manager-stewards
 /.github/          @KSAModding/content-manager-stewards
+/tools/            @KSAModding/content-manager-stewards
+/schemas/          @KSAModding/content-manager-stewards
