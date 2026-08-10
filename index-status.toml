@@ -1,0 +1,38 @@
+# Steward-owned, see .github/CODEOWNERS. One entry per affected id.
+#
+# States:
+#
+#   delisted   The listing and its releases leave the snapshot and only a
+#              tombstone remains, so a client can tell "removed" from "never
+#              listed". Installs stop being offered. Nothing is deleted from
+#              anyone's machine, and nothing is deleted from this repository.
+#
+#   disputed   The listing stays in the snapshot whole and clients show a
+#              warning. For id disputes and contested ownership while they are
+#              being resolved.
+#
+#   retracted  Scoped to one pack version, which is the pack-version equivalent
+#              of a yanked release, since a pack has no release file to amend.
+#              Requires `version`.
+#
+# Shape:
+#
+#   [[entries]]
+#   id = "SomeMod"
+#   state = "delisted"
+#   since = "2026-08-10T00:00:00Z"
+#   reason = "One sentence, shown to users where the client surfaces the state."
+#
+#   [[entries]]
+#   id = "SomePack"
+#   state = "retracted"
+#   version = "1.2.0"
+#   since = "2026-08-10T00:00:00Z"
+#   reason = "..."
+#
+# A delisting takes effect on the next snapshot build, which a change to this
+# file triggers directly. The honest latency is that build plus the snapshot
+# address's cache floor plus the client's poll interval. Mirrors and anyone
+# reading this repository directly are outside the index's reach.
+
+entries = []
