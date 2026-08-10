@@ -1,0 +1,37 @@
+spec_version = 1
+id = "AdvancedFlightComputer"
+type = "mod"
+name = "Advanced Flight Computer"
+authors = ["Maxi"]
+abstract = "Extra maneuver planning tools for Kitten Space Agency."
+description = """
+Adds quick-tools to the Transfer Planner (set periapsis/apoapsis, match or set inclination, circularize), flyby targeting so a Hohmann transfer arrives as a flyby instead of an impact, multi-pass burn splitting for Oberth-efficient departures, and lets the planner target interstellar comets on hyperbolic orbits.
+
+Features:
+
+- New plan types in the stock Transfer Planner dropdown: Set Periapsis, Set Apoapsis, Match Inclination, Set Inclination.
+- Flyby targeting: aim the departure burn at a chosen flyby periapsis and side instead of the target body's center.
+- Multi-pass burns: split a departure across successive periapsis passes to reduce finite-burn loss.
+"""
+license = "MIT"
+tags = ["control"]
+
+[releases]
+github = "Maximilian-Nesslauer/KSA-AdvancedFlightComputer"
+spacedock = 4253
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/threads/advanced-flight-computer.783/"
+repository = "https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer"
+spacedock = "https://spacedock.info/mod/4253/AdvancedFlightComputer"
+bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/issues"
+discussions = "https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/discussions"
+
+[compatibility]
+game_min = "2026.8.3.5117"
+
+[loader]
+id = "StarMap"
+min = "0.4.5"
+max = "0.4.6"
