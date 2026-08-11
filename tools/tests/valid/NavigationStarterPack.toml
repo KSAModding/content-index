@@ -1,0 +1,32 @@
+spec_version = 1
+id = "NavigationStarterPack"
+type = "modpack"
+name = "Navigation Starter Pack"
+authors = ["Maxi"]
+abstract = "Everything you need for maneuver planning, tested together."
+license = "CC0-1.0"
+tags = ["navigation"]
+version = "1.0.0"
+released_at = "2026-08-05T12:00:00Z"
+
+[links]
+forums = "https://forums.ahwoo.com/threads/navigation-starter-pack.999/"
+
+[compatibility]
+game_min = "2026.8.3.5117"
+
+[[mods]]
+id = "AdvancedFlightComputer"
+version = "0.7.0"
+
+[[mods]]
+id = "KittenExtensions"
+version = "0.4.0"
+
+[[vehicles]]
+id = "ReusableBoosterDemo"
+version = "1.2.0"
+
+[[saves]]
+id = "ApolloRecreation"
+version = "1.0.0"

@@ -10,7 +10,14 @@ If you want to argue about the format or the index itself, open a thread in [con
    The worked examples in [`examples/`](https://github.com/KSAModding/content-manager-design/tree/main/examples) are real listings you can copy from.
 2. Put it at `listings/<id>.toml`, where `<id>` is the folder name your content installs as.
    A mod pack goes to `packs/<id>/<version>.toml`.
-3. Open a pull request that adds exactly one file.
+3. Check it before you open anything, which saves you a round trip through CI:
+
+   ```sh
+   pip install -r tools/requirements.txt
+   python3 tools/check_schema.py
+   ```
+
+4. Open a pull request that adds exactly one file.
 
 Checks then validate the document, inspect your latest release archive, and verify that you control the release host the listing points at.
 

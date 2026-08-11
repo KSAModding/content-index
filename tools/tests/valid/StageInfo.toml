@@ -1,0 +1,33 @@
+spec_version = 1
+id = "StageInfo"
+type = "mod"
+name = "StageInfo"
+authors = ["Maxi"]
+abstract = "Extra info and flight performance readouts in the stock staging window for Kitten Space Agency."
+description = """
+Retired: stock KSA 2026.7.6.4939 reworked the Sequence UI and now shows per-sequence delta-v, TWR, and fuel readouts, which is what this mod added.
+The final release stays installable on the game builds it was written for.
+"""
+license = "MIT"
+tags = ["information"]
+status = "deprecated"
+
+[releases]
+github = "Maximilian-Nesslauer/KSA-StageInfo"
+spacedock = 4256
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/threads/archived-stageinfo.905/"
+repository = "https://github.com/Maximilian-Nesslauer/KSA-StageInfo"
+spacedock = "https://spacedock.info/mod/4256/StageInfo"
+bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-StageInfo/issues"
+
+[compatibility]
+game_min = "2026.7.5.4892"
+game_max = "2026.7.5.4892"
+
+[loader]
+id = "StarMap"
+min = "0.4.5"
+max = "0.4.5"
