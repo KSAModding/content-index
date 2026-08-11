@@ -1,0 +1,67 @@
+spec_version = 1
+id = "DependencyShapes"
+type = "mod"
+name = "Dependency Shapes"
+authors = ["Nobody"]
+abstract = "Not a real mod. It carries every dependency shape the format allows, so the schema is tested against all of them at once."
+description = """
+Every field here is legal and nothing in it installs anything.
+It exists so a change to the schema that quietly narrows one of these shapes fails a test instead of a listing.
+"""
+license = "MIT OR Apache-2.0"
+tags = ["tools", "user-interface"]
+
+[releases]
+github = "KSAModding/content-index"
+
+[links]
+forums = "https://forums.ahwoo.com/threads/dependency-shapes.1/"
+repository = "https://github.com/KSAModding/content-index"
+homepage = "https://github.com/KSAModding/content-manager-design"
+
+[compatibility]
+game_min = "2026.7"
+game_max = "2026.8.5.5168"
+os = ["windows", "linux"]
+
+[loader]
+id = "StarMap"
+min = "0.4.5"
+
+[[dependencies]]
+id = "KittenExtensions"
+kind = "required"
+min = "0.4.0"
+
+[[dependencies]]
+id = "ModMenu"
+kind = "recommends"
+min = "0.1.0"
+max = "0.2.1"
+
+[[dependencies]]
+id = "PrettyOrbits"
+kind = "suggests"
+
+[[dependencies]]
+id = "LegacyToolbar"
+kind = "optional"
+
+[[dependencies]]
+id = "OldStageInfo"
+kind = "conflict"
+
+[[dependencies]]
+kind = "required"
+any_of = [
+  { id = "OpenALRouter", min = "2.0.0" },
+  { id = "ClassicALRouter", min = "1.1.0", max = "1.9.9" },
+]
+
+[install]
+root = "build/DependencyShapes"
+manages = ["config/generated.toml"]
+steps = [
+  "New mods install disabled. Relaunch the game once to enable them.",
+]
+uninstall = []
