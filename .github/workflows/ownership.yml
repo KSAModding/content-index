@@ -1,0 +1,64 @@
+# The privileged half of the listing flow (RFC 0033).
+#
+# It reads the verdict the unprivileged `checks` run left, checks ownership, and
+# then posts the commit status, arms auto-merge, or hands the pull request to a
+# steward.
+name: ownership
+
+on:
+  workflow_run:
+    workflows: [checks]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: >-
+    ownership-${{ github.event.workflow_run.head_repository.full_name }}-${{
+    github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  decide:
+    name: decide
+    if: >-
+      github.event.workflow_run.event == 'pull_request' ||
+      github.event.workflow_run.event == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read # the verdict artifact of the triggering run
+      statuses: write # the commit status the watcher's sweep reads
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v6
+        id: verdict
+        continue-on-error: true
+        with:
+          name: validation-verdict
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      # GITHUB_TOKEN would arm a merge that starts no snapshot dispatch.
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ vars.INDEX_APP_ID }}
+          private-key: ${{ secrets.INDEX_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: content-index
+
+      - name: Decide
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 tools/decide.py \
+            --verdict verdict.json \
+            --head-sha "${{ github.event.workflow_run.head_sha }}" \
+            --repository "${{ github.repository }}" \
+            --run-url "${{ github.event.workflow_run.html_url }}"
