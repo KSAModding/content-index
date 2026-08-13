@@ -22,7 +22,7 @@ Every script resolves its paths from its own location, so the working directory 
 The other checks around it have their own tests, run together:
 
 ```sh
-python3 -m unittest discover -s tools -t tools
+python3 -m unittest discover -s tools -t tools --buffer
 ```
 
 ## Validate the parsed document
