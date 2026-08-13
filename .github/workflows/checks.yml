@@ -1,15 +1,26 @@
+# Checks that run in front of a listing.
+#
+# `validate` is the required check. It runs on the merge ref with a read-only
+# token and only reports; posting the commit status and arming auto-merge
+# belong to the ownership workflow (RFC 0033).
 name: checks
 
 on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: The pull request to validate
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: checks-${{ github.workflow }}-${{ github.ref }}
+  group: checks-${{ github.workflow }}-${{ github.event.pull_request.number || inputs.pull_request || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -24,9 +35,16 @@ jobs:
   schema:
     name: schema
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+
+      - name: Check out the stamper
+        uses: actions/checkout@v7
+        with:
+          repository: KSAModding/content-index-releases
+          path: .content-index-releases
+
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
@@ -34,4 +52,75 @@ jobs:
           cache-dependency-path: tools/requirements.txt
       - run: pip install -r tools/requirements.txt
       - run: python3 tools/test_check_schema.py
+      - env:
+          CONTENT_INDEX_RELEASES: ${{ github.workspace }}/.content-index-releases
+        run: python3 -m unittest discover -s tools -t tools --buffer
       - run: python3 tools/check_schema.py
+
+  validate:
+    name: validate
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Check out the merge ref
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/pull/{0}/merge', inputs.pull_request) || '' }}
+
+      - name: Check out the stamper
+        uses: actions/checkout@v7
+        with:
+          repository: KSAModding/content-index-releases
+          path: .content-index-releases
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: tools/requirements.txt
+
+      - run: pip install -r tools/requirements.txt
+
+      - name: Validate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CONTENT_INDEX_RELEASES: ${{ github.workspace }}/.content-index-releases
+          PULL_REQUEST: ${{ github.event.pull_request.number || inputs.pull_request }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          python3 tools/validate.py \
+            --pull-request "$PULL_REQUEST" \
+            --repository "$REPOSITORY" \
+            --output verdict.json
+
+      - name: Leave a verdict even when a step failed
+        # A failed checkout or pip install is transient, and the ownership
+        # workflow should read that rather than nothing.
+        if: failure() && hashFiles('verdict.json') == ''
+        env:
+          PULL_REQUEST: ${{ github.event.pull_request.number || inputs.pull_request }}
+        run: |
+          printf '%s\n' \
+            '{' \
+            '  "schema_version": 1,' \
+            '  "verdict": "could-not-evaluate",' \
+            '  "auto_merge_candidate": false,' \
+            "  \"pull_request\": $PULL_REQUEST," \
+            '  "head_sha": null,' \
+            '  "documents": [],' \
+            '  "scope_reason": "the validation job failed before it reached a verdict",' \
+            '  "checks": []' \
+            '}' > verdict.json
+
+      - name: Upload the verdict
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: validation-verdict
+          path: verdict.json
+          if-no-files-found: warn
+          retention-days: 7

@@ -14,10 +14,16 @@ python3 tools/check_schema.py
 python3 tools/test_check_schema.py
 ```
 
-Both scripts resolve their paths from their own location, so the working directory does not matter.
+Every script resolves its paths from its own location, so the working directory does not matter.
 
 `check_schema.py` validates every document under `listings/` and `packs/`, at the depth the layout puts them at.
 `test_check_schema.py` validates the schema itself, from both sides: real listings have to pass, and every rule has a case that has to fail for the stated reason.
+
+The other checks around it have their own tests, run together:
+
+```sh
+python3 -m unittest discover -s tools -t tools --buffer
+```
 
 ## Validate the parsed document
 
@@ -49,14 +55,15 @@ Some rules need more than the document, and belong to the checks around it:
 
 | Rule | Where it belongs |
 |---|---|
-| Every SPDX identifier exists in the SPDX list | the validation workflow (#3). The list is versioned data and must not be frozen into a schema. |
-| The id does not collide with another listing, case-insensitively | the validation workflow (#3) |
+| Every SPDX identifier exists in the SPDX list | `tools/check_license.py`. The list is versioned data and must not be frozen into a schema, so it arrives as a pinned dependency instead. |
+| The id does not collide with another listing, case-insensitively | `tools/check_index.py` |
 | The document sits at the path its id and type say | `tools/check_layout.py` |
-| `[loader].id` references content of type `mod-loader`, a dependency id references a `mod`, and a pack member is not itself a pack | the validation workflow (#3), once it can read the whole index |
+| `[loader].id` references content of type `mod-loader`, a dependency id references a `mod`, and a pack member is not itself a pack | `tools/check_index.py` |
 | A named `any_of` member carried `Optional = true` in the archive's own `mod.toml` | the stamper ([content-index-releases#13](https://github.com/KSAModding/content-index-releases/issues/13)), which is the only place the archive is read |
 | `[provides].launch` names a file the release actually contains | the stamper |
-| `install.root` is derivable, and the archive downloads and hashes | the validation workflow (#3) and the stamper |
-| The author controls the release host | the ownership workflow (#4) |
+| `install.root` is derivable, and the archive downloads and hashes | `tools/check_release.py`, which reaches the answer by running the stamper against the real archive rather than by repeating its rules |
+| The change is narrow enough to merge itself | `tools/check_scope.py` |
+| The author controls the release host | the ownership workflow ([#4](https://github.com/KSAModding/content-index/issues/4)) |
 
 ## Where the schema is stricter than the RFC text
 
