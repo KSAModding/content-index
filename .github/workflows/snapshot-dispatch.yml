@@ -1,0 +1,46 @@
+# Ask the generated half to rebuild the published snapshot.
+#
+# Everything here is part of that snapshot, so a merged listing, a new pack
+# version or a steward writing index-status.toml has to reach clients in one
+# build rather than at the next hourly one (RFC 0033).
+name: snapshot dispatch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - listings/**
+      - packs/**
+      - index-status.toml
+
+# The job authenticates as the org App, so the workflow token needs nothing.
+permissions: {}
+
+concurrency:
+  group: snapshot-dispatch
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    name: dispatch
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          app-id: ${{ vars.INDEX_APP_ID }}
+          private-key: ${{ secrets.INDEX_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: content-index-releases
+
+      - name: Ask for a rebuild
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          # A dispatch that never arrives costs latency, not data: the generated
+          # half rebuilds hourly from the same two checkouts anyway.
+          gh api --method POST \
+            "repos/${{ github.repository_owner }}/content-index-releases/dispatches" \
+            -f event_type=index-changed
