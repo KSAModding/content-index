@@ -14,10 +14,20 @@ If you want to argue about the format or the index itself, open a thread in [con
 
    ```sh
    pip install -r tools/requirements.txt
+   python3 tools/check_layout.py
    python3 tools/check_schema.py
+   python3 tools/check_index.py
+   python3 tools/check_license.py
+   ```
+
+   These need nothing but the repository. The remaining check downloads your latest release and stamps it, which needs the network and a checkout of [content-index-releases](https://github.com/KSAModding/content-index-releases) next to this one:
+
+   ```sh
+   python3 tools/check_release.py listings/<id>.toml
    ```
 
 4. Open a pull request that adds exactly one file.
+   One document merges itself. A pull request carrying two, or carrying anything besides a document, is valid but waits for a steward.
 
 Checks then validate the document, inspect your latest release archive, and verify that you control the release host the listing points at.
 
