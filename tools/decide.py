@@ -104,8 +104,10 @@ def decide(verdict, candidate, ownership_result, run_url=""):
         comment=(
             f"Validated, and ownership is not verified, so a steward decides.\n\n"
             f"{ownership_result.reason}.\n\n"
-            f"To prove it yourself, set the topic `{ownership.TOPIC.format(login='<your-login>')}` "
-            f"on the release repository, or commit `{ownership.MARKER_PATH}` naming your login."
+            f"The proof is something only you can put on the release repository, which "
+            f"is what says you agree to it being indexed. Either set the topic "
+            f"`{ownership.TOPIC.format(login='<your-github-username>')}` on it, or commit "
+            f"`{ownership.MARKER_PATH}` naming your username."
             + tail
         ),
     )
