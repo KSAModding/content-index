@@ -56,6 +56,18 @@ Releases are picked up on their own.
 
 Correcting metadata is a change here, not a new release of your content.
 
+## no rename possible
+
+The id is the folder name the game installs your content as, so a new id is new content and renaming the file is not an operation here.
+
+Move to a new id in three steps:
+
+1. List the new id, the ordinary way.
+2. On the old listing set `status = "deprecated"` and `superseded_by = "<the new id>"`, and leave it listed. Clients then warn and point at the successor.
+3. Remove the old listing's `[releases]` section, or the watcher opens an error issue on every release you publish: your archives now carry the new id as their folder.
+
+Do not ask for a delisting instead. That leaves a tombstone carrying the id and nothing else, so the successor pointer and every stamped release go with it.
+
 ## Takedowns and disputes
 
 Use the issue forms.
