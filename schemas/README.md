@@ -4,6 +4,10 @@
 
 It is JSON Schema 2020-12, and it covers all three types the format defines today: `mod`, `mod-loader` and `modpack`.
 
+`index-status.schema.json` covers `index-status.toml`, the index's own voice about a listing, per [RFC 0033](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0033-content-index.md).
+A state the snapshot builder cannot place fails the build, so a delisting written with a typo never reaches a client.
+`tools/check_status.py` runs the schema and resolves every id against the index.
+
 The RFCs stay the authority.
 
 ## Running it
@@ -63,6 +67,7 @@ Some rules need more than the document, and belong to the checks around it:
 | `[provides].launch` names a file the release actually contains | the stamper |
 | `install.root` is derivable, and the archive downloads and hashes | `tools/check_release.py`, which reaches the answer by running the stamper against the real archive rather than by repeating its rules |
 | The change is narrow enough to merge itself | `tools/check_scope.py` |
+| An id in `index-status.toml` names a listing or a pack that exists, and a retracted version exists on that pack | `tools/check_status.py` |
 | The author controls the release host | the ownership workflow ([#4](https://github.com/KSAModding/content-index/issues/4)) |
 
 ## Where the schema is stricter than the RFC text
