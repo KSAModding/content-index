@@ -21,6 +21,7 @@ import check_license
 import check_release
 import check_schema
 import check_scope
+import check_status
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -82,6 +83,17 @@ def run_license(entries):
     return Check("license", REJECT if errors else PASS, errors)
 
 
+def run_status(entries, skipped=()):
+    """A state the snapshot builder cannot place fails the build, so catch it here."""
+    errors, notes = check_status.check(entries)
+    messages = list(errors) + list(notes)
+    if errors and skipped:
+        messages.append(
+            f"a document that does not parse is not counted as a listing: {', '.join(skipped)}"
+        )
+    return Check("index status", REJECT if errors else PASS, messages)
+
+
 def run_release(documents, releases=None, token=None):
     if not documents:
         return Check("release", PASS, ["the change touches no document, so no archive was inspected"])
@@ -108,7 +120,11 @@ def run_checks(changes, skip_release=False, releases=None, token=None):
 
     gate = [run_layout(), run_schema()]
     entries, skipped = check_index.load_documents()
-    checks = gate + [run_index(entries, skipped), run_license(entries)]
+    checks = gate + [
+        run_index(entries, skipped),
+        run_license(entries),
+        run_status(entries, skipped),
+    ]
 
     if skip_release:
         return checks

@@ -101,7 +101,7 @@ class Run(unittest.TestCase):
             patch = mock.patch.object(validate, name, passing(name))
             patch.start()
             self.addCleanup(patch.stop)
-        for name in ("run_index", "run_license"):
+        for name in ("run_index", "run_license", "run_status"):
             patch = mock.patch.object(validate, name, passing(name))
             patch.start()
             self.addCleanup(patch.stop)
@@ -154,7 +154,10 @@ class Run(unittest.TestCase):
     def test_every_check_appears_in_the_verdict(self):
         _, verdict = self.run_with(["listings/Mod.toml"])
         names = [check["name"] for check in verdict["checks"]]
-        self.assertEqual(names, ["run_layout", "run_schema", "run_index", "run_license", "release"])
+        self.assertEqual(
+            names,
+            ["run_layout", "run_schema", "run_index", "run_license", "run_status", "release"],
+        )
 
     def test_the_archive_inspection_can_be_left_out(self):
         with mock.patch.object(validate, "run_release") as never:
@@ -209,7 +212,7 @@ class ShortCircuit(unittest.TestCase):
     """
 
     def setUp(self):
-        for name in ("run_index", "run_license"):
+        for name in ("run_index", "run_license", "run_status"):
             patch = mock.patch.object(validate, name, passing(name))
             patch.start()
             self.addCleanup(patch.stop)
