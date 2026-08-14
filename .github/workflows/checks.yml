@@ -56,6 +56,7 @@ jobs:
           CONTENT_INDEX_RELEASES: ${{ github.workspace }}/.content-index-releases
         run: python3 -m unittest discover -s tools -t tools --buffer
       - run: python3 tools/check_schema.py
+      - run: python3 tools/check_status.py
 
   verdict:
     name: verdict
