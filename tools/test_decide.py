@@ -3,6 +3,7 @@
 """Tests for what the privileged half does about a verdict. No token, no network."""
 
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -15,11 +16,35 @@ import check_scope
 import decide
 import ownership
 
+WORKFLOWS = Path(__file__).resolve().parent.parent / ".github/workflows"
+
 VERIFIED = ownership.Result(ownership.VERIFIED, "", "topic")
 UNVERIFIED = ownership.Result(ownership.UNVERIFIED, "Maxi did not prove control of a/b")
 UNAVAILABLE = ownership.Result(ownership.COULD_NOT_EVALUATE, "the host did not answer")
 
 LISTING = 'id = "AutoStage"\n[releases]\ngithub = "Maxi/KSA-AutoStage"\n'
+
+
+def workflow_jobs(path):
+    """The job ids and display names in one workflow file, without a YAML parser."""
+    ids, names = [], []
+    inside = False
+    for line in path.read_text(encoding="utf-8").splitlines():
+        bare = line.split("#")[0].rstrip()
+        if not bare.strip():
+            continue
+        if not bare.startswith(" "):
+            inside = bare.strip() == "jobs:"
+            continue
+        if not inside:
+            continue
+        job = re.match(r"^ {2}[\"']?([A-Za-z0-9_-]+)[\"']?:$", bare)
+        if job:
+            ids.append(job.group(1))
+        name = re.match(r"^ {4}name:\s*(.+)$", bare)
+        if name:
+            names.append(name.group(1).strip().strip("\"'"))
+    return ids, names
 
 
 def verdict(outcome="pass", checks=(), reason="", **overrides):
@@ -52,6 +77,7 @@ class RecordingApi:
         self.reads = []
         self.graphql_calls = []
         self.graphql_answer = {}
+        self.order = []
         self.log = lambda message: None
 
     def get(self, path, **query):
@@ -65,6 +91,7 @@ class RecordingApi:
 
     def send(self, method, path, payload, token=None):
         self.sent.append((method, path, payload, token))
+        self.order.append(f"{method} {path}")
         return {}
 
     def file(self, full_name, path, ref=None):
@@ -73,6 +100,7 @@ class RecordingApi:
 
     def graphql(self, query, variables):
         self.graphql_calls.append(variables)
+        self.order.append("graphql")
         return self.graphql_answer
 
 
@@ -248,6 +276,27 @@ class Reviewers(unittest.TestCase):
         self.assertEqual(api.sent, [])
 
 
+class RequiredCheck(unittest.TestCase):
+    """A job named like the required check would satisfy it before ownership ran."""
+
+    def jobs(self):
+        ids, names = [], []
+        for path in sorted(WORKFLOWS.glob("*.yml")):
+            found_ids, found_names = workflow_jobs(path)
+            ids.extend(found_ids)
+            names.extend(found_names)
+        return ids, names
+
+    def test_the_reader_finds_the_jobs(self):
+        ids, _ = self.jobs()
+        self.assertIn("verdict", ids)
+
+    def test_no_job_carries_the_context_the_ruleset_requires(self):
+        ids, names = self.jobs()
+        self.assertNotIn(decide.STATUS_CONTEXT, ids)
+        self.assertNotIn(decide.STATUS_CONTEXT, names)
+
+
 class Status(unittest.TestCase):
     def test_it_is_posted_under_the_name_the_sweep_reads(self):
         api = RecordingApi()
@@ -357,7 +406,23 @@ class Act(unittest.TestCase):
             self.assertEqual(self.act(), 0)
         self.assertEqual(self.api.graphql_calls, [{"id": "PR_1"}])
         self.assertEqual(self.api.reads, [(self.api.repository, "listings/AutoStage.toml", "abc")])
-        self.assertEqual(self.statuses()[0]["state"], "success")
+        self.assertEqual(self.statuses()[-1]["state"], "success")
+
+    def test_the_check_is_held_pending_until_auto_merge_is_armed(self):
+        with mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual([status["state"] for status in self.statuses()], ["pending", "success"])
+
+        posts = [index for index, call in enumerate(self.api.order) if call == "POST /statuses/abc"]
+        arm = self.api.order.index("graphql")
+        self.assertLess(posts[0], arm)
+        self.assertGreater(posts[-1], arm)
+
+    def test_nothing_is_held_pending_when_there_is_no_merge_to_arm(self):
+        with mock.patch.object(decide.ownership, "verify", lambda *a, **k: UNVERIFIED):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual([status["state"] for status in self.statuses()], ["success"])
+        self.assertEqual(self.api.graphql_calls, [])
 
     def test_a_run_that_left_no_verdict_errors_the_status(self):
         self.assertEqual(self.act(write=False), 0)
@@ -383,6 +448,7 @@ class Act(unittest.TestCase):
         self.api.graphql_answer = {"errors": [{"message": "auto-merge is off"}]}
         with mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
             self.assertEqual(self.act(), 0)
+        self.assertEqual([status["state"] for status in self.statuses()], ["pending", "success"])
         self.assertTrue(
             any(payload == {"labels": [decide.STEWARD_LABEL]} for _, _, payload, _ in self.api.sent)
         )
