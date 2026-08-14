@@ -1,8 +1,8 @@
 # Checks that run in front of a listing.
 #
-# `validate` is the required check. It runs on the merge ref with a read-only
-# token and only reports; posting the commit status and arming auto-merge
-# belong to the ownership workflow (RFC 0033).
+# They run with a read-only token and only report. The required check is the
+# `validate` commit status the ownership workflow posts (RFC 0033), so no job
+# here may carry that name.
 name: checks
 
 on:
@@ -57,8 +57,8 @@ jobs:
         run: python3 -m unittest discover -s tools -t tools --buffer
       - run: python3 tools/check_schema.py
 
-  validate:
-    name: validate
+  verdict:
+    name: verdict
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15

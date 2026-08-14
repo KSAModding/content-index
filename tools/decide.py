@@ -25,6 +25,7 @@ GITHUB_API = "https://api.github.com"
 GRAPHQL = "https://api.github.com/graphql"
 USER_AGENT = "KSAModding-content-index-ownership"
 
+# The required check in the branch ruleset. No job may carry this name.
 STATUS_CONTEXT = "validate"
 STEWARD_LABEL = "needs-steward"
 STEWARD_TEAM = "content-manager-stewards"
@@ -242,7 +243,7 @@ def post_status(api, sha, decision, run_url):
             "description": decision.description[:140],
             "target_url": run_url,
         },
-        token=api.public_token,
+        token=api.public_token,  # the Actions app, which the ruleset entry names
     )
 
 
@@ -474,14 +475,19 @@ def act(api, arguments):
 
     decision = decide({**verdict, "scope_reason": reason}, candidate, result, arguments.run_url)
 
-    if decision.auto_merge and not arm_auto_merge(api, pull["node_id"]):
-        decision = Decision(
-            decision.status,
-            "validated, and auto-merge could not be armed",
-            needs_steward=True,
-            comment="Validated and ownership verified, but auto-merge could not be armed, "
-            "so a steward has to merge this one.",
-        )
+    if decision.auto_merge:
+        # Auto-merge cannot be armed once GitHub calls the pull request mergeable.
+        pending = Decision("pending", "holding the check while auto-merge is armed")
+        post_status(api, arguments.head_sha, pending, arguments.run_url)
+
+        if not arm_auto_merge(api, pull["node_id"]):
+            decision = Decision(
+                decision.status,
+                "validated, and auto-merge could not be armed",
+                needs_steward=True,
+                comment="Validated and ownership verified, but auto-merge could not be armed, "
+                "so a steward has to merge this one.",
+            )
 
     post_status(api, arguments.head_sha, decision, arguments.run_url)
     upsert_comment(api, number, decision.comment)

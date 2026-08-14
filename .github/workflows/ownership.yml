@@ -1,8 +1,8 @@
 # The privileged half of the listing flow (RFC 0033).
 #
 # It reads the verdict the unprivileged `checks` run left, checks ownership, and
-# then posts the commit status, arms auto-merge, or hands the pull request to a
-# steward.
+# then arms auto-merge or hands the pull request to a steward. The `validate`
+# commit status it posts is the required check.
 name: ownership
 
 on:
