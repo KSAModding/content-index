@@ -36,12 +36,15 @@ When ownership cannot be verified automatically, a steward looks instead.
 
 ## Proving you control the release host
 
-Any one of three proofs is enough, and the first that applies is used:
+Each proof is something only somebody with access to the release repository can put there, which is what says the author agrees to their content being indexed.
+
+Any one of the three is enough, and the first that applies is used:
 
 1. The repository in `[releases]` is owned by your own account, and is not a fork.
-2. The repository carries the topic `ksa-index-<your-login>`, lowercased, per [RFC 0038](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0038-repository-topic-ownership-proof.md).
+2. The repository carries the topic `ksa-index-<your-github-username>`, lowercased, per [RFC 0038](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0038-repository-topic-ownership-proof.md).
+   So `Maximilian-Nesslauer` sets `ksa-index-maximilian-nesslauer`.
    One topic covers every listing that points at that repository, and it is the easy path for an organization-owned repository.
-3. The repository contains `.github/ksa-content-index.toml` naming the listing id and your login.
+3. The repository contains `.github/ksa-content-index.toml` naming the listing id and your username.
 
 A SpaceDock release host has no comparable proof today, so those listings wait for a steward.
 
