@@ -49,6 +49,22 @@ Any one of the three is enough, and the first that applies is used:
 
 A SpaceDock release host has no comparable proof today, so those listings wait for a steward.
 
+## Changing a listing that already exists
+
+An edit is checked against the release host your listing names right now, on `main`, and not against the one your pull request writes into it.
+Otherwise anybody could point somebody else's listing at their own repository and then prove control of that.
+
+If you point your listing at a different release host, you must prove control of both hosts: the one it comes from and the one it goes to.
+
+Renaming or transferring your repository on GitHub is not such a move.
+The old address then answers as the new one, and only somebody who controls a repository can rename or transfer it.
+The check reads that redirect, so catching your listing up with its own repository stays self-service.
+
+Handing a listing to somebody:
+
+- **You transfer the repository itself.** The redirect above carries your consent, and the release host moved with it, so the new owner updates the listing without a steward.
+- **You point the listing at a separate repository.** Nobody controls both hosts, so a steward applies it, unless you first put the incoming account's proof on your own repository, for example their `ksa-index-<username>` topic.
+
 ## After you are listed
 
 You touch your authored document again only when the facts change: a new dependency bound, a new link, or the day you stop maintaining it.

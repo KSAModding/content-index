@@ -65,7 +65,7 @@ def verdict(outcome="pass", checks=(), reason="", **overrides):
 class RecordingApi:
     """Every call this workflow would make, recorded instead of sent."""
 
-    def __init__(self, comments=(), labels=(), reviewers=None, files=None):
+    def __init__(self, comments=(), labels=(), reviewers=None, files=None, repositories=None):
         self.repository = "KSAModding/content-index"
         self.token = "app"
         self.public_token = "workflow"
@@ -74,6 +74,8 @@ class RecordingApi:
         self.labels = list(labels)
         self.reviewers = reviewers or {"teams": []}
         self.files = {"listings/AutoStage.toml": LISTING} if files is None else files
+        self.repositories = repositories or {}
+        self.repository_reads = []
         self.reads = []
         self.graphql_calls = []
         self.graphql_answer = {}
@@ -96,7 +98,18 @@ class RecordingApi:
 
     def file(self, full_name, path, ref=None):
         self.reads.append((full_name, path, ref))
+        # A (path, ref) key serves a different document per ref.
+        if (path, ref) in self.files:
+            return self.files[(path, ref)]
         return self.files.get(path)
+
+    # What OwnershipApi forwards to a release host.
+    def repository_of(self, full_name):
+        self.repository_reads.append(full_name)
+        return self.repositories.get(full_name)
+
+    def topics(self, full_name):
+        return []
 
     def graphql(self, query, variables):
         self.graphql_calls.append(variables)
@@ -321,17 +334,18 @@ class AuthoredDocument(unittest.TestCase):
         self.assertEqual(document["id"], "AutoStage")
         self.assertEqual(api.reads, [(api.repository, "listings/AutoStage.toml", "abc123")])
 
-    def test_a_document_that_is_not_there_says_so(self):
+    def test_a_document_that_is_not_there_is_not_a_failure(self):
         api = RecordingApi(files={})
         document, problem = decide.authored_document(api, "listings/AutoStage.toml", "abc123")
         self.assertIsNone(document)
-        self.assertIn("could not be read", problem)
+        self.assertIsNone(problem)
 
-    def test_a_document_that_does_not_parse_says_so(self):
+    def test_a_document_that_does_not_parse_says_so_and_names_the_ref(self):
         api = RecordingApi(files={"listings/AutoStage.toml": "id = \n"})
         document, problem = decide.authored_document(api, "listings/AutoStage.toml", "abc123")
         self.assertIsNone(document)
         self.assertIn("does not parse", problem)
+        self.assertIn("abc123", problem)
 
     def test_a_host_that_did_not_answer_says_so(self):
         api = RecordingApi()
@@ -339,6 +353,98 @@ class AuthoredDocument(unittest.TestCase):
         document, problem = decide.authored_document(api, "listings/AutoStage.toml", "abc")
         self.assertIsNone(document)
         self.assertIn("502", problem)
+
+
+class OwnershipFor(unittest.TestCase):
+    """Which document reaches the ownership check, and from which ref."""
+
+    PATH = "listings/AutoStage.toml"
+    BASE_BRANCH = "index-staging"
+
+    def setUp(self):
+        self.pull = {"user": {"login": "Maxi", "id": 7}, "base": {"ref": self.BASE_BRANCH}}
+        self.seen = []
+
+        def record(base, submitted, login, author_id, api):
+            self.seen.append((base, submitted, login, author_id))
+            return VERIFIED
+
+        patch = mock.patch.object(decide.ownership, "verify_change", record)
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def run_for(self, api):
+        return decide.ownership_for(api, self.pull, self.PATH, "head1234567890")
+
+    def test_a_listing_absent_from_the_base_branch_is_an_addition(self):
+        api = RecordingApi(files={(self.PATH, "head1234567890"): LISTING})
+        result = self.run_for(api)
+        self.assertEqual(result.state, ownership.VERIFIED)
+        self.assertIsNone(self.seen[0][0])
+        self.assertEqual([ref for _, _, ref in api.reads], ["head1234567890", self.BASE_BRANCH])
+
+    def test_a_listing_on_the_base_branch_is_an_edit(self):
+        api = RecordingApi(
+            files={
+                (self.PATH, "head1234567890"):
+                    'id = "AutoStage"\n[releases]\ngithub = "Attacker/Mod"\n',
+                (self.PATH, self.BASE_BRANCH):
+                    'id = "AutoStage"\n[releases]\ngithub = "Victim/Mod"\n',
+            }
+        )
+        self.run_for(api)
+
+        base, submitted, login, author_id = self.seen[0]
+        self.assertEqual(base["releases"]["github"], "Victim/Mod")
+        self.assertEqual(submitted["releases"]["github"], "Attacker/Mod")
+        self.assertEqual((login, author_id), ("Maxi", 7))
+
+    def test_a_submitted_document_that_is_not_there_reaches_no_verdict(self):
+        api = RecordingApi(files={})
+        result = self.run_for(api)
+        self.assertEqual(result.state, ownership.COULD_NOT_EVALUATE)
+        self.assertIn("head123", result.reason)
+        self.assertEqual(self.seen, [])
+
+    def test_a_base_document_that_does_not_parse_reaches_no_verdict(self):
+        api = RecordingApi(
+            files={(self.PATH, "head1234567890"): LISTING, (self.PATH, self.BASE_BRANCH): "id = \n"}
+        )
+        result = self.run_for(api)
+        self.assertEqual(result.state, ownership.COULD_NOT_EVALUATE)
+        self.assertIn(f"the listing on {self.BASE_BRANCH}", result.reason)
+        self.assertEqual(self.seen, [])
+
+    def test_a_base_read_the_host_refused_reaches_no_verdict(self):
+        api = RecordingApi(files={(self.PATH, "head1234567890"): LISTING})
+        reads = []
+
+        def file(full_name, path, ref=None):
+            reads.append(ref)
+            if ref == self.BASE_BRANCH:
+                raise ownership.Unavailable("HTTP 502")
+            return api.files.get((path, ref))
+
+        api.file = file
+        result = self.run_for(api)
+        self.assertEqual(result.state, ownership.COULD_NOT_EVALUATE)
+        self.assertIn("502", result.reason)
+        self.assertEqual(self.seen, [])
+
+    def test_the_base_branch_name_reaches_the_message_whole(self):
+        # ref[:7] was a short-sha convention, and the base read is a branch.
+        api = RecordingApi(
+            files={(self.PATH, "head1234567890"): LISTING, (self.PATH, self.BASE_BRANCH): "id = \n"}
+        )
+        self.assertIn(self.BASE_BRANCH, self.run_for(api).reason)
+
+    def test_a_pull_request_with_no_base_branch_reaches_no_verdict(self):
+        self.pull = {"user": {"login": "Maxi", "id": 7}}
+        api = RecordingApi(files={(self.PATH, "head1234567890"): LISTING})
+        result = self.run_for(api)
+        self.assertEqual(result.state, ownership.COULD_NOT_EVALUATE)
+        self.assertIn("no base branch", result.reason)
+        self.assertEqual(self.seen, [])
 
 
 class AutoMerge(unittest.TestCase):
@@ -366,6 +472,7 @@ class Act(unittest.TestCase):
             "node_id": "PR_1",
             "state": "open",
             "head": {"sha": "abc"},
+            "base": {"ref": "main", "sha": "base1"},
             "user": {"login": "Maxi", "id": 7},
         }
         patches = [
@@ -402,11 +509,34 @@ class Act(unittest.TestCase):
         self.assertEqual(self.api.sent, [])
 
     def test_an_added_listing_is_read_at_the_head_and_can_merge(self):
+        # Absent on the base branch, so this really is an addition.
+        self.api.files = {("listings/AutoStage.toml", "abc"): LISTING}
         with mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
             self.assertEqual(self.act(), 0)
         self.assertEqual(self.api.graphql_calls, [{"id": "PR_1"}])
-        self.assertEqual(self.api.reads, [(self.api.repository, "listings/AutoStage.toml", "abc")])
+        self.assertEqual([ref for _, _, ref in self.api.reads], ["abc", "main"])
         self.assertEqual(self.statuses()[-1]["state"], "success")
+
+    def test_an_addition_that_the_base_branch_already_carries_is_an_edit(self):
+        # GitHub calls this an addition, because it diffs against the merge
+        # base. The base branch says the listing is already there.
+        self.api.files = {
+            ("listings/AutoStage.toml", "abc"):
+                'id = "AutoStage"\n[releases]\ngithub = "Attacker/Mod"\n',
+            ("listings/AutoStage.toml", "main"):
+                'id = "AutoStage"\n[releases]\ngithub = "Victim/Mod"\n',
+        }
+        asked = []
+
+        def verify(document, login, author_id, api):
+            asked.append(document["releases"]["github"])
+            return VERIFIED if document["releases"]["github"] == "Attacker/Mod" else UNVERIFIED
+
+        with mock.patch.object(decide.ownership, "verify", verify):
+            self.assertEqual(self.act(), 0)
+
+        self.assertEqual(asked, ["Victim/Mod"])
+        self.assertEqual(self.api.graphql_calls, [])
 
     def test_the_check_is_held_pending_until_auto_merge_is_armed(self):
         with mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
@@ -428,6 +558,34 @@ class Act(unittest.TestCase):
         self.assertEqual(self.act(write=False), 0)
         self.assertEqual(self.statuses()[0]["state"], "error")
         self.assertEqual(self.api.graphql_calls, [])
+
+    def test_an_edit_is_verified_against_the_listing_on_the_base_branch(self):
+        # The author controls the submitted host, so verifying it would merge
+        # a takeover.
+        self.api.files = {
+            ("listings/AutoStage.toml", "abc"):
+                'id = "AutoStage"\n[releases]\ngithub = "Attacker/Mod"\n',
+            ("listings/AutoStage.toml", "main"):
+                'id = "AutoStage"\n[releases]\ngithub = "Victim/Mod"\n',
+        }
+        asked = []
+
+        def verify(document, login, author_id, api):
+            host = document["releases"]["github"]
+            asked.append(host)
+            return VERIFIED if host == "Attacker/Mod" else UNVERIFIED
+
+        with mock.patch.object(
+            decide, "changed_paths",
+            lambda api, number: [check_scope.Change("listings/AutoStage.toml", "modified")],
+        ), mock.patch.object(decide.ownership, "verify", verify):
+            self.assertEqual(self.act(), 0)
+
+        self.assertEqual(asked, ["Victim/Mod"])
+        self.assertEqual(self.api.graphql_calls, [])
+        self.assertTrue(
+            any(payload == {"labels": [decide.STEWARD_LABEL]} for _, _, payload, _ in self.api.sent)
+        )
 
     def test_a_faked_pass_on_a_wide_change_does_not_merge(self):
         # Scope is re-derived from the API, so a faked candidate cannot merge.
