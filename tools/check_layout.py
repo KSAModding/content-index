@@ -45,6 +45,15 @@ def load(path, where, errors):
         return None
 
 
+def check_suffix(path, where, errors):
+    """Lowercase only: the snapshot builder globs '*.toml', case-sensitively on Linux.
+
+    toml_files matches either case so Foo.TOML is rejected here, not skipped.
+    """
+    if path.suffix != ".toml":
+        errors.append(f"{where}: the file name has to end in '.toml', in lowercase")
+
+
 def check_listing(path, where, errors):
     document = load(path, where, errors)
     if document is None:
@@ -93,12 +102,14 @@ def check(listings=LISTINGS, packs=PACKS):
             return path.as_posix()
 
     for path in toml_files(listings):
+        check_suffix(path, where(path), errors)
         if path.parent != listings:
             errors.append(f"{where(path)}: listings/ holds no subfolders, one document per listing")
             continue
         check_listing(path, where(path), errors)
 
     for path in toml_files(packs):
+        check_suffix(path, where(path), errors)
         if path.parent.parent != packs:
             errors.append(f"{where(path)}: a pack version goes at packs/<id>/<version>.toml")
             continue
