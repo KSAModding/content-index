@@ -18,6 +18,7 @@ If you want to argue about the format or the index itself, open a thread in [con
    python3 tools/check_schema.py
    python3 tools/check_index.py
    python3 tools/check_license.py
+   python3 tools/check_status.py
    ```
 
    These need nothing but the repository. The remaining check downloads your latest release and stamps it, which needs the network and a checkout of [content-index-releases](https://github.com/KSAModding/content-index-releases) next to this one:
