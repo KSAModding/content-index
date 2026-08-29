@@ -32,6 +32,8 @@ STEWARD_TEAM = "content-manager-stewards"
 
 COMMENT_MARKER = "<!-- content-index:verdict -->"
 
+PULL_REQUEST_EVENT = "pull_request"
+
 PASS = "pass"
 REJECT = "reject"
 COULD_NOT_EVALUATE = "could-not-evaluate"
@@ -71,7 +73,7 @@ def decide(verdict, candidate, ownership_result, run_url=""):
         body = "\n".join(
             ["The validation could not reach a verdict, so nothing is decided yet.", ""]
             + _messages(verdict)
-            + ["", "The watcher's sweep comes back to this within the hour."]
+            + ["", "A new commit on this pull request runs the checks again."]
         )
         return Decision("error", "the validation could not reach a verdict", comment=body + tail)
 
@@ -336,11 +338,22 @@ def arm_auto_merge(api, node_id):
     return not errors
 
 
-def pull_request_for(api, sha):
-    """The open pull request whose head is `sha`, from the API rather than the verdict."""
-    for pull in api.get(f"/commits/{sha}/pulls", per_page=100) or []:
-        if pull.get("state") == "open" and (pull.get("head") or {}).get("sha") == sha:
-            return pull
+def pull_request_for(api, event, head_repository, head_branch, head_sha):
+    """The open pull request a workflow_run event belongs to, or None.
+
+    Only a `pull_request` run belongs to one.
+    """
+    if event != PULL_REQUEST_EVENT:
+        return None
+
+    owner = head_repository.split("/")[0]
+    for pull in api.get("/pulls", state="open", head=f"{owner}:{head_branch}") or []:
+        head = pull.get("head") or {}
+        if head.get("sha") != head_sha:
+            continue
+        if ((head.get("repo") or {}).get("full_name") or "") != head_repository:
+            continue
+        return pull
     return None
 
 
@@ -441,6 +454,9 @@ def parse_arguments(argv):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--verdict", type=Path, required=True)
     parser.add_argument("--head-sha", required=True, help="from the workflow_run event")
+    parser.add_argument("--event", required=True, help="from the workflow_run event")
+    parser.add_argument("--head-repository", required=True, help="from the workflow_run event")
+    parser.add_argument("--head-branch", required=True, help="from the workflow_run event")
     parser.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY"))
     parser.add_argument("--run-url", default="")
     parser.add_argument("--dry-run", action="store_true")
@@ -476,10 +492,17 @@ def main(argv=None):
 def act(api, arguments):
     verdict, verdict_error = read_verdict(arguments.verdict)
 
-    pull = pull_request_for(api, arguments.head_sha)
+    pull = pull_request_for(
+        api,
+        arguments.event,
+        arguments.head_repository,
+        arguments.head_branch,
+        arguments.head_sha,
+    )
     if pull is None:
         print(
-            f"no open pull request in {api.repository} has {arguments.head_sha} as its head",
+            f"no open pull request for a {arguments.event} run on "
+            f"{arguments.head_repository}:{arguments.head_branch} at {arguments.head_sha}",
             file=sys.stderr,
         )
         return 0

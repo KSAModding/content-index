@@ -22,15 +22,13 @@ concurrency:
 jobs:
   decide:
     name: decide
-    if: >-
-      github.event.workflow_run.event == 'pull_request' ||
-      github.event.workflow_run.event == 'workflow_dispatch'
+    if: github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
       actions: read # the verdict artifact of the triggering run
-      statuses: write # the commit status the watcher's sweep reads
+      statuses: write # the commit status the branch ruleset requires
     steps:
       - uses: actions/checkout@v7
 
@@ -51,14 +49,24 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: content-index
 
+      # The head repository, the branch and the head commit identify the pull request.
       - name: Decide
         env:
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
           GITHUB_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event.workflow_run.event }}
+          HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
         run: |
           set -euo pipefail
           python3 tools/decide.py \
             --verdict verdict.json \
-            --head-sha "${{ github.event.workflow_run.head_sha }}" \
-            --repository "${{ github.repository }}" \
-            --run-url "${{ github.event.workflow_run.html_url }}"
+            --event "$EVENT" \
+            --head-repository "$HEAD_REPOSITORY" \
+            --head-branch "$HEAD_BRANCH" \
+            --head-sha "$HEAD_SHA" \
+            --repository "$REPOSITORY" \
+            --run-url "$RUN_URL"
