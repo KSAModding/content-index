@@ -357,19 +357,59 @@ def changed_paths(api, number):
 
 
 def authored_document(api, path, ref):
-    """At the head commit: on the base branch an added listing does not exist,
-    and a modified one still names the host it is moving away from.
+    """One authored document at `ref`, and what stopped the read.
+
+    (None, None) means the path is not there, which is a fact, not a failure.
     """
     try:
         text = api.file(api.repository, path, ref=ref)
     except ownership.Unavailable as error:
         return None, str(error)
     if text is None:
-        return None, f"{path} could not be read at {ref[:7]}"
+        return None, None
     try:
         return tomllib.loads(text), ""
     except tomllib.TOMLDecodeError as error:
-        return None, f"{path} does not parse: {error}"
+        return None, f"{path} does not parse at {ref}: {error}"
+
+
+def ownership_for(api, pull, path, head_sha):
+    """Verify the pull request author against the document it touches.
+
+    Whether the listing exists is read from the base branch, not from the
+    reported file status, which is computed against the merge base. Reading the
+    branch tip and not the commit the pull request was cut from keeps a stale
+    pull request from verifying against a previous owner.
+    """
+    submitted, problem = authored_document(api, path, head_sha)
+    if submitted is None:
+        return ownership.Result(
+            ownership.COULD_NOT_EVALUATE,
+            problem or f"{path} is not there at {head_sha[:7]}",
+        )
+
+    base_ref = (pull.get("base") or {}).get("ref") or ""
+    if not base_ref:
+        return ownership.Result(
+            ownership.COULD_NOT_EVALUATE,
+            "the pull request names no base branch, so the listing it edits "
+            "could not be read",
+        )
+
+    base, problem = authored_document(api, path, base_ref)
+    if base is None and problem is not None:
+        return ownership.Result(
+            ownership.COULD_NOT_EVALUATE,
+            f"the listing on {base_ref} could not be read: {problem}",
+        )
+
+    return ownership.verify_change(
+        base,
+        submitted,
+        (pull.get("user") or {}).get("login") or "",
+        (pull.get("user") or {}).get("id"),
+        OwnershipApi(api),
+    )
 
 
 def read_verdict(path):
@@ -462,16 +502,7 @@ def act(api, arguments):
 
     result = ownership.Result(ownership.UNVERIFIED, "not checked")
     if candidate and verdict.get("verdict") == PASS:
-        document, problem = authored_document(api, documents[0], arguments.head_sha)
-        if document is None:
-            result = ownership.Result(ownership.COULD_NOT_EVALUATE, problem)
-        else:
-            result = ownership.verify(
-                document,
-                (pull.get("user") or {}).get("login") or "",
-                (pull.get("user") or {}).get("id"),
-                OwnershipApi(api),
-            )
+        result = ownership_for(api, pull, documents[0], arguments.head_sha)
 
     decision = decide({**verdict, "scope_reason": reason}, candidate, result, arguments.run_url)
 
