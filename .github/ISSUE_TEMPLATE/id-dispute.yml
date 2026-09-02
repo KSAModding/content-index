@@ -1,0 +1,49 @@
+name: Id dispute
+description: the ownership of a listing is contested
+title: "[Dispute] "
+labels: ["area:governance"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read [POLICY.md](https://github.com/KSAModding/content-index/blob/main/POLICY.md) first.
+
+        Who was first is decided by the forums thread, so link yours. While the dispute is open the listing is marked `disputed` and clients show a warning.
+  - type: input
+    id: listing
+    attributes:
+      label: Listing id
+      description: The id as it appears under `listings/` or `packs/`.
+      placeholder: AdvancedFlightComputer
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is disputed
+      options:
+        - The id is the folder name of my content, and somebody else listed it
+        - The ownership of my listing is contested, for example after a handover
+        - Something else, explained below
+    validations:
+      required: true
+  - type: input
+    id: forums
+    attributes:
+      label: Your forums thread
+      description: The thread that announced your content under this folder name. The steward reads its date.
+      placeholder: https://forums.ahwoo.com/threads/...
+    validations:
+      required: true
+  - type: textarea
+    id: claim
+    attributes:
+      label: Your claim
+      description: What happened, in order, with links. What makes the id yours.
+    validations:
+      required: true
+  - type: textarea
+    id: other
+    attributes:
+      label: The other party
+      description: Their forums thread or GitHub account, if you know it.
