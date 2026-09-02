@@ -24,6 +24,7 @@ https://ksamodding.github.io/content-index-releases/v1/index.json
 | `listings/<id>.toml` | One authored document per mod or mod loader. |
 | `packs/<id>/<version>.toml` | One authored document per mod pack version. |
 | `index-status.toml` | The index's own voice about a listing. Stewards only. |
+| `POLICY.md` | How a takedown or an id dispute is filed, and what a steward does with it. |
 | `schemas/` | What a document may contain, as JSON Schema. See its [README](schemas/README.md). |
 | `tools/` | The checks that run on every pull request. |
 
