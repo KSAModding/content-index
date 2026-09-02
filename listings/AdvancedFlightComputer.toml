@@ -43,7 +43,7 @@ bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer
 discussions = "https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/discussions"
 
 [compatibility]
-game_min = "2026.8.19.5261"
+game_min = "2026.9.4.5400"
 
 [loader]
 id = "StarMap"
