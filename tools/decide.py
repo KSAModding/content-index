@@ -109,7 +109,9 @@ def decide(verdict, candidate, ownership_result, run_url=""):
             f"The proof is something only you can put on the release repository, which "
             f"is what says you agree to it being indexed. Either set the topic "
             f"`{ownership.TOPIC.format(login='<your-github-username>')}` on it, or commit "
-            f"`{ownership.MARKER_PATH}` naming your username."
+            f"`{ownership.MARKER_PATH}` naming your username. For a SpaceDock host, set "
+            f"your GitHub repository as the mod's source code link on SpaceDock, and put "
+            f"the proof on that repository."
             + tail
         ),
     )

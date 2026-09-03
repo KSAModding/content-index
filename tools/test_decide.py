@@ -171,6 +171,7 @@ class Table(unittest.TestCase):
         decision = decide.decide(verdict(), True, UNVERIFIED)
         self.assertIn("ksa-index-", decision.comment)
         self.assertIn(ownership.MARKER_PATH, decision.comment)
+        self.assertIn("source code link", decision.comment)
 
     def test_ownership_that_could_not_be_checked_waits_too(self):
         decision = decide.decide(verdict(), True, UNAVAILABLE)
@@ -457,6 +458,29 @@ class OwnershipFor(unittest.TestCase):
         self.assertEqual(result.state, ownership.COULD_NOT_EVALUATE)
         self.assertIn("no base branch", result.reason)
         self.assertEqual(self.seen, [])
+
+
+class SpaceDockListing(unittest.TestCase):
+    """A SpaceDock-hosted listing goes through the same call, with the real check."""
+
+    def test_the_link_on_spacedock_reaches_the_github_proofs(self):
+        listing = 'id = "AutoStage"\n[releases]\nspacedock = 4253\n'
+        api = RecordingApi(
+            files={("listings/AutoStage.toml", "head1234567890"): listing},
+            repositories={"Maxi/Mod": {"full_name": "Maxi/Mod", "fork": False, "owner": {"id": 7}}},
+            spacedock={
+                "4253": {
+                    "id": 4253,
+                    "game_id": ownership.SPACEDOCK_GAME_ID,
+                    "source_code": "https://github.com/Maxi/Mod",
+                }
+            },
+        )
+        pull = {"user": {"login": "Maxi", "id": 7}, "base": {"ref": "main"}}
+        result = decide.ownership_for(api, pull, "listings/AutoStage.toml", "head1234567890")
+        self.assertEqual(result.state, ownership.VERIFIED)
+        self.assertEqual(result.proof, "source code link, owner id")
+        self.assertEqual(api.repository_reads, ["Maxi/Mod"])
 
 
 class Answer:
