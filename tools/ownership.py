@@ -5,6 +5,7 @@
 RFC 0033 for the marker file and the owner id, RFC 0038 for the topic.
 """
 
+import re
 import tomllib
 from urllib.parse import urlparse
 
@@ -14,6 +15,8 @@ COULD_NOT_EVALUATE = "could-not-evaluate"
 
 MARKER_PATH = ".github/ksa-content-index.toml"
 TOPIC = "ksa-index-{login}"
+
+GITHUB_NAME = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$")
 
 # Which host a verdict about an edit is talking about.
 CURRENT_HOST = "the authority the listing already names"
@@ -46,7 +49,10 @@ def github_repository(url):
     parts = [part for part in parsed.path.split("/") if part]
     if len(parts) < 2:
         return None
-    return f"{parts[0]}/{parts[1].removesuffix('.git')}"
+    owner, name = parts[0], parts[1].removesuffix(".git")
+    if not GITHUB_NAME.match(owner) or not GITHUB_NAME.match(name):
+        return None
+    return f"{owner}/{name}"
 
 
 def authority(document):

@@ -66,6 +66,16 @@ class Url(unittest.TestCase):
 
     def test_an_owner_without_a_repository_is_not_one(self):
         self.assertIsNone(ownership.github_repository("https://github.com/Maxi"))
+    def test_a_name_github_cannot_carry_is_not_one(self):
+        # Such a name would otherwise reach the GitHub API path unquoted.
+        for url in (
+            "https://github.com/Maxi/Bad Name",
+            "https://github.com/Maxi/M\u00f6d",
+            "https://github.com/-Maxi/Thing",
+            "https://github.com/Maxi/Thing.",
+            "https://github.com/Maxi/%2e%2e",
+        ):
+            self.assertIsNone(ownership.github_repository(url), url)
 
 
 class Authority(unittest.TestCase):
