@@ -24,6 +24,41 @@ UNAVAILABLE = ownership.Result(ownership.COULD_NOT_EVALUATE, "the host did not a
 
 LISTING = 'id = "AutoStage"\n[releases]\ngithub = "Maxi/KSA-AutoStage"\n'
 
+FORK = "Maxi/content-index"
+BRANCH = "list-autostage"
+
+
+def pull_request(number=5, sha="abc", branch=BRANCH, repository=FORK, base="main"):
+    return {
+        "number": number,
+        "node_id": f"PR_{number}",
+        "state": "open",
+        "head": {"sha": sha, "ref": branch, "repo": {"full_name": repository}},
+        "base": {"ref": base, "sha": "base1"},
+        "user": {"login": "Maxi", "id": 7},
+    }
+
+
+def _head_filter(pull):
+    """What GitHub matches `head=owner:branch` against."""
+    head = pull["head"]
+    return f"{head['repo']['full_name'].split('/')[0]}:{head['ref']}"
+
+
+def run_block_lines(text):
+    """Every line inside a `run:` block, without a YAML parser."""
+    depth = None
+    for line in text.splitlines():
+        indent = len(line) - len(line.lstrip())
+        if depth is not None:
+            if line.strip() and indent <= depth:
+                depth = None
+            else:
+                yield line
+                continue
+        if line.strip().startswith("run:"):
+            depth = indent
+
 
 def workflow_jobs(path):
     """The job ids and display names in one workflow file, without a YAML parser."""
@@ -65,7 +100,8 @@ def verdict(outcome="pass", checks=(), reason="", **overrides):
 class RecordingApi:
     """Every call this workflow would make, recorded instead of sent."""
 
-    def __init__(self, comments=(), labels=(), reviewers=None, files=None, repositories=None):
+    def __init__(self, comments=(), labels=(), reviewers=None, files=None,
+                 repositories=None, pulls=()):
         self.repository = "KSAModding/content-index"
         self.token = "app"
         self.public_token = "workflow"
@@ -76,6 +112,8 @@ class RecordingApi:
         self.files = {"listings/AutoStage.toml": LISTING} if files is None else files
         self.repositories = repositories or {}
         self.repository_reads = []
+        self.pulls = list(pulls)
+        self.asked = []
         self.reads = []
         self.graphql_calls = []
         self.graphql_answer = {}
@@ -83,6 +121,9 @@ class RecordingApi:
         self.log = lambda message: None
 
     def get(self, path, **query):
+        self.asked.append((path, query))
+        if path == "/pulls":
+            return [p for p in self.pulls if _head_filter(p) == query.get("head")]
         if path.endswith("/comments"):
             return self.comments
         if path.endswith("/labels"):
@@ -130,7 +171,7 @@ class Table(unittest.TestCase):
         decision = decide.decide(verdict("could-not-evaluate"), True, VERIFIED)
         self.assertEqual(decision.status, "error")
         self.assertFalse(decision.auto_merge)
-        self.assertIn("sweep", decision.comment)
+        self.assertIn("A new commit", decision.comment)
 
     def test_the_happy_path_arms_auto_merge_and_says_nothing(self):
         decision = decide.decide(verdict(), True, VERIFIED)
@@ -311,7 +352,7 @@ class RequiredCheck(unittest.TestCase):
 
 
 class Status(unittest.TestCase):
-    def test_it_is_posted_under_the_name_the_sweep_reads(self):
+    def test_it_is_posted_under_the_name_the_ruleset_requires(self):
         api = RecordingApi()
         decide.post_status(api, "abc", decide.Decision("success", "validated"), "https://x/run/1")
         method, path, payload, token = api.sent[0]
@@ -458,6 +499,62 @@ class AutoMerge(unittest.TestCase):
         self.assertFalse(decide.arm_auto_merge(api, "PR_1"))
 
 
+class ResolvingThePullRequest(unittest.TestCase):
+    """A listing arrives from a fork, so the head commit is not in this repository."""
+
+    def resolve(self, api, event="pull_request", repository=FORK, branch=BRANCH, sha="abc"):
+        return decide.pull_request_for(api, event, repository, branch, sha)
+
+    def test_a_fork_pull_request_resolves(self):
+        api = RecordingApi(pulls=[pull_request()])
+        self.assertEqual(self.resolve(api)["number"], 5)
+
+    def test_a_branch_in_this_repository_still_resolves(self):
+        api = RecordingApi(pulls=[pull_request(repository="KSAModding/content-index")])
+        found = self.resolve(api, repository="KSAModding/content-index")
+        self.assertEqual(found["number"], 5)
+
+    def test_the_query_names_the_owner_and_the_branch(self):
+        """A filter GitHub does not understand answers with nothing, silently."""
+        api = RecordingApi(pulls=[pull_request()])
+        self.resolve(api)
+        self.assertEqual(
+            api.asked, [("/pulls", {"state": "open", "head": f"Maxi:{BRANCH}"})]
+        )
+
+    def test_another_head_commit_does_not_resolve(self):
+        api = RecordingApi(pulls=[pull_request(sha="deadbeef")])
+        self.assertIsNone(self.resolve(api))
+
+    def test_another_repository_of_the_same_owner_does_not_resolve(self):
+        """The filter pins the owner and the branch, the full name pins the fork."""
+        api = RecordingApi(pulls=[pull_request(repository="Maxi/renamed-index")])
+        self.assertIsNone(self.resolve(api))
+
+    def test_a_dispatched_run_belongs_to_no_pull_request(self):
+        """It carries the branch it was dispatched on, which is nobody's head."""
+        api = RecordingApi(pulls=[pull_request()])
+        self.assertIsNone(self.resolve(api, event="workflow_dispatch"))
+        self.assertEqual(api.asked, [])
+
+
+class DecideArguments(unittest.TestCase):
+    """The script needs what identifies the pull request."""
+
+    def step(self):
+        return (WORKFLOWS / "ownership.yml").read_text(encoding="utf-8")
+
+    def test_every_argument_the_script_needs_is_passed(self):
+        text = self.step()
+        for flag in ("--event", "--head-repository", "--head-branch", "--head-sha"):
+            self.assertIn(flag, text, f"ownership.yml does not pass {flag}")
+
+    def test_nothing_is_interpolated_into_a_shell_here(self):
+        """A fork picks its own branch name, and this job holds the App token."""
+        for line in run_block_lines(self.step()):
+            self.assertNotIn("${{", line, f"interpolated into a command: {line.strip()}")
+
+
 class Act(unittest.TestCase):
     """The whole run, with only the API replaced."""
 
@@ -465,34 +562,30 @@ class Act(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
-        self.api = RecordingApi()
+        # A fork branch, resolved through the real lookup rather than a patched one.
+        self.api = RecordingApi(pulls=[pull_request()])
 
-        self.pull = {
-            "number": 5,
-            "node_id": "PR_1",
-            "state": "open",
-            "head": {"sha": "abc"},
-            "base": {"ref": "main", "sha": "base1"},
-            "user": {"login": "Maxi", "id": 7},
-        }
-        patches = [
-            mock.patch.object(decide, "pull_request_for", lambda api, sha: self.pull),
-            mock.patch.object(
-                decide, "changed_paths",
-                lambda api, number: [check_scope.Change("listings/AutoStage.toml", "added")],
-            ),
-        ]
-        for patch in patches:
-            patch.start()
-            self.addCleanup(patch.stop)
+        patch = mock.patch.object(
+            decide, "changed_paths",
+            lambda api, number: [check_scope.Change("listings/AutoStage.toml", "added")],
+        )
+        patch.start()
+        self.addCleanup(patch.stop)
 
-    def act(self, document=None, write=True):
+    def act(self, document=None, write=True, event="pull_request"):
         path = self.root / "verdict.json"
         if write:
             path.write_text(json.dumps(document if document is not None else verdict()),
                             encoding="utf-8")
         arguments = mock.Mock(
-            verdict=path, head_sha="abc", repository=self.api.repository, run_url="", dry_run=False
+            verdict=path,
+            event=event,
+            head_repository=FORK,
+            head_branch=BRANCH,
+            head_sha="abc",
+            repository=self.api.repository,
+            run_url="",
+            dry_run=False,
         )
         return decide.act(self.api, arguments)
 
@@ -513,7 +606,7 @@ class Act(unittest.TestCase):
         self.api.files = {("listings/AutoStage.toml", "abc"): LISTING}
         with mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
             self.assertEqual(self.act(), 0)
-        self.assertEqual(self.api.graphql_calls, [{"id": "PR_1"}])
+        self.assertEqual(self.api.graphql_calls, [{"id": "PR_5"}])
         self.assertEqual([ref for _, _, ref in self.api.reads], ["abc", "main"])
         self.assertEqual(self.statuses()[-1]["state"], "success")
 
@@ -620,7 +713,7 @@ class Act(unittest.TestCase):
 
     def test_a_crash_still_leaves_a_status(self):
         arguments = mock.Mock(
-            verdict=self.root / "missing.json", head_sha="abc",
+            verdict=self.root / "missing.json", event="pull_request", head_sha="abc",
             repository=self.api.repository, run_url="", dry_run=False,
         )
         with mock.patch.object(decide, "Api", lambda *a, **k: self.api), mock.patch.object(
@@ -628,6 +721,11 @@ class Act(unittest.TestCase):
         ), mock.patch.object(decide, "parse_arguments", lambda argv: arguments):
             self.assertEqual(decide.main([]), 1)
         self.assertEqual(self.statuses()[0]["state"], "error")
+
+    def test_a_run_that_belongs_to_no_pull_request_touches_nothing(self):
+        self.assertEqual(self.act(event="workflow_dispatch"), 0)
+        self.assertEqual(self.api.sent, [])
+        self.assertEqual(self.api.graphql_calls, [])
 
 
 if __name__ == "__main__":
