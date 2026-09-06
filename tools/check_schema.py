@@ -74,6 +74,11 @@ def pointer(error):
     return "".join(parts).lstrip(".")
 
 
+def titled(subschema):
+    """The title a subschema uses to describe itself in words, when it carries one."""
+    return subschema.get("title") if isinstance(subschema, dict) else None
+
+
 def explain(error):
     """Say what a rejection means in words.
 
@@ -81,13 +86,19 @@ def explain(error):
     schema, because a boolean subschema loses the key name from the error path
     and the report then points at the whole document. A "not" that carries a
     pattern says what it rejects in its title, since the raw message would put
-    the pattern itself in front of the author.
+    the pattern itself in front of the author. A pattern carries a title for the
+    same reason, and its message says the value is not what the title names,
+    because an author whose value was refused needs the shape that is wanted
+    rather than the regex that refused it.
     """
+    if error.validator == "pattern":
+        title = titled(error.schema)
+        return f"{error.instance!r} is not {title}" if title else error.message
     if error.validator != "not":
         return error.message
     if error.validator_value == {}:
         return "this key is not allowed here"
-    title = error.validator_value.get("title") if isinstance(error.validator_value, dict) else None
+    title = titled(error.validator_value)
     return f"{error.instance!r} is {title}" if title else error.message
 
 

@@ -98,7 +98,7 @@ They are collected here so any one of them can be argued down on its own.
 In several regex flavours, Python's included, `$` also matches before a trailing newline, so `^...$` would accept an id of `"MyMod\n"` and put that newline into a folder name. `(?![\s\S])` is a true end of input in both Python and ECMAScript.
 
 **A forbidden key is `{"not": {}}`, not `false`.**
-Both reject the key. On a boolean subschema the validator loses the key name from the error path, so the report points at the whole document instead of at the key. `check_schema.explain` turns the resulting message back into English, and does the same for a `not` carrying a pattern, using the `title` on that subschema so the author reads "is a reserved name" rather than the pattern itself.
+Both reject the key. On a boolean subschema the validator loses the key name from the error path, so the report points at the whole document instead of at the key. `check_schema.explain` turns the resulting message back into English, and does the same for a `not` carrying a pattern, using the `title` on that subschema so the author reads "is a reserved name" rather than the pattern itself. A `pattern` may carry a `title` for the same reason, and `links.forums` does. A pattern title names what the value should be rather than what it is, so the message negates it, and the author reads the shape that is wanted rather than the regex that refused it.
 
 ## Editor support
 
