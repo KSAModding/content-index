@@ -338,6 +338,46 @@ class Label(unittest.TestCase):
         )
 
 
+class DocumentLabel(unittest.TestCase):
+    def test_the_kind_of_document_is_named(self):
+        api = RecordingApi()
+        decide.sync_document_labels(api, 5, ["listing"])
+        self.assertEqual(api.sent[0][2], {"labels": ["listing"]})
+
+    def test_it_is_not_added_twice(self):
+        api = RecordingApi(labels=["listing"])
+        decide.sync_document_labels(api, 5, ["listing"])
+        self.assertEqual(api.sent, [])
+
+    def test_a_kind_the_change_no_longer_touches_is_taken_off(self):
+        api = RecordingApi(labels=["listing", "pack"])
+        decide.sync_document_labels(api, 5, ["listing"])
+        self.assertEqual(
+            [(method, path) for method, path, _, _ in api.sent],
+            [("DELETE", "/issues/5/labels/pack")],
+        )
+
+    def test_a_label_this_workflow_does_not_own_is_left_alone(self):
+        api = RecordingApi(labels=[decide.STEWARD_LABEL, "area:publishing"])
+        decide.sync_document_labels(api, 5, [])
+        self.assertEqual(api.sent, [])
+
+    def test_a_label_the_repository_does_not_have_is_created_first(self):
+        api = MissingLabelApi("listing")
+        decide.sync_document_labels(api, 5, ["listing"])
+        self.assertEqual(
+            [(path, payload) for _, path, payload, _ in api.sent],
+            [
+                ("/labels", {
+                    "name": "listing",
+                    "color": "0e8a16",
+                    "description": "changes a listing document",
+                }),
+                ("/issues/5/labels", {"labels": ["listing"]}),
+            ],
+        )
+
+
 class Reviewers(unittest.TestCase):
     def test_the_stewards_team_is_requested(self):
         api = RecordingApi()
@@ -622,6 +662,13 @@ class Act(unittest.TestCase):
     def statuses(self):
         return [payload for _, path, payload, _ in self.api.sent if path == "/statuses/abc"]
 
+    def labelled(self):
+        return [
+            payload["labels"][0]
+            for _, path, payload, _ in self.api.sent
+            if path == "/issues/5/labels"
+        ]
+
     def test_a_verdict_naming_another_pull_request_is_refused(self):
         self.assertEqual(self.act(verdict(pull_request=999)), 1)
         self.assertEqual(self.api.sent, [])
@@ -740,6 +787,39 @@ class Act(unittest.TestCase):
         self.api.labels = [decide.STEWARD_LABEL]
         self.assertEqual(self.act(verdict("reject")), 0)
         self.assertNotIn("DELETE", [m for m, _, _, _ in self.api.sent])
+
+    def test_a_listing_that_waits_for_a_steward_carries_both_labels(self):
+        with mock.patch.object(decide.ownership, "verify", lambda *a, **k: UNVERIFIED):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.labelled(), ["listing", decide.STEWARD_LABEL])
+
+    def test_a_rejected_listing_still_reads_as_a_listing(self):
+        self.assertEqual(self.act(verdict("reject")), 0)
+        self.assertEqual(self.labelled(), ["listing"])
+
+    def test_a_listing_that_merges_itself_is_labelled_too(self):
+        with mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.labelled(), ["listing"])
+
+    def test_a_change_that_touches_both_kinds_carries_both(self):
+        with mock.patch.object(
+            decide, "changed_paths",
+            lambda api, number: [
+                check_scope.Change("listings/AutoStage.toml", "added"),
+                check_scope.Change("packs/Starter/1.0.0.toml", "added"),
+            ],
+        ):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.labelled(), ["listing", "pack", decide.STEWARD_LABEL])
+
+    def test_a_change_that_touches_no_document_carries_no_kind(self):
+        with mock.patch.object(
+            decide, "changed_paths",
+            lambda api, number: [check_scope.Change("tools/validate.py", "modified")],
+        ):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.labelled(), [decide.STEWARD_LABEL])
 
     def test_a_crash_still_leaves_a_status(self):
         arguments = mock.Mock(

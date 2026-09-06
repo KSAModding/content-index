@@ -34,7 +34,13 @@ STEWARD_TEAM = "content-manager-stewards"
 # missing one is created from.
 LABELS = {
     STEWARD_LABEL: ("d93f0b", "waiting on a steward"),
+    check_scope.LISTING_KIND: ("0e8a16", "changes a listing document"),
+    check_scope.PACK_KIND: ("0e8a16", "changes a pack document"),
 }
+
+# One label per kind of document, so the queue separates a submission from a
+# change to the checks that gate it.
+DOCUMENT_LABELS = tuple(kind for kind, _ in check_scope.KINDS)
 
 COMMENT_MARKER = "<!-- content-index:verdict -->"
 
@@ -307,6 +313,22 @@ def remove_steward_label(api, number):
         api.send("DELETE", f"/issues/{number}/labels/{STEWARD_LABEL}", None)
 
 
+def sync_document_labels(api, number, wanted):
+    """Say which kinds of document the pull request touches.
+
+    The kind is a fact about the diff and not about the verdict, so a listing
+    that a steward has to merge still reads as a listing. Both directions are
+    kept, because a pull request can stop touching a document, and no label
+    outside DOCUMENT_LABELS is looked at.
+    """
+    present = _labels(api, number)
+    for name in DOCUMENT_LABELS:
+        if name in wanted and name not in present:
+            _put_label(api, number, name)
+        elif name not in wanted and name in present:
+            api.send("DELETE", f"/issues/{number}/labels/{name}", None)
+
+
 def _requested(api, number):
     requested = api.get(f"/pulls/{number}/requested_reviewers") or {}
     return any(team.get("slug") == STEWARD_TEAM for team in requested.get("teams") or [])
@@ -529,7 +551,8 @@ def act(api, arguments):
             return 1
 
     # Re-derived from the API: the verdict cannot be trusted to decide a merge.
-    candidate, documents, reason = check_scope.evaluate(changed_paths(api, number))
+    changes = changed_paths(api, number)
+    candidate, documents, reason = check_scope.evaluate(changes)
 
     result = ownership.Result(ownership.UNVERIFIED, "not checked")
     if candidate and verdict.get("verdict") == PASS:
@@ -553,6 +576,7 @@ def act(api, arguments):
 
     post_status(api, arguments.head_sha, decision, arguments.run_url)
     upsert_comment(api, number, decision.comment)
+    sync_document_labels(api, number, check_scope.kinds(changes))
 
     if decision.needs_steward:
         add_steward_label(api, number)
