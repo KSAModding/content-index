@@ -1,0 +1,34 @@
+spec_version = 1
+id = "ksamods_gg_submit_test"
+type = "mod"
+name = "ksamods_gg_submit_test"
+authors = ["SafeShows"]
+abstract = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since 1966, when designers at Letraset and James Mosley, the librarian at St Bride Printing Library in London, took a 1914 Cicero translation and scrambled it to make dummy text for Letraset's Body Type sheets. It has survived not only many decades, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised thanks to these sheets and more recently with desktop publishing software like Aldus PageMaker and Microsoft Word including versions of Lorem Ipsum."
+description = """
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus ac turpis sit amet nulla elementum pulvinar. Sed et elit a neque lacinia ullamcorper. Integer egestas placerat sapien. Aenean eu ex sit amet elit scelerisque condimentum nec nec sem. Curabitur scelerisque velit est, ac rhoncus tellus elementum non. Phasellus fringilla tristique augue vitae scelerisque. Mauris vitae velit id erat ultrices aliquam ac ut ante. Sed elit neque, mattis posuere malesuada et, mollis vel est. Interdum et malesuada fames ac ante ipsum primis in faucibus.
+
+Mauris a ipsum risus. Quisque tempor nunc sed metus lacinia aliquam. Donec eget tincidunt sapien, et maximus mauris. Nam orci velit, pulvinar quis interdum ut, vestibulum nec mauris. Donec consectetur elit quis ornare ultricies. Nulla viverra quam luctus, ullamcorper nisi eu, lacinia eros. Proin vitae scelerisque erat, ut varius ante. Praesent urna nulla, feugiat sed dapibus in, pretium nec ante.
+
+Aenean sollicitudin, augue rutrum aliquam pretium, orci dui iaculis tellus, in dapibus enim mauris in dui. Vestibulum facilisis dictum massa, a lacinia mi malesuada quis. Ut aliquam faucibus hendrerit. Morbi condimentum, augue vel faucibus venenatis, eros purus pharetra lorem, in luctus lorem ipsum eu tellus. In dictum sem consequat diam gravida iaculis. Duis in ipsum sit amet purus sollicitudin rhoncus. Integer sodales nibh elit. Donec sed viverra tortor. Mauris lobortis libero in eros hendrerit sagittis. Nam tempus, nulla id finibus posuere, arcu tortor dignissim sem, eget fringilla ex augue in nisi. Sed pharetra, orci in egestas vulputate, augue nunc pharetra eros, id venenatis est nunc ac magna. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Nam feugiat tincidunt erat eu cursus. Sed pulvinar libero in risus molestie, nec dictum nisi hendrerit.
+
+Ut risus est, euismod in viverra quis, convallis eu urna. In nibh justo, iaculis a tincidunt vitae, pulvinar ut mauris. Proin sodales ipsum justo, id faucibus quam porttitor eget. Vestibulum tincidunt nisl lorem, sit amet malesuada turpis interdum at. Nulla eu dui quis leo laoreet venenatis vitae eu lacus. Fusce scelerisque nulla ac nisl euismod consequat. Vestibulum vitae leo eu eros vestibulum cursus id sit amet elit. Duis id placerat lectus, id elementum dolor. Fusce pharetra maximus consectetur. Aenean porta augue non mattis pretium.
+
+Maecenas quam tortor, elementum ac pulvinar eget, fringilla nec velit. Ut id felis eu massa imperdiet sagittis. Sed non ex mauris. Integer congue in dolor quis pharetra. Vestibulum augue ipsum, cursus vel scelerisque in, maximus sed urna. Fusce blandit tortor ut risus blandit cursus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae;
+"""
+license = "MIT"
+
+[releases]
+github = "SafeShows/ksamods_gg_submit_test"
+
+[links]
+forums = "https://forums.ahwoo.com/"
+
+[compatibility]
+game_min = "2026.9.7.5402"
+game_max = "2026.9.7.5402"
+
+[loader]
+id = "Starmap"
+min = "0.4.5"
+max = "0.4.5"
