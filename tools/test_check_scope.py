@@ -50,6 +50,39 @@ class IsDocument(unittest.TestCase):
         self.assertFalse(check_scope.is_document("listings-archive/Mod.toml"))
 
 
+class Kinds(unittest.TestCase):
+    def kinds(self, *paths):
+        return check_scope.kinds(check_scope.changes(list(paths)))
+
+    def test_a_listing_names_its_kind(self):
+        self.assertEqual(check_scope.kind_of("listings/Mod.toml"), check_scope.LISTING_KIND)
+
+    def test_a_pack_version_names_its_kind(self):
+        self.assertEqual(check_scope.kind_of("packs/Pack/1.0.0.toml"), check_scope.PACK_KIND)
+
+    def test_anything_else_names_no_kind(self):
+        self.assertIsNone(check_scope.kind_of("tools/decide.py"))
+
+    def test_only_the_kinds_that_are_there_are_reported(self):
+        self.assertEqual(self.kinds("listings/Mod.toml"), ["listing"])
+
+    def test_a_change_beside_a_document_does_not_hide_the_kind(self):
+        # The kind says what the change touches, and the verdict says whether
+        # that may merge itself. A wide change is still a listing change.
+        self.assertEqual(self.kinds("listings/Mod.toml", "tools/decide.py"), ["listing"])
+
+    def test_both_kinds_come_in_the_order_KINDS_names(self):
+        self.assertEqual(
+            self.kinds("packs/Pack/1.0.0.toml", "listings/Mod.toml"), ["listing", "pack"]
+        )
+
+    def test_a_repeated_kind_is_reported_once(self):
+        self.assertEqual(self.kinds("listings/A.toml", "listings/B.toml"), ["listing"])
+
+    def test_a_change_without_a_document_reports_nothing(self):
+        self.assertEqual(self.kinds("tools/decide.py", "README.md"), [])
+
+
 class Evaluate(unittest.TestCase):
     def evaluate(self, paths, status="added"):
         return check_scope.evaluate(check_scope.changes(paths, status))

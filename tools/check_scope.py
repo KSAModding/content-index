@@ -10,6 +10,13 @@ SUFFIX = r"\.[Tt][Oo][Mm][Ll]"
 LISTING = re.compile(rf"^listings/[^/]+{SUFFIX}(?![\s\S])")
 PACK = re.compile(rf"^packs/[^/]+/[^/]+{SUFFIX}(?![\s\S])")
 
+LISTING_KIND = "listing"
+PACK_KIND = "pack"
+
+# In this order wherever a caller reports several, so two kinds always read the
+# same way around.
+KINDS = ((LISTING_KIND, LISTING), (PACK_KIND, PACK))
+
 WRITING = ("added", "modified")
 
 Change = namedtuple("Change", "path status")
@@ -19,13 +26,27 @@ def changes(paths, status="added"):
     return [Change(path, status) for path in paths]
 
 
+def kind_of(path):
+    """The kind of document at `path`, or None when the path is not a document."""
+    for kind, pattern in KINDS:
+        if pattern.match(path):
+            return kind
+    return None
+
+
 def is_document(path):
-    return bool(LISTING.match(path) or PACK.match(path))
+    return kind_of(path) is not None
 
 
 def documents(changes):
     """The document paths among `changes`, in the order given."""
     return [change.path for change in changes if is_document(change.path)]
+
+
+def kinds(changes):
+    """The kinds of document `changes` touches, in the order KINDS names them."""
+    found = {kind_of(change.path) for change in changes}
+    return [kind for kind, _ in KINDS if kind in found]
 
 
 def evaluate(changes):
