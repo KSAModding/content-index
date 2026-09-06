@@ -7,6 +7,7 @@ import re
 import sys
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
 from unittest import mock
 
@@ -286,26 +287,55 @@ class Comment(unittest.TestCase):
         self.assertEqual([m for m, _, _, _ in api.sent], ["POST"])
 
 
+class MissingLabelApi(RecordingApi):
+    """A repository that does not carry `missing` as a label yet."""
+
+    def __init__(self, missing, **keywords):
+        super().__init__(**keywords)
+        self.missing = missing
+
+    def send(self, method, path, payload, token=None):
+        if self.missing and payload and payload.get("labels") == [self.missing]:
+            self.missing = None
+            raise urllib.error.HTTPError(path, 404, "Not Found", None, None)
+        return super().send(method, path, payload, token)
+
+
 class Label(unittest.TestCase):
     def test_it_is_added_when_a_steward_is_needed(self):
         api = RecordingApi()
-        decide.add_label(api, 5)
+        decide.add_steward_label(api, 5)
         self.assertEqual(api.sent[0][2], {"labels": [decide.STEWARD_LABEL]})
 
     def test_it_is_not_added_twice(self):
         api = RecordingApi(labels=[decide.STEWARD_LABEL])
-        decide.add_label(api, 5)
+        decide.add_steward_label(api, 5)
         self.assertEqual(api.sent, [])
 
     def test_it_is_removed_on_the_way_to_a_merge(self):
         api = RecordingApi(labels=[decide.STEWARD_LABEL])
-        decide.remove_label(api, 5)
+        decide.remove_steward_label(api, 5)
         self.assertEqual([m for m, _, _, _ in api.sent], ["DELETE"])
 
     def test_removing_one_that_is_not_there_does_nothing(self):
         api = RecordingApi()
-        decide.remove_label(api, 5)
+        decide.remove_steward_label(api, 5)
         self.assertEqual(api.sent, [])
+
+    def test_a_label_the_repository_does_not_have_is_created_first(self):
+        api = MissingLabelApi(decide.STEWARD_LABEL)
+        decide.add_steward_label(api, 5)
+        self.assertEqual(
+            [(path, payload) for _, path, payload, _ in api.sent],
+            [
+                ("/labels", {
+                    "name": decide.STEWARD_LABEL,
+                    "color": "d93f0b",
+                    "description": "waiting on a steward",
+                }),
+                ("/issues/5/labels", {"labels": [decide.STEWARD_LABEL]}),
+            ],
+        )
 
 
 class Reviewers(unittest.TestCase):
