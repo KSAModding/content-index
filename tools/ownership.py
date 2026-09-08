@@ -5,6 +5,7 @@
 RFC 0033 for the marker file and the owner id, RFC 0038 for the topic.
 """
 
+import re
 import tomllib
 from urllib.parse import urlparse
 
@@ -14,6 +15,10 @@ COULD_NOT_EVALUATE = "could-not-evaluate"
 
 MARKER_PATH = ".github/ksa-content-index.toml"
 TOPIC = "ksa-index-{login}"
+
+GITHUB_NAME = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$")
+
+SPACEDOCK_GAME_ID = 22409
 
 # Which host a verdict about an edit is talking about.
 CURRENT_HOST = "the authority the listing already names"
@@ -46,7 +51,10 @@ def github_repository(url):
     parts = [part for part in parsed.path.split("/") if part]
     if len(parts) < 2:
         return None
-    return f"{parts[0]}/{parts[1].removesuffix('.git')}"
+    owner, name = parts[0], parts[1].removesuffix(".git")
+    if not GITHUB_NAME.match(owner) or not GITHUB_NAME.match(name):
+        return None
+    return f"{owner}/{name}"
 
 
 def authority(document):
@@ -62,8 +70,8 @@ def authority(document):
             key = releases.get("authority")
             if key not in hosts:
                 return None, None, "the [releases] section names no valid authority"
-        if key == "github":
-            return "github", str(hosts[key]), ""
+        if key in ("github", "spacedock"):
+            return key, str(hosts[key]), ""
         return key, str(hosts[key]), f"{key} offers no ownership proof a check can read"
 
     repository = github_repository((document.get("links") or {}).get("repository"))
@@ -88,12 +96,76 @@ def _marker_names(text, listing_id, login):
 
 
 def verify(document, login, author_id, api):
-    """The three proofs, cheapest first."""
+    """The proofs on the host the document binds ownership to."""
     listing_id = document.get("id") or ""
     kind, target, reason = authority(document)
-    if kind != "github":
-        return Result(UNVERIFIED, reason)
+    if kind == "github":
+        return _verify_repository(target, listing_id, login, author_id, api)
+    if kind == "spacedock":
+        return _verify_spacedock(target, listing_id, login, author_id, api)
+    return Result(UNVERIFIED, reason)
 
+
+def _verify_spacedock(mod_id, listing_id, login, author_id, api):
+    """A SpaceDock mod through its source code link.
+
+    Only the mod's owner, its accepted co-authors and SpaceDock's administrators
+    can set that link, and only somebody who controls the repository it names
+    can pass a proof there. So the mod's authors decide which repository stands
+    for the mod, and whoever controls that repository can list it. A mod
+    without a usable link binds to nothing.
+    """
+    if not mod_id.isdigit():
+        return Result(UNVERIFIED, f"'{mod_id}' is not a SpaceDock mod id, which is a number")
+
+    try:
+        mod = api.spacedock_mod(mod_id)
+    except Unavailable as error:
+        return Result(COULD_NOT_EVALUATE, str(error))
+
+    if mod is None:
+        return Result(UNVERIFIED, f"SpaceDock has no mod {mod_id}")
+
+    if mod.get("error"):
+        if "not published" in str(mod.get("reason") or "").lower():
+            return Result(UNVERIFIED, f"SpaceDock mod {mod_id} is not published")
+        return Result(UNVERIFIED, f"SpaceDock refuses to show mod {mod_id}")
+
+    if str(mod.get("id")) != mod_id:
+        return Result(
+            COULD_NOT_EVALUATE, f"the answer about SpaceDock mod {mod_id} is not the mod's document"
+        )
+
+    if mod.get("game_id") != SPACEDOCK_GAME_ID:
+        return Result(UNVERIFIED, f"SpaceDock mod {mod_id} is not a Kitten Space Agency mod")
+
+    link = mod.get("source_code")
+    if not link:
+        return Result(
+            UNVERIFIED,
+            f"SpaceDock mod {mod_id} has no source code link, so nothing binds it to a "
+            "GitHub repository",
+        )
+
+    repository = github_repository(link)
+    if repository is None:
+        return Result(
+            UNVERIFIED,
+            f"the source code link of SpaceDock mod {mod_id} does not name a GitHub repository",
+        )
+
+    result = _verify_repository(
+        repository, listing_id, login, author_id, api, named_by="the link on SpaceDock"
+    )
+    if result.state == VERIFIED:
+        return Result(VERIFIED, "", f"source code link, {result.proof}")
+    return Result(
+        result.state, f"SpaceDock mod {mod_id} links to {repository}, and {result.reason}"
+    )
+
+
+def _verify_repository(target, listing_id, login, author_id, api, named_by="the listing"):
+    """The three proofs on one GitHub repository."""
     try:
         repository = api.repository(target)
     except Unavailable as error:
@@ -104,7 +176,7 @@ def verify(document, login, author_id, api):
 
     full_name = repository.get("full_name") or ""
     if full_name.lower() != target.lower():
-        return Result(UNVERIFIED, f"{target} now answers as {full_name}, so the listing is stale")
+        return Result(UNVERIFIED, f"{target} now answers as {full_name}, so {named_by} is stale")
 
     if repository.get("fork"):
         return Result(UNVERIFIED, f"{target} is a fork")  # forks inherit files

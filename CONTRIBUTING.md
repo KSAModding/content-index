@@ -48,7 +48,13 @@ Any one of the three is enough, and the first that applies is used:
    One topic covers every listing that points at that repository, and it is the easy path for an organization-owned repository.
 3. The repository contains `.github/ksa-content-index.toml` naming the listing id and your username.
 
-A SpaceDock release host has no comparable proof today, so those listings wait for a steward.
+A SpaceDock release host is verified through the mod's source code link.
+Set that link on the mod's SpaceDock page to your GitHub repository, and prove control of the repository with one of the three proofs above.
+
+So the mod's authors decide which repository stands for the mod, and whoever controls that repository can list it.
+The linked repository must not be a fork.
+When you rename or transfer it, update the link on SpaceDock, because the redirect rule below covers only a repository the listing itself names.
+A SpaceDock mod with no source code link, or with a link that does not name a GitHub repository, still waits for a steward.
 
 ## Changing a listing that already exists
 
@@ -57,7 +63,7 @@ Otherwise anybody could point somebody else's listing at their own repository an
 
 If you point your listing at a different release host, you must prove control of both hosts: the one it comes from and the one it goes to.
 
-Renaming or transferring your repository on GitHub is not such a move.
+Renaming or transferring the repository your listing names on GitHub is not such a move.
 The old address then answers as the new one, and only somebody who controls a repository can rename or transfer it.
 The check reads that redirect, so catching your listing up with its own repository stays self-service.
 

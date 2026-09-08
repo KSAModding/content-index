@@ -23,6 +23,7 @@ import ownership
 
 GITHUB_API = "https://api.github.com"
 GRAPHQL = "https://api.github.com/graphql"
+SPACEDOCK_API = "https://spacedock.info/api"
 USER_AGENT = "KSAModding-content-index-ownership"
 
 # The required check in the branch ruleset. No job may carry this name.
@@ -122,7 +123,9 @@ def decide(verdict, candidate, ownership_result, run_url=""):
             f"The proof is something only you can put on the release repository, which "
             f"is what says you agree to it being indexed. Either set the topic "
             f"`{ownership.TOPIC.format(login='<your-github-username>')}` on it, or commit "
-            f"`{ownership.MARKER_PATH}` naming your username."
+            f"`{ownership.MARKER_PATH}` naming your username. For a SpaceDock host, set "
+            f"your GitHub repository as the mod's source code link on SpaceDock, and put "
+            f"the proof on that repository."
             + tail
         ),
     )
@@ -207,6 +210,37 @@ class Api:
         except (ValueError, UnicodeDecodeError):
             return None
 
+    def spacedock_mod(self, mod_id):
+        """SpaceDock's info about a mod, as it gives it."""
+        url = f"{SPACEDOCK_API}/mod/{urllib.parse.quote(str(mod_id), safe='')}"
+        headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
+        request = urllib.request.Request(url, headers=headers)
+        refused = False
+        try:
+            with urllib.request.urlopen(request, timeout=30) as answer:
+                text = answer.read()
+        except urllib.error.HTTPError as error:
+            if error.code == 404:
+                return None
+            if error.code not in (401, 403):
+                raise ownership.Unavailable(f"HTTP {error.code} asking SpaceDock for mod {mod_id}")
+            refused = True
+            text = error.read()
+        except OSError as error:
+            raise ownership.Unavailable(str(error)) from error
+
+        try:
+            document = json.loads(text)
+        except ValueError as error:
+            raise ownership.Unavailable(
+                f"SpaceDock answered about mod {mod_id} with something that is not JSON"
+            ) from error
+        if not isinstance(document, dict):
+            raise ownership.Unavailable(f"SpaceDock answered about mod {mod_id} with no document")
+        if refused and not document.get("error"):
+            raise ownership.Unavailable(f"HTTP 4xx asking SpaceDock for mod {mod_id}")
+        return document
+
     def graphql(self, query, variables):
         if self.dry_run:
             self.log(f"dry run: graphql {json.dumps(variables)}")
@@ -236,6 +270,9 @@ class OwnershipApi:
 
     def file(self, full_name, path):
         return self.api.file(full_name, path)
+
+    def spacedock_mod(self, mod_id):
+        return self.api.spacedock_mod(mod_id)
 
 
 AUTO_MERGE = """

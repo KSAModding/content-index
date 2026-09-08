@@ -101,8 +101,16 @@ def verdict(outcome="pass", checks=(), reason="", **overrides):
 class RecordingApi:
     """Every call this workflow would make, recorded instead of sent."""
 
-    def __init__(self, comments=(), labels=(), reviewers=None, files=None,
-                 repositories=None, pulls=()):
+    def __init__(
+        self,
+        comments=(),
+        labels=(),
+        reviewers=None,
+        files=None,
+        repositories=None,
+        pulls=(),
+        spacedock=None,
+    ):
         self.repository = "KSAModding/content-index"
         self.token = "app"
         self.public_token = "workflow"
@@ -112,6 +120,7 @@ class RecordingApi:
         self.reviewers = reviewers or {"teams": []}
         self.files = {"listings/AutoStage.toml": LISTING} if files is None else files
         self.repositories = repositories or {}
+        self.spacedock = spacedock or {}
         self.repository_reads = []
         self.pulls = list(pulls)
         self.asked = []
@@ -152,6 +161,9 @@ class RecordingApi:
 
     def topics(self, full_name):
         return []
+
+    def spacedock_mod(self, mod_id):
+        return self.spacedock.get(mod_id)
 
     def graphql(self, query, variables):
         self.graphql_calls.append(variables)
@@ -201,6 +213,7 @@ class Table(unittest.TestCase):
         decision = decide.decide(verdict(), True, UNVERIFIED)
         self.assertIn("ksa-index-", decision.comment)
         self.assertIn(ownership.MARKER_PATH, decision.comment)
+        self.assertIn("source code link", decision.comment)
 
     def test_ownership_that_could_not_be_checked_waits_too(self):
         decision = decide.decide(verdict(), True, UNAVAILABLE)
@@ -556,6 +569,114 @@ class OwnershipFor(unittest.TestCase):
         self.assertEqual(result.state, ownership.COULD_NOT_EVALUATE)
         self.assertIn("no base branch", result.reason)
         self.assertEqual(self.seen, [])
+
+
+class SpaceDockListing(unittest.TestCase):
+    """A SpaceDock-hosted listing goes through the same call, with the real check."""
+
+    def test_the_link_on_spacedock_reaches_the_github_proofs(self):
+        listing = 'id = "AutoStage"\n[releases]\nspacedock = 4253\n'
+        api = RecordingApi(
+            files={("listings/AutoStage.toml", "head1234567890"): listing},
+            repositories={"Maxi/Mod": {"full_name": "Maxi/Mod", "fork": False, "owner": {"id": 7}}},
+            spacedock={
+                "4253": {
+                    "id": 4253,
+                    "game_id": ownership.SPACEDOCK_GAME_ID,
+                    "source_code": "https://github.com/Maxi/Mod",
+                }
+            },
+        )
+        pull = {"user": {"login": "Maxi", "id": 7}, "base": {"ref": "main"}}
+        result = decide.ownership_for(api, pull, "listings/AutoStage.toml", "head1234567890")
+        self.assertEqual(result.state, ownership.VERIFIED)
+        self.assertEqual(result.proof, "source code link, owner id")
+        self.assertEqual(api.repository_reads, ["Maxi/Mod"])
+
+
+class Answer:
+    """What urlopen hands back: a body and a context manager around it."""
+
+    def __init__(self, body):
+        self.body = body
+
+    def read(self):
+        return self.body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def http_error(code, body=b""):
+    import io
+    import urllib.error
+
+    return urllib.error.HTTPError("https://spacedock.info", code, "", {}, io.BytesIO(body))
+
+
+class SpaceDockApi(unittest.TestCase):
+    """The one request `Api` makes to SpaceDock, and what each answer becomes."""
+
+    def api(self):
+        return decide.Api("KSAModding/content-index", "app", public_token="workflow")
+
+    def fetch(self, mod_id="4253", answer=None, error=None):
+        opener = mock.Mock(side_effect=error) if error else mock.Mock(return_value=answer)
+        with mock.patch.object(decide.urllib.request, "urlopen", opener):
+            result = self.api().spacedock_mod(mod_id)
+        return result, opener
+
+    def test_the_mod_document_comes_back_as_is(self):
+        body = json.dumps({"id": 4253, "source_code": "https://github.com/Maxi/Mod"}).encode()
+        document, opener = self.fetch(answer=Answer(body))
+        self.assertEqual(document["source_code"], "https://github.com/Maxi/Mod")
+        request = opener.call_args.args[0]
+        self.assertEqual(request.full_url, "https://spacedock.info/api/mod/4253")
+        self.assertEqual(request.get_header("Accept"), "application/json")
+        self.assertIsNone(request.get_header("Authorization"))
+
+    def test_the_mod_id_is_quoted_into_the_path(self):
+        _, opener = self.fetch(mod_id="4253/../x", answer=Answer(b"{}"))
+        request = opener.call_args.args[0]
+        self.assertEqual(request.full_url, "https://spacedock.info/api/mod/4253%2F..%2Fx")
+
+    def test_a_missing_mod_is_none(self):
+        body = b'{"error": true, "reason": "Mod not found."}'
+        document, _ = self.fetch(error=http_error(404, body))
+        self.assertIsNone(document)
+
+    def test_a_refusal_carries_spacedock_reason(self):
+        body = b'{"error": true, "reason": "Mod not published. Authentication needed."}'
+        for code in (401, 403):
+            document, _ = self.fetch(error=http_error(code, body))
+            self.assertEqual(document["reason"], "Mod not published. Authentication needed.")
+
+    def test_a_refusal_that_is_not_json_is_unavailable(self):
+        # A challenge page in front of the site, not SpaceDock's own answer.
+        with self.assertRaises(ownership.Unavailable):
+            self.fetch(error=http_error(403, b"<html>Just a moment</html>"))
+
+    def test_a_refusal_without_spacedock_error_document_is_unavailable(self):
+        # JSON, but not SpaceDock's: a proxy or firewall in front of it.
+        with self.assertRaises(ownership.Unavailable):
+            self.fetch(error=http_error(403, b'{"message": "Forbidden"}'))
+
+    def test_any_other_http_error_is_unavailable(self):
+        with self.assertRaises(ownership.Unavailable) as raised:
+            self.fetch(error=http_error(502))
+        self.assertIn("502", str(raised.exception))
+
+    def test_a_network_failure_is_unavailable(self):
+        with self.assertRaises(ownership.Unavailable):
+            self.fetch(error=OSError("connection reset"))
+
+    def test_a_body_that_is_not_a_document_is_unavailable(self):
+        for body in (b"not json", b"[]", b"null"):
+            with self.assertRaises(ownership.Unavailable, msg=body):
+                self.fetch(answer=Answer(body))
 
 
 class AutoMerge(unittest.TestCase):
