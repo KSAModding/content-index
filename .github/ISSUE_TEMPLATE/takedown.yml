@@ -1,0 +1,48 @@
+name: Takedown request
+description: Ask a steward to stop offering a listing or a pack version
+title: "[Takedown] "
+labels: ["area:governance"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Read [POLICY.md](https://github.com/KSAModding/content-index/blob/main/POLICY.md) first.
+
+        The index holds metadata only. A takedown here stops the index from offering the content. The files stay on their release host, and that host has its own takedown process.
+
+        If you are the author and want your own listing gone, `status = "deprecated"` or a yanked release is usually what you want. See [CONTRIBUTING.md](https://github.com/KSAModding/content-index/blob/main/CONTRIBUTING.md).
+  - type: input
+    id: listing
+    attributes:
+      label: Listing id
+      description: The id as it appears under `listings/` or `packs/`. For one pack version, add the version.
+      placeholder: AdvancedFlightComputer
+    validations:
+      required: true
+  - type: dropdown
+    id: ground
+    attributes:
+      label: Ground
+      options:
+        - The content breaks the law or the license of what it contains
+        - The archive carries something harmful
+        - The release host has already taken the files down
+        - The required forums thread is gone, or the author was banned there
+        - I am the author and want my own listing removed
+        - Something else, explained below
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What is wrong
+      description: What a steward can check for themselves. Links, the license text, the forums thread, the release.
+    validations:
+      required: true
+  - type: textarea
+    id: who
+    attributes:
+      label: Who you are
+      description: Your relation to the content. If you are the rights holder, say what you hold the rights to.
+    validations:
+      required: true

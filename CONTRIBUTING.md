@@ -86,7 +86,7 @@ Do not ask for a delisting instead. That leaves a tombstone carrying the id and 
 
 ## Takedowns and disputes
 
-Use the issue forms.
+Use the issue forms, and read [POLICY.md](POLICY.md) for what a steward does with them.
 A steward decides, and the required forums link is the tiebreaker for who claimed an id first.
 
 ## Licensing your contribution
