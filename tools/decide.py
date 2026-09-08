@@ -30,6 +30,18 @@ STATUS_CONTEXT = "validate"
 STEWARD_LABEL = "needs-steward"
 STEWARD_TEAM = "content-manager-stewards"
 
+# The labels this workflow writes, each with the colour and the description a
+# missing one is created from.
+LABELS = {
+    STEWARD_LABEL: ("d93f0b", "waiting on a steward"),
+    check_scope.LISTING_KIND: ("0e8a16", "changes a listing document"),
+    check_scope.PACK_KIND: ("0e8a16", "changes a pack document"),
+}
+
+# One label per kind of document, so the queue separates a submission from a
+# change to the checks that gate it.
+DOCUMENT_LABELS = tuple(kind for kind, _ in check_scope.KINDS)
+
 COMMENT_MARKER = "<!-- content-index:verdict -->"
 
 PULL_REQUEST_EVENT = "pull_request"
@@ -277,26 +289,44 @@ def _labels(api, number):
     return {label.get("name") for label in api.get(f"/issues/{number}/labels") or []}
 
 
-def add_label(api, number):
-    if STEWARD_LABEL in _labels(api, number):
-        return
+def _put_label(api, number, name):
+    """Put one label on, and create it first when the repository has none."""
     try:
-        api.send("POST", f"/issues/{number}/labels", {"labels": [STEWARD_LABEL]})
+        api.send("POST", f"/issues/{number}/labels", {"labels": [name]})
     except urllib.error.HTTPError as error:
         if error.code != 404:
             raise
-        api.send(
-            "POST",
-            "/labels",
-            {"name": STEWARD_LABEL, "color": "d93f0b", "description": "waiting on a steward"},
-        )
-        api.send("POST", f"/issues/{number}/labels", {"labels": [STEWARD_LABEL]})
+        colour, description = LABELS[name]
+        api.send("POST", "/labels", {"name": name, "color": colour, "description": description})
+        api.send("POST", f"/issues/{number}/labels", {"labels": [name]})
 
 
-def remove_label(api, number):
+def add_steward_label(api, number):
+    if STEWARD_LABEL in _labels(api, number):
+        return
+    _put_label(api, number, STEWARD_LABEL)
+
+
+def remove_steward_label(api, number):
     """Only on the way to a merge, so a steward's own labelling survives a reject."""
     if STEWARD_LABEL in _labels(api, number):
         api.send("DELETE", f"/issues/{number}/labels/{STEWARD_LABEL}", None)
+
+
+def sync_document_labels(api, number, wanted):
+    """Say which kinds of document the pull request touches.
+
+    The kind is a fact about the diff and not about the verdict, so a listing
+    that a steward has to merge still reads as a listing. Both directions are
+    kept, because a pull request can stop touching a document, and no label
+    outside DOCUMENT_LABELS is looked at.
+    """
+    present = _labels(api, number)
+    for name in DOCUMENT_LABELS:
+        if name in wanted and name not in present:
+            _put_label(api, number, name)
+        elif name not in wanted and name in present:
+            api.send("DELETE", f"/issues/{number}/labels/{name}", None)
 
 
 def _requested(api, number):
@@ -521,7 +551,8 @@ def act(api, arguments):
             return 1
 
     # Re-derived from the API: the verdict cannot be trusted to decide a merge.
-    candidate, documents, reason = check_scope.evaluate(changed_paths(api, number))
+    changes = changed_paths(api, number)
+    candidate, documents, reason = check_scope.evaluate(changes)
 
     result = ownership.Result(ownership.UNVERIFIED, "not checked")
     if candidate and verdict.get("verdict") == PASS:
@@ -545,12 +576,13 @@ def act(api, arguments):
 
     post_status(api, arguments.head_sha, decision, arguments.run_url)
     upsert_comment(api, number, decision.comment)
+    sync_document_labels(api, number, check_scope.kinds(changes))
 
     if decision.needs_steward:
-        add_label(api, number)
+        add_steward_label(api, number)
         request_stewards(api, number)
     elif decision.auto_merge:
-        remove_label(api, number)
+        remove_steward_label(api, number)
         withdraw_stewards(api, number)
 
     print(f"#{number}: {decision.status}, {decision.description}")
