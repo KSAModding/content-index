@@ -78,7 +78,7 @@ They are collected here so any one of them can be argued down on its own.
 | Rule | Why |
 |---|---|
 | Unknown keys are rejected, everywhere | The index is the authority for what a document may say. `abstrct = "..."` accepted silently is a listing that ships with no abstract, and RFC 0031's "clients ignore fields they do not know" is a rule for clients reading published data, not for the gate that publishes it. |
-| `links.forums` must be on `forums.ahwoo.com` | The field exists to tie a listing to an Ahwoo account, to be the tiebreaker in an id dispute, and to be the takedown tripwire. A link anywhere else satisfies the letter and defeats all three. |
+| `links.forums` must be an `https` link to a thread on `forums.ahwoo.com` | The field exists to tie a listing to an Ahwoo account, to be the tiebreaker in an id dispute, and to be the takedown tripwire. A link anywhere else satisfies the letter and defeats all three, and so do the forum root and a category page, which are on the host and name no content. RFC 0031's field table already calls the field the forums thread, so what the schema adds is a machine rule for that description and the one domain the RFC's examples use. Every form the forum serves a thread under passes, which is `/threads/<slug>.<id>/`, the same thread under its node path, and the `index.php` form. |
 | A link value must be an `http` or `https` URL | RFC 0031 says "plain links, shown as such". A client renders these, so a value that is not a URL is not a link. |
 | `superseded_by` requires `status = "deprecated"` | RFC 0031 calls it "only meaningful together with" a deprecation. Alone it is a successor no client will ever show, which is more likely a forgotten `status` line than an intention. |
 | A `mod` may not set `install.path`, and may only set `install.target = "mods"` | RFC 0035: "a mod's install location is not the author's to choose in the first place", because the folder name is the identity `Mod.MakeUsing` assigns. |
@@ -98,7 +98,7 @@ They are collected here so any one of them can be argued down on its own.
 In several regex flavours, Python's included, `$` also matches before a trailing newline, so `^...$` would accept an id of `"MyMod\n"` and put that newline into a folder name. `(?![\s\S])` is a true end of input in both Python and ECMAScript.
 
 **A forbidden key is `{"not": {}}`, not `false`.**
-Both reject the key. On a boolean subschema the validator loses the key name from the error path, so the report points at the whole document instead of at the key. `check_schema.explain` turns the resulting message back into English, and does the same for a `not` carrying a pattern, using the `title` on that subschema so the author reads "is a reserved name" rather than the pattern itself.
+Both reject the key. On a boolean subschema the validator loses the key name from the error path, so the report points at the whole document instead of at the key. `check_schema.explain` turns the resulting message back into English, and does the same for a `not` carrying a pattern, using the `title` on that subschema so the author reads "is a reserved name" rather than the pattern itself. A `pattern` may carry a `title` for the same reason, and `links.forums` does. A pattern title names what the value should be rather than what it is, so the message negates it, and the author reads the shape that is wanted rather than the regex that refused it.
 
 ## Editor support
 

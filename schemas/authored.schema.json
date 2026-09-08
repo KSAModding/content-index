@@ -449,9 +449,10 @@
     },
 
     "forumsUrl": {
-      "$comment": "The host is pinned because the field exists to tie a listing to an Ahwoo account. A link elsewhere satisfies the letter and defeats the purpose.",
+      "$comment": "The host is pinned because the field exists to tie a listing to an Ahwoo account. A thread id is required.",
+      "title": "an https link to a thread on forums.ahwoo.com, such as https://forums.ahwoo.com/threads/my-mod.783/",
       "type": "string",
-      "pattern": "^https://forums\\.ahwoo\\.com/[^\\s\\u0000-\\u001f]*(?![\\s\\S])"
+      "pattern": "^https://forums\\.ahwoo\\.com/(?:index\\.php\\?)?(?:threads/|forums/(?:[^\\s/?#\\u0000-\\u001f]+/)+)(?:[^\\s/?#\\u0000-\\u001f]*\\.)?[0-9]+(?:[/?#][^\\s\\u0000-\\u001f]*)?(?![\\s\\S])"
     },
 
     "spdxExpression": {

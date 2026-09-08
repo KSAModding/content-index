@@ -141,7 +141,12 @@ REJECTED = [
 
     # Links
     ("missing forums link", mod(replace=(FORUMS, 'repository = "https://github.com/a/b"')), "links: 'forums' is a required property"),
-    ("forums link on another host", mod(replace=(FORUMS, 'forums = "https://example.com/t/1"')), "links.forums: 'https://example.com/t/1' does not match"),
+    ("forums link on another host", mod(replace=(FORUMS, 'forums = "https://example.com/t/1"')), "links.forums: 'https://example.com/t/1' is not an https link to a thread on forums.ahwoo.com"),
+    ("forums link over http", mod(replace=(FORUMS, 'forums = "http://forums.ahwoo.com/threads/test-mod.1/"')), "links.forums: 'http://forums.ahwoo.com/threads/test-mod.1/' is not an https link to a thread on forums.ahwoo.com"),
+    ("forums link to the forum root", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/"')), "links.forums: 'https://forums.ahwoo.com/' is not an https link to a thread on forums.ahwoo.com"),
+    ("forums link to a category", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/"')), "links.forums: 'https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/' is not an https link to a thread on forums.ahwoo.com"),
+    ("forums link to a member profile", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/members/nobody.42/"')), "links.forums: 'https://forums.ahwoo.com/members/nobody.42/' is not an https link to a thread on forums.ahwoo.com"),
+    ("forums link with a control character in it", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/threads/my\\u001bmod.783/"')), "links.forums: 'https://forums.ahwoo.com/threads/my\\x1bmod.783/' is not an https link to a thread on forums.ahwoo.com"),
     ("a link that is not a URL", mod(replace=(FORUMS, FORUMS + '\nrepository = "github.com/a/b"')), "links.repository: 'github.com/a/b' does not match"),
     (
         "link key differing only in case",
@@ -285,6 +290,11 @@ ACCEPTED = [
     ("a path segment that starts like a device", mod(append='\n[install]\nroot = "console/TestMod"\n')),
     ("a dependency on a mod named like a reserved stem", mod(append='\n[[dependencies]]\nid = "Nullify"\nkind = "optional"\n')),
     ("a link key the format does not name", mod(replace=(FORUMS, FORUMS + '\ndiscord = "https://discord.gg/abc"'))),
+    ("a forums thread under its node path", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/test-mod.1/"'))),
+    ("a forums thread named by its id alone", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/threads/1/"'))),
+    ("a forums thread link that opens a page", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/threads/test-mod.1/page-2"'))),
+    ("a forums thread link to a post in it", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/threads/test-mod.1/post-42"'))),
+    ("a forums thread in the index.php form", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/index.php?threads/test-mod.1/"'))),
     ("a native TOML timestamp in a pack", pack(replace=('released_at = "2026-08-05T12:00:00Z"', "released_at = 2026-08-05T12:00:00Z"))),
 ]
 

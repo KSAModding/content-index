@@ -31,6 +31,7 @@ If you want to argue about the format or the index itself, open a thread in [con
    One document merges itself. A pull request carrying two, or carrying anything besides a document, is valid but waits for a steward.
 
 Checks then validate the document, inspect your latest release archive, and verify that you control the release host the listing points at.
+The pull request is then labelled `listing` or `pack`, which says which kind of document it changes, and one that changes both carries both labels.
 
 When everything is green and ownership verified, the pull request merges itself.
 When ownership cannot be verified automatically, a steward looks instead.
@@ -92,7 +93,7 @@ Do not ask for a delisting instead. That leaves a tombstone carrying the id and 
 
 ## Takedowns and disputes
 
-Use the issue forms.
+Use the issue forms, and read [POLICY.md](POLICY.md) for what a steward does with them.
 A steward decides, and the required forums link is the tiebreaker for who claimed an id first.
 
 ## Licensing your contribution
