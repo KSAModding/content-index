@@ -186,12 +186,14 @@ class Table(unittest.TestCase):
         self.assertFalse(decision.auto_merge)
         self.assertIn("Push a fix", decision.comment)
 
-    def test_the_happy_path_arms_auto_merge_and_says_nothing(self):
+    def test_the_happy_path_arms_auto_merge_and_says_what_happens_next(self):
         decision = decide.decide(verdict(), True, VERIFIED)
         self.assertEqual(decision.status, "success")
         self.assertTrue(decision.auto_merge)
         self.assertFalse(decision.needs_steward)
-        self.assertIsNone(decision.comment)
+        self.assertIn("merges on its own", decision.comment)
+        self.assertIn("within about ten minutes", decision.comment)
+        self.assertIn("snapshot follows", decision.comment)
 
     def test_a_change_that_is_not_a_candidate_waits_for_a_steward(self):
         decision = decide.decide(
@@ -231,6 +233,7 @@ class Table(unittest.TestCase):
     def test_a_passing_check_contributes_its_message_on_every_path(self):
         note = {"name": "schema", "outcome": "pass", "messages": ["all good"]}
         cases = [
+            (verdict(checks=[note]), True, VERIFIED),
             (verdict("reject", [note]), True, VERIFIED),
             (verdict("could-not-evaluate", [note]), True, VERIFIED),
             (verdict(checks=[note]), False, VERIFIED),
@@ -243,7 +246,7 @@ class Table(unittest.TestCase):
                 self.assertIn("Notes:\n- `schema`: all good", decision.comment)
 
     def test_a_run_with_no_messages_has_no_notes_section(self):
-        decision = decide.decide(verdict("reject"), True, VERIFIED)
+        decision = decide.decide(verdict(), True, VERIFIED)
         self.assertNotIn("Notes:", decision.comment)
 
     def test_reject_and_could_not_evaluate_tell_the_author_to_push_a_fix(self):

@@ -124,7 +124,21 @@ def decide(verdict, candidate, ownership_result, run_url=""):
         )
 
     if ownership_result.state == ownership.VERIFIED:
-        return Decision("success", "validated, arming auto-merge", auto_merge=True)
+        return Decision(
+            "success",
+            "validated, arming auto-merge",
+            auto_merge=True,
+            comment=_comment(
+                "Validated.",
+                verdict,
+                [
+                    "This pull request merges on its own once the checks finish. The watcher "
+                    "stamps the first release within about ten minutes after the merge, and the "
+                    "snapshot follows."
+                ],
+                run_url,
+            ),
+        )
 
     if ownership_result.state == ownership.COULD_NOT_EVALUATE:
         return Decision(
