@@ -184,7 +184,7 @@ class Table(unittest.TestCase):
         decision = decide.decide(verdict("could-not-evaluate"), True, VERIFIED)
         self.assertEqual(decision.status, "error")
         self.assertFalse(decision.auto_merge)
-        self.assertIn("A new commit", decision.comment)
+        self.assertIn("Push a fix", decision.comment)
 
     def test_the_happy_path_arms_auto_merge_and_says_nothing(self):
         decision = decide.decide(verdict(), True, VERIFIED)
@@ -228,14 +228,29 @@ class Table(unittest.TestCase):
         self.assertNotIn("reach the release host", decision.comment)
         self.assertIn("it does not parse", decision.comment)
 
-    def test_a_passing_check_contributes_no_message(self):
-        checks = [
-            {"name": "schema", "outcome": "pass", "messages": ["all good"]},
-            {"name": "index", "outcome": "reject", "messages": ["collides"]},
+    def test_a_passing_check_contributes_its_message_on_every_path(self):
+        note = {"name": "schema", "outcome": "pass", "messages": ["all good"]}
+        cases = [
+            (verdict("reject", [note]), True, VERIFIED),
+            (verdict("could-not-evaluate", [note]), True, VERIFIED),
+            (verdict(checks=[note]), False, VERIFIED),
+            (verdict(checks=[note]), True, UNVERIFIED),
+            (verdict(checks=[note]), True, UNAVAILABLE),
         ]
-        decision = decide.decide(verdict("reject", checks), True, VERIFIED)
-        self.assertNotIn("all good", decision.comment)
-        self.assertIn("collides", decision.comment)
+        for document, candidate, result in cases:
+            with self.subTest(outcome=document["verdict"], candidate=candidate, owner=result.state):
+                decision = decide.decide(document, candidate, result)
+                self.assertIn("Notes:\n- `schema`: all good", decision.comment)
+
+    def test_a_run_with_no_messages_has_no_notes_section(self):
+        decision = decide.decide(verdict("reject"), True, VERIFIED)
+        self.assertNotIn("Notes:", decision.comment)
+
+    def test_reject_and_could_not_evaluate_tell_the_author_to_push_a_fix(self):
+        for outcome in ("reject", "could-not-evaluate"):
+            with self.subTest(outcome=outcome):
+                decision = decide.decide(verdict(outcome), True, VERIFIED)
+                self.assertIn("Push a fix and the checks run again.", decision.comment)
 
     def test_the_run_url_is_linked_when_given(self):
         decision = decide.decide(verdict("reject"), True, VERIFIED, run_url="https://x/run/1")
@@ -895,14 +910,16 @@ class Act(unittest.TestCase):
 
     def test_auto_merge_that_could_not_be_armed_goes_to_a_steward(self):
         self.api.graphql_answer = {"errors": [{"message": "auto-merge is off"}]}
+        checks = [{"name": "release", "outcome": "pass", "messages": ["archive checked"]}]
         with mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
-            self.assertEqual(self.act(), 0)
+            self.assertEqual(self.act(verdict(checks=checks)), 0)
         self.assertEqual([status["state"] for status in self.statuses()], ["pending", "success"])
         self.assertTrue(
             any(payload == {"labels": [decide.STEWARD_LABEL]} for _, _, payload, _ in self.api.sent)
         )
         comment = [p for _, path, p, _ in self.api.sent if path.endswith("/comments")][0]
         self.assertIn("could not be armed", comment["body"])
+        self.assertIn("archive checked", comment["body"])
 
     def test_a_rejection_leaves_a_steward_label_alone(self):
         self.api.labels = [decide.STEWARD_LABEL]
