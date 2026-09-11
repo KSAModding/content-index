@@ -36,6 +36,9 @@ Checks validate it, a further check verifies that you control the release host t
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+Security problems in this repository, its tools, or its workflows use [SECURITY.md](SECURITY.md).
+Problems with a listing or archive use the [takedown and dispute policy](POLICY.md).
+
 A new release of an already listed mod needs nothing from you at all: a watcher picks it up and stamps it.
 
 ## Two different things are called a license here
