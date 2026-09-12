@@ -68,6 +68,17 @@ class Suffix(LayoutCase):
 
 
 class Placement(LayoutCase):
+    def test_a_listing_id_mismatch_names_the_required_file(self):
+        self.listing("ExampleMod", name="OldExampleMod.toml")
+
+        self.assertEqual(
+            self.errors(),
+            [
+                "listings/OldExampleMod.toml: declares id "
+                "'ExampleMod', so the file name must be 'ExampleMod.toml'"
+            ],
+        )
+
     def test_a_listing_in_a_subfolder_is_rejected(self):
         nested = self.listings / "deep"
         nested.mkdir()
