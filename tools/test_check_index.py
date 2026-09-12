@@ -150,6 +150,19 @@ class Collisions(IndexCase):
 
 
 class References(IndexCase):
+    def test_a_successor_reference_with_canonical_case_is_fine(self):
+        old = entry("OldMod")
+        old.document["superseded_by"] = "NewMod"
+        self.assertEqual(check_index.check_references([entry("NewMod"), old]), [])
+
+    def test_a_successor_reference_with_noncanonical_case_is_rejected(self):
+        old = entry("OldMod")
+        old.document["superseded_by"] = "newmod"
+        errors = check_index.check_references([entry("NewMod"), old])
+        self.assertEqual(len(errors), 1)
+        self.assertIn("superseded_by", errors[0])
+        self.assertIn("canonical id spelling 'NewMod'", errors[0])
+
     def test_a_loader_that_is_a_mod_loader_is_fine(self):
         self.listing("StarMap", kind="mod-loader")
         self.listing("Mod", extra='\n[loader]\nid = "StarMap"\nmin = "0.4.5"\n')
@@ -166,15 +179,25 @@ class References(IndexCase):
         self.listing("Mod", extra='\n[loader]\nid = "NotListedYet"\nmin = "0.4.5"\n')
         self.assertEqual(self.errors(), [])
 
-    def test_a_loader_reference_is_matched_case_insensitively(self):
+    def test_a_loader_reference_with_noncanonical_case_is_rejected(self):
         self.listing("StarMap", kind="mod-loader")
         self.listing("Mod", extra='\n[loader]\nid = "starmap"\nmin = "0.4.5"\n')
-        self.assertEqual(self.errors(), [])
+        errors = self.errors()
+        self.assertEqual(len(errors), 1)
+        self.assertIn("canonical id spelling 'StarMap'", errors[0])
 
     def test_a_dependency_on_a_mod_is_fine(self):
         self.listing("Other")
         self.listing("Mod", extra='\n[[dependencies]]\nid = "Other"\nkind = "required"\n')
         self.assertEqual(self.errors(), [])
+
+    def test_a_dependency_reference_with_noncanonical_case_is_rejected(self):
+        self.listing("Other")
+        self.listing("Mod", extra='\n[[dependencies]]\nid = "other"\nkind = "required"\n')
+        errors = self.errors()
+        self.assertEqual(len(errors), 1)
+        self.assertIn("dependencies[0]", errors[0])
+        self.assertIn("canonical id spelling 'Other'", errors[0])
 
     def test_a_dependency_on_a_loader_is_rejected(self):
         self.listing("StarMap", kind="mod-loader")
@@ -214,6 +237,14 @@ class References(IndexCase):
         self.listing("Mod")
         self.pack("Pack", extra='\n[[mods]]\nid = "Mod"\nversion = "1.0.0"\n')
         self.assertEqual(self.errors(), [])
+
+    def test_a_pack_member_with_noncanonical_case_is_rejected(self):
+        self.listing("Mod")
+        self.pack("Pack", extra='\n[[mods]]\nid = "mod"\nversion = "1.0.0"\n')
+        errors = self.errors()
+        self.assertEqual(len(errors), 1)
+        self.assertIn("mods[0]", errors[0])
+        self.assertIn("canonical id spelling 'Mod'", errors[0])
 
     def test_a_pack_pinning_a_pack_is_rejected(self):
         self.pack("Inner")
