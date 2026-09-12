@@ -1,5 +1,5 @@
 spec_version = 1
-id = "WebcastTelemetryOverlay"
+id = "KSATelemetryOverlay"
 type = "mod"
 name = "Webcast Telemetry Overlay"
 authors = ["elevatorcait"]
@@ -36,11 +36,12 @@ license = "MIT"
 tags = ["ui"]
 
 [releases]
-github = "https://github.com/elevatorctln/KSA-Public-Telemetry/"
+github = "elevatorctln/KSA-Public-Telemetry"
 spacedock = 4552
 authority = "github"
 
 [links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/webcast-telemetry-overlay.1237/"
 repository = "https://github.com/elevatorctln/KSA-Public-Telemetry/"
 spacedock = "https://spacedock.info/mod/4552/Webcast%20Telemetry%20Overlay#info"
 bugtracker = "https://github.com/elevatorctln/KSA-Public-Telemetry/issues"
