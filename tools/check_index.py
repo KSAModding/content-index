@@ -118,21 +118,22 @@ def check_collisions(entries):
 
 def check_references(entries):
     """Every reference that resolves to a listed id has to name the right type."""
-    types = {}
+    targets = {}
     for entry in entries:
-        types.setdefault(entry.folded, entry.type)
+        targets.setdefault(entry.folded, entry)
 
     errors = []
     for entry in entries:
+        _check_successor(entry, targets, entry.where, errors)
         if entry.type == PACK_TYPE:
-            _check_pins(entry, types, entry.where, errors)
+            _check_pins(entry, targets, entry.where, errors)
         else:
-            _check_loader(entry, types, entry.where, errors)
-            _check_dependencies(entry, types, entry.where, errors)
+            _check_loader(entry, targets, entry.where, errors)
+            _check_dependencies(entry, targets, entry.where, errors)
     return errors
 
 
-def _resolved(entry, types, value):
+def _resolved(entry, targets, value, where, errors):
     """The listed type of `value`, or None when unlisted or self-referential.
 
     check_schema reports a self-reference in the words of its own field.
@@ -142,14 +143,28 @@ def _resolved(entry, types, value):
     folded = value.casefold()
     if folded == entry.folded:
         return None
-    return types.get(folded)
+    target = targets.get(folded)
+    if target is None:
+        return None
+    if value != target.identifier:
+        errors.append(
+            f"{where}: '{value}' does not use the canonical id spelling "
+            f"'{target.identifier}'"
+        )
+    return target.type
 
 
-def _check_loader(entry, types, where, errors):
+def _check_successor(entry, targets, where, errors):
+    _resolved(
+        entry, targets, entry.document.get("superseded_by"), f"{where}: superseded_by", errors
+    )
+
+
+def _check_loader(entry, targets, where, errors):
     loader = entry.document.get("loader")
     if not isinstance(loader, dict):
         return
-    found = _resolved(entry, types, loader.get("id"))
+    found = _resolved(entry, targets, loader.get("id"), f"{where}: loader", errors)
     if found is not None and found != LOADER_TYPE:
         errors.append(
             f"{where}: loader: '{loader['id']}' is listed as a {found}, "
@@ -157,7 +172,7 @@ def _check_loader(entry, types, where, errors):
         )
 
 
-def _check_dependencies(entry, types, where, errors):
+def _check_dependencies(entry, targets, where, errors):
     entries = entry.document.get("dependencies")
     if not isinstance(entries, list):
         return
@@ -170,22 +185,22 @@ def _check_dependencies(entry, types, where, errors):
             for offset, member in enumerate(alternatives):
                 if isinstance(member, dict):
                     _check_dependency_id(
-                        entry, types, f"{where}: dependencies[{index}].any_of[{offset}]",
+                        entry, targets, f"{where}: dependencies[{index}].any_of[{offset}]",
                         member.get("id"), errors,
                     )
             continue
         _check_dependency_id(
-            entry, types, f"{where}: dependencies[{index}]", dependency.get("id"), errors
+            entry, targets, f"{where}: dependencies[{index}]", dependency.get("id"), errors
         )
 
 
-def _check_dependency_id(entry, types, where, value, errors):
-    found = _resolved(entry, types, value)
+def _check_dependency_id(entry, targets, where, value, errors):
+    found = _resolved(entry, targets, value, where, errors)
     if found is not None and found != MOD_TYPE:
         errors.append(f"{where}: '{value}' is listed as a {found}, and a dependency has to be a {MOD_TYPE}")
 
 
-def _check_pins(entry, types, where, errors):
+def _check_pins(entry, targets, where, errors):
     for section in PINNED_SECTIONS:
         pinned = entry.document.get(section)
         if not isinstance(pinned, list):
@@ -193,7 +208,9 @@ def _check_pins(entry, types, where, errors):
         for index, member in enumerate(pinned):
             if not isinstance(member, dict):
                 continue
-            found = _resolved(entry, types, member.get("id"))
+            found = _resolved(
+                entry, targets, member.get("id"), f"{where}: {section}[{index}]", errors
+            )
             if found == PACK_TYPE:
                 errors.append(
                     f"{where}: {section}[{index}]: '{member['id']}' is itself a pack, "
