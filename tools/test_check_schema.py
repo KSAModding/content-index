@@ -173,7 +173,11 @@ REJECTED = [
     ("unknown authority", mod(append='\n[releases]\ngithub = "a/b"\nauthority = "forums"\n'), "releases.authority: 'forums' is not one of"),
     ("spacedock id as a string", mod(append='\n[releases]\nspacedock = "4253"\n'), "releases.spacedock: '4253' is not of type 'integer'"),
     ("spacedock id of zero", mod(append="\n[releases]\nspacedock = 0\n"), "releases.spacedock: 0 is less than the minimum"),
-    ("github host that is not owner/repo", mod(append='\n[releases]\ngithub = "StarMapLoader"\n'), "releases.github: 'StarMapLoader' does not match"),
+    (
+        "github host that is not owner/repo",
+        mod(append='\n[releases]\ngithub = "repository"\n'),
+        ("releases.github: 'repository' does not match", "for example, use 'owner/repository'"),
+    ),
 
     # Loader
     ("loader max below min", mod(append='\n[loader]\nid = "StarMap"\nmin = "0.4.6"\nmax = "0.4.5"\n'), "loader: max '0.4.5' is below min '0.4.6'"),
@@ -325,15 +329,16 @@ def main():
             failures.append(f"'{name}' should be accepted, but: " + "; ".join(errors))
 
     seen = set()
-    for name, text, fragment in REJECTED:
+    for name, text, expected in REJECTED:
         checked += 1
         assert name not in seen, f"two cases are both called '{name}'"
         seen.add(name)
         errors = failures_for(text, checker)
+        fragments = (expected,) if isinstance(expected, str) else expected
         if not errors:
             failures.append(f"'{name}' should be rejected, but nothing complained")
-        elif not any(fragment in error for error in errors):
-            failures.append(f"'{name}' should be rejected for '{fragment}', but said: " + "; ".join(errors))
+        elif not any(all(fragment in error for fragment in fragments) for error in errors):
+            failures.append(f"'{name}' should be rejected for {fragments}, but said: " + "; ".join(errors))
 
     if failures:
         print("\n".join(failures))
