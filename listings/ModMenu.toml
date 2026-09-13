@@ -1,0 +1,50 @@
+spec_version = 1
+id = "ModMenu"
+type = "mod"
+name = "ModMenu"
+authors = ["MrJeranimo"]
+abstract = "This mod adds a \"Mods\" menu tab to the Main Menu Bar at the top of the screen for mods to put menu entries in."
+description = """
+# ModMenu
+
+A modding framework for Kitten Space Agency that allows mods to easily add menu entries.
+This mod will work standalone, but the "Mods" menu will have nothing inside it. This mod is intended as a dependency for other mods.
+
+Source Code: https://github.com/MrJeranimo/ModMenu/
+
+Mod Loader (Required): StarMap https://github.com/StarMapLoader/StarMap
+
+## Example Mod
+
+To see ModMenu in action, it is recommended to install [ModMenu.ExampleMod](https://spacedock.info/mod/4055/ModMenu%20ExampleMod) and put that mod in your KSA Content folder.
+
+For developers it is also recommended to see how ModMenu.ExampleMod uses the ModMenu.
+
+## For Mod Developers
+
+Check out the GitHub Page for more info: https://github.com/MrJeranimo/ModMenu
+
+## License
+
+MIT
+"""
+license = "MIT"
+tags = ["user-interface"]
+
+[releases]
+github = "MrJeranimo/ModMenu"
+spacedock = 4054
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/modmenu.562/"
+repository = "https://github.com/MrJeranimo/ModMenu"
+spacedock = "https://spacedock.info/mod/4054/ModMenu"
+bugtracker = "https://github.com/MrJeranimo/ModMenu/issues"
+
+[compatibility]
+game_min = "2026.9.7.5402"
+
+[loader]
+id = "StarMap"
+min = "0.4.6"
