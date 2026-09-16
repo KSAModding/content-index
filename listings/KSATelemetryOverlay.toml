@@ -7,6 +7,8 @@ abstract = "A SpaceX-style launch broadcast telemetry overlay in-game"
 description = """
 A work-in-progress mod for Kitten Space Agency that creates a SpaceX-style launch broadcast telemetry overlay in-game. The overlay is populated with live data from the active vehicle and the mod includes an engine diagram generated automatically using the actual position of the engines on your stage relative to each other.
 
+![Screenshot](ksa-image:9e-hero)
+
 ## Features
 
 - A broadcast-style bottom bar: speed and altitude on the left, T+ clock and mission timeline in the center, g-force and the engine diagram on the right. Styled to look like the SpaceX webcast overlay slick animations and all.
@@ -17,6 +19,9 @@ A work-in-progress mod for Kitten Space Agency that creates a SpaceX-style launc
 - Optionally and by default hides the flight UI while the overlay is up, and restores it when disabled.
 - Every element is also available as its own movable imgui window that behaves like any other.
 - Fairly in-depth configuration avalible in the settlings menu.
+
+![Unusual engine layout example](ksa-image:funky)
+![Extreme engine count example](ksa-image:72e)
 
 StarMap loader is required for this mod.
 
@@ -52,3 +57,36 @@ game_min = "2026.9.7.5402"
 [loader]
 id = "StarMap"
 min = "0.4.5"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/icon.png"
+sha256 = "febf3746545bbd7bb63771670796b54afc5ceec625f87967abcd070b41f7bdb6"
+width = 512
+height = 512
+size = 144678
+attribution = "Screenshot by Caitlyn Hausam"
+source = "https://github.com/elevatorctln/KSA-Public-Telemetry"
+
+[[images.description]]
+id = "9e-hero"
+url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/9e-hero.png"
+sha256 = "a479a87dbf9c124bcc42cffedd3f6afb54aab5db96cc53c853418df1c118ec55"
+width = 1796
+height = 984
+size = 1335665
+
+[[images.description]]
+id = "funky"
+url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/funky.png"
+sha256 = "6efcb6993cfff7f16e2cab6e95fbf00a94de588dc2418d68f40221dde64fffd7"
+width = 1920
+height = 1080
+size = 1532651
+
+[[images.description]]
+id = "72e"
+url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/72e.png"
+sha256 = "24711a62b640129ee3840ce468ccaef659dcac8bd9a847f58105e08864805c48"
+width = 1920
+height = 1080
+size = 1779678
