@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import check_scope
 import ownership
+import pack_ownership
 
 GITHUB_API = "https://api.github.com"
 GRAPHQL = "https://api.github.com/graphql"
@@ -109,6 +110,19 @@ def decide(verdict, candidate, ownership_result, run_url=""):
             ),
         )
 
+    if ownership_result.state == ownership.REJECTED:
+        return Decision(
+            "failure",
+            "the pack ownership check rejected this change",
+            comment=_comment(
+                "The pack ownership check rejected this change.",
+                verdict,
+                [ownership_result.reason + "."],
+                run_url,
+                rerun=True,
+            ),
+        )
+
     if not candidate:
         reason = verdict.get("scope_reason") or "the change is not a single document"
         return Decision(
@@ -124,6 +138,14 @@ def decide(verdict, candidate, ownership_result, run_url=""):
         )
 
     if ownership_result.state == ownership.VERIFIED:
+        if ownership_result.proof == pack_ownership.PROOF:
+            next_step = "This pull request merges on its own once the checks finish. The snapshot follows."
+        else:
+            next_step = (
+                "This pull request merges on its own once the checks finish. The watcher "
+                "stamps the first release within about ten minutes after the merge, and the "
+                "snapshot follows."
+            )
         return Decision(
             "success",
             "validated, arming auto-merge",
@@ -131,11 +153,7 @@ def decide(verdict, candidate, ownership_result, run_url=""):
             comment=_comment(
                 "Validated.",
                 verdict,
-                [
-                    "This pull request merges on its own once the checks finish. The watcher "
-                    "stamps the first release within about ten minutes after the merge, and the "
-                    "snapshot follows."
-                ],
+                [next_step],
                 run_url,
             ),
         )
@@ -156,6 +174,14 @@ def decide(verdict, candidate, ownership_result, run_url=""):
             ),
         )
 
+    instructions = ownership_result.instructions or (
+        "The proof is something only you can put on the release repository, which "
+        "is what says you agree to it being indexed. Either set the topic "
+        f"`{ownership.TOPIC.format(login='<your-github-username>')}` on it, or commit "
+        f"`{ownership.MARKER_PATH}` naming your username. For a SpaceDock host, set "
+        "your GitHub repository as the mod's source code link on SpaceDock, and put "
+        "the proof on that repository."
+    )
     return Decision(
         "success",
         "validated, ownership not verified",
@@ -165,12 +191,7 @@ def decide(verdict, candidate, ownership_result, run_url=""):
             verdict,
             [
                 f"{ownership_result.reason}.",
-                "The proof is something only you can put on the release repository, which "
-                "is what says you agree to it being indexed. Either set the topic "
-                f"`{ownership.TOPIC.format(login='<your-github-username>')}` on it, or commit "
-                f"`{ownership.MARKER_PATH}` naming your username. For a SpaceDock host, set "
-                "your GitHub repository as the mod's source code link on SpaceDock, and put "
-                "the proof on that repository.",
+                instructions,
             ],
             run_url,
         ),
@@ -476,7 +497,13 @@ def changed_paths(api, number):
     while True:
         batch = api.get(f"/pulls/{number}/files", per_page=100, page=page) or []
         for entry in batch:
-            changes.append(check_scope.Change(entry["filename"], entry.get("status") or "modified"))
+            changes.append(
+                check_scope.Change(
+                    entry["filename"],
+                    entry.get("status") or "modified",
+                    entry.get("previous_filename"),
+                )
+            )
         if len(batch) < 100:
             return changes
         page += 1
@@ -507,6 +534,9 @@ def ownership_for(api, pull, path, head_sha):
     branch tip and not the commit the pull request was cut from keeps a stale
     pull request from verifying against a previous owner.
     """
+    if check_scope.kind_of(path) == check_scope.PACK_KIND:
+        return pack_ownership.verify(api, pull, path, head_sha)
+
     submitted, problem = authored_document(api, path, head_sha)
     if submitted is None:
         return ownership.Result(
@@ -638,7 +668,8 @@ def act(api, arguments):
     candidate, documents, reason = check_scope.evaluate(changes)
 
     result = ownership.Result(ownership.UNVERIFIED, "not checked")
-    if candidate and verdict.get("verdict") == PASS:
+    one_pack = len(documents) == 1 and check_scope.kind_of(documents[0]) == check_scope.PACK_KIND
+    if (candidate or one_pack) and verdict.get("verdict") == PASS:
         result = ownership_for(api, pull, documents[0], arguments.head_sha)
 
     decision = decide({**verdict, "scope_reason": reason}, candidate, result, arguments.run_url)

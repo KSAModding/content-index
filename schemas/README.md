@@ -1,6 +1,6 @@
 # Schemas
 
-`authored.schema.json` is the machine-readable form of the authored document defined by [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md) and extended by [RFC 0035](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0035-content-install-descriptor.md).
+`authored.schema.json` is the machine-readable form of the authored document defined by [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md) and extended by [RFC 0035](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0035-content-install-descriptor.md), [RFC 0049](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0049-instance-handover.md) and [RFC 0058](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0058-listing-images-and-dates.md), and amended by [RFC 0065](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0065-icon-center-crop.md).
 
 It is JSON Schema 2020-12, and it covers all three types the format defines today: `mod`, `mod-loader` and `modpack`.
 
@@ -28,6 +28,19 @@ The other checks around it have their own tests, run together:
 ```sh
 python3 -m unittest discover -s tools -t tools --buffer
 ```
+
+## Writing an image record
+
+`tools/image_record.py` measures an image and prints its `[images.icon]` or `[[images.description]]` record, so nobody writes `sha256`, `width`, `height` and `size` by hand:
+
+```sh
+python3 tools/image_record.py icon.png --icon --url https://example.invalid/my-mod/icon.png --license CC-BY-4.0 --attribution "Artwork by Example Artist"
+python3 tools/image_record.py https://example.invalid/my-mod/settings-window.png --description settings-window
+```
+
+A URL is fetched by the rules of `tools/images.py`, and a local file needs `--url`, the address where it will be hosted.
+The tool validates the record against this schema and the SPDX list.
+When the image breaks a limit or a value is refused, it names the problem on stderr and prints no record.
 
 ## Validate the parsed document
 
@@ -61,14 +74,21 @@ Some rules need more than the document, and belong to the checks around it:
 |---|---|
 | Every SPDX identifier exists in the SPDX list | `tools/check_license.py`. The list is versioned data and must not be frozen into a schema, so it arrives as a pinned dependency instead. |
 | The id does not collide with another listing, case-insensitively | `tools/check_index.py` |
+| A changed document names a forums thread that no other listing or pack names, compared by thread id | `tools/check_index.py` warns only. The id comes from the `links.forums` pattern, so every URL form of one thread compares equal. |
+| A changed document has an `abstract` of at most 280 characters | `tools/check_index.py` warns only. RFC 0031 calls the abstract one or two sentences, and a longer one breaks list views. |
 | The document sits at the path its id and type say | `tools/check_layout.py` |
 | `[loader].id` references content of type `mod-loader`, a dependency id references a `mod`, and a pack member is not itself a pack | `tools/check_index.py` |
 | A named `any_of` member carried `Optional = true` in the archive's own `mod.toml` | the stamper ([content-index-releases#13](https://github.com/KSAModding/content-index-releases/issues/13)), which is the only place the archive is read |
 | `[provides].launch` names a file the release actually contains | the stamper |
 | `install.root` is derivable, and the archive downloads and hashes | `tools/check_release.py`, which reaches the answer by running the stamper against the real archive rather than by repeating its rules |
 | The change is narrow enough to merge itself | `tools/check_scope.py` |
+| A changed document has a curated tag, and each free-form tag is in the curated list | `tools/check_tags.py` warns only. `mod`, `mod-loader` and `modpack` share the `mod` list in `tags.toml`. |
+| The shorter side of an icon is at most 1024 pixels and its longer side at most twice the shorter side, a description image `id` is used once, and each `ksa-image:` reference in the description names a record | `tools/check_images.py` |
+| A changed document has an icon that is not square | `tools/check_images.py` warns only, and names the center square that clients show. |
+| Each image of a changed document downloads safely and matches its record | `tools/check_images.py` with the document path, by the fetch rules of RFC 0058 |
+| An image record's `license` names identifiers on the SPDX list | `tools/check_license.py` |
 | An id in `index-status.toml` names a listing or a pack that exists, and a retracted version exists on that pack | `tools/check_status.py` |
-| The author controls the release host | the ownership workflow ([#4](https://github.com/KSAModding/content-index/issues/4)) |
+| The author controls the release host, or owns the pack id | the ownership workflow ([#4](https://github.com/KSAModding/content-index/issues/4)); pack ownership is read from the steward-owned `packs/<id>/owner.json` on the base branch |
 
 ## Where the schema is stricter than the RFC text
 
@@ -87,7 +107,8 @@ They are collected here so any one of them can be argued down on its own.
 | Authored SemVer bounds reject a leading `v` | Only a release tag gets its `v` stripped, and that happens at stamp time. An authored bound is not a tag. |
 | Game bounds reject a suffix or a `+hash`, take a four-digit year, and take a month of 1 to 12 | RFC 0017 puts builds carrying a suffix outside the compatibility model, and a bound has to resolve to a revision. |
 | An `any_of` entry may not carry `min` or `max` of its own | RFC 0031 puts the bounds on each alternative. An outer pair would have no defined meaning against a set. |
-| A path may not run through a reserved Windows device name | Not in either RFC. A segment naming `NUL` or `CON` swallows every write on Windows, so a manager writing `[provides.configure]` there reports success and configures nothing, which is the failure that section exists to prevent. |
+| A path may not run through a reserved Windows device name | Not in any RFC. A segment naming `NUL` or `CON` swallows every write on Windows, so a manager writing `[provides.configure]` there reports success and configures nothing, which is the failure that section exists to prevent. |
+| A `[provides.instance]` key may not carry a Unicode control character, U+0000 to U+001F or U+007F to U+009F | RFC 0049 forbids only whitespace. A manager hands the value to a process start as an argument or a variable name, where a control character that is not whitespace, such as a NUL, cuts the value short or makes the start fail. The paths and keys elsewhere in the schema exclude the control characters below U+0020 for the same reason. |
 | `[releases]` must name at least one host | A section carrying only `authority` names an authority for nothing. Implied by RFC 0031 rather than stated. |
 | `tags` are lowercase, and a word or words joined by `-` | RFC 0031 says "free-form lowercase tags". The casing is the RFC's; the separator is this schema's, so a filter list cannot end up holding both `user-interface` and `user_interface`. |
 | `[[mods]]` and `authors` need at least one entry, and `name`, `abstract` and `changelog` may not be empty | A required field present but empty is the same absence with none of the reporting. |

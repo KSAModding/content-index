@@ -5,8 +5,13 @@
 
 import re
 import sys
+from pathlib import Path
 
 from license_expression import get_spdx_licensing
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import images
 
 # SPDX calls the tail an idstring: letters, digits, `-` and `.`.
 IDSTRING = r"[A-Za-z0-9.-]+"
@@ -53,6 +58,9 @@ def check_document(where, document, errors):
     """Append any license error of one already parsed document."""
     for message in errors_for(document.get("license")):
         errors.append(f"{where}: license: {message}")
+    for place, _, record in images.records(document):
+        for message in errors_for(record.get("license")):
+            errors.append(f"{where}: {place}.license: {message}")
 
 
 def main():

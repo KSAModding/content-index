@@ -79,6 +79,12 @@ def titled(subschema):
     return subschema.get("title") if isinstance(subschema, dict) else None
 
 
+def example(subschema):
+    """The first example a subschema offers, when it carries one."""
+    examples = subschema.get("examples") if isinstance(subschema, dict) else None
+    return examples[0] if isinstance(examples, list) and examples else None
+
+
 def explain(error):
     """Say what a rejection means in words.
 
@@ -89,9 +95,13 @@ def explain(error):
     the pattern itself in front of the author. A pattern carries a title for the
     same reason, and its message says the value is not what the title names,
     because an author whose value was refused needs the shape that is wanted
-    rather than the regex that refused it.
+    rather than the regex that refused it. A pattern with an example keeps its
+    regex and adds the example, so the exact rule and common form stay visible.
     """
     if error.validator == "pattern":
+        sample = example(error.schema)
+        if sample is not None:
+            return f"{error.message}; for example, use {sample!r}"
         title = titled(error.schema)
         return f"{error.instance!r} is not {title}" if title else error.message
     if error.validator != "not":

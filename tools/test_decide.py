@@ -22,6 +22,7 @@ WORKFLOWS = Path(__file__).resolve().parent.parent / ".github/workflows"
 VERIFIED = ownership.Result(ownership.VERIFIED, "", "topic")
 UNVERIFIED = ownership.Result(ownership.UNVERIFIED, "Maxi did not prove control of a/b")
 UNAVAILABLE = ownership.Result(ownership.COULD_NOT_EVALUATE, "the host did not answer")
+REJECTED = ownership.Result(ownership.REJECTED, "the accepted pack version is immutable")
 
 LISTING = 'id = "AutoStage"\n[releases]\ngithub = "Maxi/KSA-AutoStage"\n'
 
@@ -195,6 +196,13 @@ class Table(unittest.TestCase):
         self.assertIn("within about ten minutes", decision.comment)
         self.assertIn("snapshot follows", decision.comment)
 
+    def test_a_pack_version_does_not_claim_that_the_watcher_stamps_it(self):
+        result = ownership.Result(ownership.VERIFIED, "", "pack owner record")
+        decision = decide.decide(verdict(), True, result)
+        self.assertTrue(decision.auto_merge)
+        self.assertIn("snapshot follows", decision.comment)
+        self.assertNotIn("watcher", decision.comment)
+
     def test_a_change_that_is_not_a_candidate_waits_for_a_steward(self):
         decision = decide.decide(
             verdict(reason="the change touches 2 documents"), False, VERIFIED
@@ -203,6 +211,13 @@ class Table(unittest.TestCase):
         self.assertFalse(decision.auto_merge)
         self.assertTrue(decision.needs_steward)
         self.assertIn("touches 2 documents", decision.comment)
+
+    def test_a_pack_ownership_rejection_fails_the_status(self):
+        decision = decide.decide(verdict(), True, REJECTED)
+        self.assertEqual(decision.status, "failure")
+        self.assertFalse(decision.auto_merge)
+        self.assertFalse(decision.needs_steward)
+        self.assertIn("immutable", decision.comment)
 
     def test_unverified_ownership_is_green_and_waits_for_a_steward(self):
         decision = decide.decide(verdict(), True, UNVERIFIED)
@@ -216,6 +231,16 @@ class Table(unittest.TestCase):
         self.assertIn("ksa-index-", decision.comment)
         self.assertIn(ownership.MARKER_PATH, decision.comment)
         self.assertIn("source code link", decision.comment)
+
+    def test_pack_guidance_does_not_suggest_a_release_host_proof(self):
+        result = ownership.Result(
+            ownership.UNVERIFIED,
+            "this is the first claim",
+            instructions="A steward must accept the first claim.",
+        )
+        decision = decide.decide(verdict(), True, result)
+        self.assertIn("steward must accept", decision.comment)
+        self.assertNotIn("release repository", decision.comment)
 
     def test_ownership_that_could_not_be_checked_waits_too(self):
         decision = decide.decide(verdict(), True, UNAVAILABLE)
@@ -953,6 +978,37 @@ class Act(unittest.TestCase):
         ):
             self.assertEqual(self.act(), 0)
         self.assertEqual(self.labelled(), ["listing", "pack", decide.STEWARD_LABEL])
+
+    def test_a_first_pack_claim_cannot_name_another_owner(self):
+        owner_path = "packs/Starter/owner.json"
+        self.api.files = {
+            (owner_path, "abc"): json.dumps({"github_login": "Attacker", "github_id": 9})
+        }
+        with mock.patch.object(
+            decide,
+            "changed_paths",
+            lambda api, number: [
+                check_scope.Change("packs/Starter/1.0.0.toml", "added"),
+                check_scope.Change(owner_path, "added"),
+            ],
+        ):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.statuses()[-1]["state"], "failure")
+        self.assertEqual(self.api.graphql_calls, [])
+
+    def test_the_recorded_pack_owner_can_merge_a_new_version(self):
+        owner_path = "packs/Starter/owner.json"
+        self.api.files = {
+            (owner_path, "main"): json.dumps({"github_login": "Maxi", "github_id": 7})
+        }
+        with mock.patch.object(
+            decide,
+            "changed_paths",
+            lambda api, number: [check_scope.Change("packs/Starter/2.0.0.toml", "added")],
+        ):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.api.graphql_calls, [{"id": "PR_5"}])
+        self.assertEqual(self.statuses()[-1]["state"], "success")
 
     def test_a_change_that_touches_no_document_carries_no_kind(self):
         with mock.patch.object(

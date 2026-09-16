@@ -67,7 +67,10 @@ def check_listing(path, where, errors):
 
     identifier = document.get("id")
     if identifier != path.stem:
-        errors.append(f"{where}: declares id '{identifier}', the file name says '{path.stem}'")
+        if isinstance(identifier, str):
+            errors.append(f"{where}: declares id '{identifier}', so the file name must be '{identifier}.toml'")
+        else:
+            errors.append(f"{where}: declares id '{identifier}', the file name says '{path.stem}'")
 
 
 def check_pack(path, where, errors):

@@ -3,6 +3,8 @@
 """The rules that need the whole index rather than one document.
 """
 
+import json
+import re
 import sys
 import tomllib
 from pathlib import Path
@@ -10,12 +12,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 LISTINGS = ROOT / "listings"
 PACKS = ROOT / "packs"
+SCHEMA = ROOT / "schemas" / "authored.schema.json"
 
 PACK_TYPE = "modpack"
 LOADER_TYPE = "mod-loader"
 MOD_TYPE = "mod"
 
 PINNED_SECTIONS = ("mods", "vehicles", "saves")
+
+THREAD_ID = "[0-9]+"
+ABSTRACT_LIMIT = 280
 
 
 class Entry:
@@ -221,6 +227,66 @@ def _check_pins(entry, targets, where, errors):
 def check(entries):
     """Every whole-index rule, over an already loaded set."""
     return check_collisions(entries) + check_references(entries)
+
+
+def thread_pattern(schema=SCHEMA):
+    """The schema's rule for links.forums, with the thread id captured."""
+    rule = json.loads(schema.read_text(encoding="utf-8"))["$defs"]["forumsUrl"]["pattern"]
+    if rule.count(THREAD_ID) != 1:
+        raise ValueError(f"{_relative(schema, ROOT)}: forumsUrl has no single thread id to capture")
+    return re.compile(rule.replace(THREAD_ID, f"({THREAD_ID})"))
+
+
+def _thread(entry, pattern):
+    links = entry.document.get("links")
+    forums = links.get("forums") if isinstance(links, dict) else None
+    match = pattern.match(forums) if isinstance(forums, str) else None
+    return int(match.group(1)) if match else None
+
+
+def check_forums(entries, documents, pattern=None):
+    """A changed document that names a forums thread another holder already names."""
+    changed = [entry for entry in entries if entry.where in documents]
+    if not changed:
+        return []
+
+    pattern = pattern or thread_pattern()
+    notes = []
+    for entry in changed:
+        thread = _thread(entry, pattern)
+        if thread is None:
+            continue
+        others = sorted(
+            {
+                other.where
+                for other in entries
+                if other.holder != entry.holder and _thread(other, pattern) == thread
+            }
+        )
+        if others:
+            notes.append(
+                f"{entry.where}: links.forums: thread {thread} is also the forums thread of "
+                f"{', '.join(others)}, so the thread cannot settle an id dispute between them"
+            )
+    return notes
+
+
+def check_abstracts(entries, documents):
+    """A changed document whose abstract is too long for a list view."""
+    notes = []
+    for entry in entries:
+        abstract = entry.document.get("abstract")
+        if entry.where in documents and isinstance(abstract, str) and len(abstract) > ABSTRACT_LIMIT:
+            notes.append(
+                f"{entry.where}: abstract: {len(abstract)} characters is longer than "
+                f"{ABSTRACT_LIMIT}, and an abstract is one or two sentences for list views"
+            )
+    return notes
+
+
+def notes(entries, documents):
+    """Every note on the changed documents."""
+    return check_forums(entries, documents) + check_abstracts(entries, documents)
 
 
 def main():

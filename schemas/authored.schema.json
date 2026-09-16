@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/KSAModding/content-index/main/schemas/authored.schema.json",
   "title": "KSA content index: authored document",
-  "description": "One authored TOML document per listing or pack version, per RFC 0031 and RFC 0035. Validate the parsed document.",
+  "description": "One authored TOML document per listing or pack version, per RFC 0031, RFC 0035, RFC 0049 and RFC 0058. Validate the parsed document.",
   "type": "object",
   "additionalProperties": false,
 
@@ -66,6 +66,38 @@
         "forums": { "$ref": "#/$defs/forumsUrl" }
       },
       "additionalProperties": { "$ref": "#/$defs/url" }
+    },
+
+    "images": {
+      "description": "The images a client shows for the listing, per RFC 0058. Each image stays on the author's host, and the checks fetch it and compare it with its record.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "icon": {
+          "description": "The image that stands for the listing in lists, tiles and headers. A client shows its center square.",
+          "$ref": "#/$defs/imageRecord",
+          "properties": {
+            "id": { "not": {} },
+            "width": { "minimum": 256, "maximum": 2048 },
+            "height": { "minimum": 256, "maximum": 2048 },
+            "size": { "maximum": 262144 }
+          }
+        },
+        "description": {
+          "description": "The images the description references as ksa-image:<id>.",
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "#/$defs/imageRecord",
+            "required": ["id"],
+            "properties": {
+              "width": { "maximum": 2048 },
+              "height": { "maximum": 2048 },
+              "size": { "maximum": 1048576 }
+            }
+          }
+        }
+      }
     },
 
     "compatibility": {
@@ -234,6 +266,22 @@
             "game-path": {
               "description": "The key that receives the absolute path of the game directory, addressed by dot-separated path from the document root.",
               "$ref": "#/$defs/configKeyPath"
+            }
+          }
+        },
+        "instance": {
+          "description": "How a manager tells the loader which instance to run, per RFC 0049. A closed table with at least one key: absent means the loader does not run instances, and a manager must not guess.",
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "flag": {
+              "description": "The command line argument that precedes the absolute instance root. A manager passes the two as separate arguments.",
+              "$ref": "#/$defs/singleToken"
+            },
+            "variable": {
+              "description": "The environment variable that carries the absolute instance root.",
+              "$ref": "#/$defs/singleToken"
             }
           }
         }
@@ -448,6 +496,53 @@
       "pattern": "^https?://[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::[0-9]{1,5})?(?:[/?#][^\\s\\u0000-\\u001f]*)?(?![\\s\\S])"
     },
 
+    "httpsUrl": {
+      "title": "an https URL",
+      "type": "string",
+      "pattern": "^https://[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::[0-9]{1,5})?(?:[/?#][^\\s\\u0000-\\u001f]*)?(?![\\s\\S])"
+    },
+
+    "imageRecord": {
+      "$comment": "The facts the checks verify against the fetched bytes. Each role narrows the pixel and byte limits where it references this.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "sha256", "width", "height", "size"],
+      "properties": {
+        "url": {
+          "description": "The image on the author's host.",
+          "$ref": "#/$defs/httpsUrl"
+        },
+        "sha256": {
+          "description": "Hex SHA-256 of the image bytes, compared case-insensitively.",
+          "title": "a hex SHA-256 digest of 64 characters",
+          "type": "string",
+          "pattern": "^[0-9A-Fa-f]{64}(?![\\s\\S])"
+        },
+        "width": { "description": "Width in pixels.", "type": "integer", "minimum": 1 },
+        "height": { "description": "Height in pixels.", "type": "integer", "minimum": 1 },
+        "size": { "description": "Length of the image in bytes.", "type": "integer", "minimum": 1 },
+        "license": {
+          "description": "The image's own license. Absent means the document's license.",
+          "$ref": "#/$defs/spdxExpression"
+        },
+        "attribution": {
+          "description": "Credit text a client shows with the image.",
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "description": "The original work, which a client links with the image.",
+          "$ref": "#/$defs/httpsUrl"
+        },
+        "id": {
+          "description": "The name the description references. Only a description image carries it.",
+          "title": "1 to 64 ASCII letters, digits, - and _, starting and ending with a letter or digit",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9_-]{0,62}[A-Za-z0-9])?(?![\\s\\S])"
+        }
+      }
+    },
+
     "forumsUrl": {
       "$comment": "The host is pinned because the field exists to tie a listing to an Ahwoo account. A thread id is required.",
       "title": "an https link to a thread on forums.ahwoo.com, such as https://forums.ahwoo.com/threads/my-mod.783/",
@@ -477,8 +572,16 @@
       "pattern": "^[^.\\u0000-\\u001f]+(?:\\.[^.\\u0000-\\u001f]+)*(?![\\s\\S])"
     },
 
+    "singleToken": {
+      "$comment": "RFC 0049: one token without whitespace, and not empty. A manager passes it to a process start as an argument or a variable name, so every Unicode control character (U+0000 to U+001F and U+007F to U+009F) is excluded too.",
+      "title": "a single token without whitespace or control characters",
+      "type": "string",
+      "pattern": "^[^\\s\\u0000-\\u001f\\u007f-\\u009f]+(?![\\s\\S])"
+    },
+
     "githubRepo": {
       "type": "string",
+      "examples": ["owner/repository"],
       "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?/[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?(?![\\s\\S])"
     },
 

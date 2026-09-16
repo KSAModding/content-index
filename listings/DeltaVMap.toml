@@ -1,0 +1,163 @@
+spec_version = 1
+id = "DeltaVMap"
+type = "mod"
+name = "DeltaVMap"
+authors = ["Maxi"]
+abstract = "An interactive, auto-generated delta-v subway map and transfer-window planner for Kitten Space Agency."
+description = '''
+It reads the loaded solar system live, so it works with any system, stock or modded, with no per-system setup.
+
+![The Delta-V Map rooted at Earth](ksa-image:delta-v-map)
+
+This mod is written against the [StarMap loader](https://github.com/StarMapLoader/StarMap).
+
+## What it does
+
+The map tells you "where can I go from where I am and for how much delta-v".
+The transfer-window layer answers the "and when do I leave" question.
+
+Both are generated from the loaded `CelestialSystem`, recurse through every planet, moon, asteroid and comet, and read each body's mass, radius, SOI, orbit and atmosphere. Nothing is hardcoded.
+
+All numbers are closed-form patched-conic estimates (Hohmann transfers with Oberth-combined departure and capture, no iterative solver), so the whole map is fast and every transfer is cached once per session.
+
+The delta-v figures are the idealized optimal values, so they assume a well-timed, well-flown transfer. A "piloting-margin percentage" slider is available.
+
+## Features
+
+### Delta-v subway map
+
+- **Ego-centric metro layout.** The body you are currently in is the root; the map re-roots automatically on the next open after an SOI change, and Shift-Click re-roots to any body on demand.
+- **Accurate budgets.** Closed-form Hohmann transfers with Oberth-combined ejection and capture, a per-body state ladder (surface, low orbit, stationary, SOI edge, intercept) and a "you are here" marker at your actual orbit.
+- **Route planning.** Click any body to highlight the exact route from your current state, with a running total and a per-segment breakdown. Toggles for from-surface, landing, aerobraking, plane change and a return trip, plus a piloting-margin percentage to budget for non-optimal flying.
+- **Vehicle comparison.** A bar compares the selected route against your ship's available delta-v.
+- **Readable at scale.** Node-symbol vocabulary with a legend, search / focus / isolate, and automatic minor-body aggregation so a dense system (thousands of asteroids) stays usable.
+- **Three layout modes**, switched from the on-canvas toggle or the Options menu:
+
+**Cumulative-down (default)**
+
+![Cumulative-down layout](ksa-image:delta-v-map)
+
+**Gravity-well**
+
+![Gravity-well layout](ksa-image:layout-gravity-well)
+
+**Spring**
+
+![Spring layout](ksa-image:layout-spring)
+
+### Transfer windows
+
+The timing companion to the map. For the root body and every sibling sharing its parent, it shows the optimal phase angle, the live current phase, a countdown to the next window, the synodic period, the ejection angle and the transfer time, in a compact list plus a live polar phase-clock.
+
+![The transfer-window list and phase clock](ksa-image:transfer-windows)
+
+A separate, opt-in layer draws the same data in the game's 3D map mode: the optimal-departure marker on the destination's real orbit (where it will be when the window opens), the planet-star-planet phase angle, and an ejection-angle gizmo at the departure body.
+
+![The transfer-window overlay in the game map mode](ksa-image:map-mode-overlay)
+
+## Installation
+
+1. Install [StarMap](https://github.com/StarMapLoader/StarMap).
+2. Download the latest release from the [GitHub Releases](https://github.com/Maximilian-Nesslauer/KSA-DeltaVMap/releases) tab or from [SpaceDock](https://spacedock.info/mod/4294/DeltaVMap).
+3. Extract into `Documents\My Games\Kitten Space Agency\mods\DeltaVMap\`.
+4. The game auto-discovers new mods and prompts you to enable them. Alternatively, add to `Documents\My Games\Kitten Space Agency\manifest.toml`:
+
+```toml
+[[mods]]
+id = "DeltaVMap"
+enabled = true
+```
+
+Open the map from the **View** -> "Delta-V Map" menu in flight, or the top-level **Delta-V Map** tab in the editor.
+
+## Dependencies
+
+- [StarMap](https://github.com/StarMapLoader/StarMap): Mod loader, required at runtime (see Installation). Tested version 0.4.6.
+
+## Build dependencies
+
+Required only to build the mod from source. Targets **.NET 10**.
+
+- [StarMap.API](https://github.com/StarMapLoader/StarMap) from NuGet, tested version 0.3.6.
+- [Lib.Harmony](https://www.nuget.org/packages/Lib.Harmony) from NuGet, tested version 2.4.2.
+
+## Mod compatibility
+
+- Known conflicts: none
+
+## Community
+
+Thread on the KSA forums: https://forums.ahwoo.com/threads/deltavmap.978/
+
+## Check out my other mods
+
+- [AdvancedFlightComputer](https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer) - maneuver planning, burn execution, automatic staging and closed-loop guidance ([forum thread](https://forums.ahwoo.com/threads/advanced-flight-computer.783/))
+- [MeasureTools](https://github.com/Maximilian-Nesslauer/KSA-MeasureTools) - click-to-measure ruler, protractor, and surface measuring in the map view ([forum thread](https://forums.ahwoo.com/threads/measuretools.992/))
+'''
+license = "MIT"
+tags = ["user-interface"]
+
+[releases]
+github = "Maximilian-Nesslauer/KSA-DeltaVMap"
+spacedock = 4294
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/threads/deltavmap.978/"
+repository = "https://github.com/Maximilian-Nesslauer/KSA-DeltaVMap"
+spacedock = "https://spacedock.info/mod/4294/DeltaVMap"
+bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-DeltaVMap/issues"
+
+[compatibility]
+game_min = "2026.9.10.5438"
+
+[loader]
+id = "StarMap"
+min = "0.4.5"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-DeltaVMap/88b39f875e9f1e35f7921ab545aae28ab89d2656/images/listing/icon.png"
+sha256 = "ed946e22305dbe7be6a14a8f2d501d597002c572162332db07d58dc4918ea41f"
+width = 512
+height = 512
+size = 42884
+
+[[images.description]]
+id = "delta-v-map"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-DeltaVMap/88b39f875e9f1e35f7921ab545aae28ab89d2656/images/listing/delta-v-map.png"
+sha256 = "761cfe0f3fc923845c15884b28da8c3f03fb1922e44f2295ad06066e0600c4ec"
+width = 2048
+height = 1191
+size = 497028
+
+[[images.description]]
+id = "layout-gravity-well"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-DeltaVMap/88b39f875e9f1e35f7921ab545aae28ab89d2656/images/listing/layout-gravity-well.png"
+sha256 = "b12bb0a4f33b118189cf9a85c7eff06b27e3316cdd68a255f846804e24e8ecd7"
+width = 2048
+height = 1193
+size = 443550
+
+[[images.description]]
+id = "layout-spring"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-DeltaVMap/88b39f875e9f1e35f7921ab545aae28ab89d2656/images/listing/layout-spring.png"
+sha256 = "bada0f02308946026ecd195fadc5f2efc9cbf36d9960ccfb3470a0f7b6e3f919"
+width = 2048
+height = 1184
+size = 676429
+
+[[images.description]]
+id = "transfer-windows"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-DeltaVMap/00bda472d606c2533203da0ef174ae70a3423e20/images/transfer-windows.png"
+sha256 = "f75e350d859e89b5898d219744564b5b613459850719a73ff98e8c957bf5dc2c"
+width = 952
+height = 474
+size = 85509
+
+[[images.description]]
+id = "map-mode-overlay"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-DeltaVMap/88b39f875e9f1e35f7921ab545aae28ab89d2656/images/listing/map-mode-overlay.jpg"
+sha256 = "175aded823ef1744ab9d07065a95cbf62e39ec41a3b95d11d93852c6372f9445"
+width = 2048
+height = 1474
+size = 728244

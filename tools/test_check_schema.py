@@ -78,6 +78,14 @@ FORUMS = 'forums = "https://forums.ahwoo.com/threads/test-mod.1/"'
 # A loader that installs somewhere, so the provides cases have a valid base.
 STANDALONE = '\n[install]\ntarget = "standalone"\n\n[provides]\nlaunch = "x.exe"\n'
 
+# The instance table on that loader, so each instance case adds only its keys.
+INSTANCE = STANDALONE + "\n[provides.instance]\n"
+
+ICON_URL = 'url = "https://example.invalid/icon.png"'
+ICON_DIGEST = f'sha256 = "{"a" * 64}"'
+ICON = f"\n[images.icon]\n{ICON_URL}\n{ICON_DIGEST}\nwidth = 512\nheight = 512\nsize = 48213\n"
+SHOT = f'\n[[images.description]]\nid = "shot"\nurl = "https://example.invalid/shot.png"\nsha256 = "{"b" * 64}"\nwidth = 1600\nheight = 900\nsize = 402117\n'
+
 
 def mod(*, replace=None, keys="", append=""):
     """The base mod document, edited.
@@ -173,7 +181,11 @@ REJECTED = [
     ("unknown authority", mod(append='\n[releases]\ngithub = "a/b"\nauthority = "forums"\n'), "releases.authority: 'forums' is not one of"),
     ("spacedock id as a string", mod(append='\n[releases]\nspacedock = "4253"\n'), "releases.spacedock: '4253' is not of type 'integer'"),
     ("spacedock id of zero", mod(append="\n[releases]\nspacedock = 0\n"), "releases.spacedock: 0 is less than the minimum"),
-    ("github host that is not owner/repo", mod(append='\n[releases]\ngithub = "StarMapLoader"\n'), "releases.github: 'StarMapLoader' does not match"),
+    (
+        "github host that is not owner/repo",
+        mod(append='\n[releases]\ngithub = "repository"\n'),
+        ("releases.github: 'repository' does not match", "for example, use 'owner/repository'"),
+    ),
 
     # Loader
     ("loader max below min", mod(append='\n[loader]\nid = "StarMap"\nmin = "0.4.6"\nmax = "0.4.5"\n'), "loader: max '0.4.5' is below min '0.4.6'"),
@@ -232,12 +244,44 @@ REJECTED = [
     ("configure without a file", loader(append=STANDALONE + '\n[provides.configure]\nformat = "json"\n'), "provides.configure: 'file' is a required property"),
     ("an unwritable configure format", loader(append=STANDALONE + '\n[provides.configure]\nfile = "c.ini"\nformat = "ini"\n'), "provides.configure.format: 'ini' is not one of"),
     ("a configure key that cannot be addressed", loader(append=STANDALONE + '\n[provides.configure]\nfile = "c.json"\nformat = "json"\ngame-path = ""\n'), "provides.configure.game-path: '' does not match"),
+    ("an instance table naming neither key", loader(append=INSTANCE), "provides.instance: {} should be non-empty"),
+    ("an instance flag with whitespace", loader(append=INSTANCE + 'flag = "-Instance Path"\n'), "provides.instance.flag: '-Instance Path' is not a single token without whitespace or control characters"),
+    ("an instance flag with a control character", loader(append=INSTANCE + 'flag = "-Instance\\u0001Path"\n'), "provides.instance.flag: '-Instance\\x01Path' is not a single token without whitespace or control characters"),
+    ("an instance flag with a DEL character", loader(append=INSTANCE + 'flag = "-Instance\\u007fPath"\n'), "provides.instance.flag: '-Instance\\x7fPath' is not a single token without whitespace or control characters"),
+    ("an instance variable with a C1 control character", loader(append=INSTANCE + 'variable = "STARMAP\\u009fPATH"\n'), "provides.instance.variable: 'STARMAP\\x9fPATH' is not a single token without whitespace or control characters"),
+    ("an empty instance variable", loader(append=INSTANCE + 'variable = ""\n'), "provides.instance.variable: '' is not a single token without whitespace or control characters"),
+    ("an instance variable that is not a string", loader(append=INSTANCE + "variable = 3\n"), "provides.instance.variable: 3 is not of type 'string'"),
+    ("an unknown key inside instance", loader(append=INSTANCE + 'flag = "-InstancePath"\npath = "Instances"\n'), "provides.instance: Additional properties are not allowed ('path'"),
+    ("an instance table on a mod", mod(append='\n[provides.instance]\nflag = "-InstancePath"\n'), "provides: this key is not allowed here"),
 
     # License
     ("unbalanced parentheses in the license", mod(replace=('license = "MIT"', 'license = "(MIT OR Apache-2.0"')), "license: '(MIT OR Apache-2.0' has unbalanced parentheses"),
     ("a license closing a parenthesis it never opened", mod(replace=('license = "MIT"', 'license = "MIT)"')), "license: 'MIT)' has unbalanced parentheses"),
     ("a license closing before opening", mod(replace=('license = "MIT"', 'license = ")("')), "license: ')(' has unbalanced parentheses"),
     ("a license operator with no right side", mod(replace=('license = "MIT"', 'license = "MIT OR"')), "license: 'MIT OR' does not match"),
+
+    # Images
+    ("an unknown role in images", mod(append='\n[images]\nbanner = "x"\n'), "images: Additional properties are not allowed ('banner'"),
+    ("more than one icon", mod(append=ICON.replace("[images.icon]", "[[images.icon]]")), "images.icon: [{"),
+    ("an icon without a digest", mod(append=ICON.replace(ICON_DIGEST + "\n", "")), "images.icon: 'sha256' is a required property"),
+    ("an unknown key on an image record", mod(append=ICON + 'caption = "x"\n'), "images.icon: Additional properties are not allowed ('caption'"),
+    ("an icon carrying an id", mod(append=ICON + 'id = "icon"\n'), "images.icon.id: this key is not allowed here"),
+    ("an image over http", mod(append=ICON.replace("https://", "http://")), "images.icon.url: 'http://example.invalid/icon.png' is not an https URL"),
+    ("an image source over http", mod(append=ICON + 'source = "http://example.invalid/art"\n'), "images.icon.source: 'http://example.invalid/art' is not an https URL"),
+    ("an image digest that is too short", mod(append=ICON.replace(ICON_DIGEST, 'sha256 = "abc"')), "images.icon.sha256: 'abc' is not a hex SHA-256 digest of 64 characters"),
+    ("an icon below the pixel limit", mod(append=ICON.replace("width = 512", "width = 128")), "images.icon.width: 128 is less than the minimum of 256"),
+    ("an icon above the pixel limit", mod(append=ICON.replace("height = 512", "height = 2049")), "images.icon.height: 2049 is greater than the maximum of 2048"),
+    ("an icon above the byte cap", mod(append=ICON.replace("size = 48213", "size = 262145")), "images.icon.size: 262145 is greater than the maximum of 262144"),
+    ("an image with a size of zero", mod(append=ICON.replace("size = 48213", "size = 0")), "images.icon.size: 0 is less than the minimum of 1"),
+    ("an image license that is not an expression", mod(append=ICON + 'license = "MIT OR"\n'), "images.icon.license: 'MIT OR' does not match"),
+    ("an empty attribution", mod(append=ICON + 'attribution = ""\n'), "images.icon.attribution: '' should be non-empty"),
+    ("a description image without an id", mod(append=SHOT.replace('id = "shot"\n', "")), "images.description[0]: 'id' is a required property"),
+    ("a description image id starting with a dash", mod(append=SHOT.replace('id = "shot"', 'id = "-shot"')), "images.description[0].id: '-shot' is not 1 to 64 ASCII letters"),
+    ("a description image id with a space", mod(append=SHOT.replace('id = "shot"', 'id = "the shot"')), "images.description[0].id: 'the shot' is not 1 to 64 ASCII letters"),
+    ("a description image id above the length limit", mod(append=SHOT.replace('id = "shot"', f'id = "{"s" * 65}"')), "images.description[0].id: 'sss"),
+    ("a description image above the pixel limit", mod(append=SHOT.replace("width = 1600", "width = 4096")), "images.description[0].width: 4096 is greater than the maximum of 2048"),
+    ("a description image above the byte cap", mod(append=SHOT.replace("size = 402117", "size = 1048577")), "images.description[0].size: 1048577 is greater than the maximum of 1048576"),
+    ("more than sixteen description images", mod(append=SHOT * 17), "images.description: [{"),
 
     # Type boundaries
     ("a mod carrying a pack version", mod(keys='version = "1.0.0"\n'), "version: this key is not allowed here"),
@@ -277,6 +321,9 @@ ACCEPTED = [
     ("two month bounds in order", mod(replace=(GAME_MIN, 'game_min = "2026.7"\ngame_max = "2026.8"'))),
     ("a month bound against a revision bound", mod(replace=(GAME_MIN, 'game_min = "2026.9"\ngame_max = "2026.7.5.4892"'))),
     ("an empty steps list", mod(append="\n[install]\nsteps = []\n")),
+    ("an instance table naming both keys", loader(append=INSTANCE + 'flag = "-InstancePath"\nvariable = "STARMAP_INSTANCE_PATH"\n')),
+    ("an instance table naming only the flag", loader(append=INSTANCE + 'flag = "-InstancePath"\n')),
+    ("an instance table naming only the variable", loader(append=INSTANCE + 'variable = "STARMAP_INSTANCE_PATH"\n')),
     ("a pre-release loader bound", mod(append='\n[loader]\nid = "StarMap"\nmin = "0.5.0-rc.1"\n')),
     ("a pre-release ordered below its release", mod(append='\n[loader]\nid = "StarMap"\nmin = "0.5.0-rc.1"\nmax = "0.5.0"\n')),
     ("a numeric pre-release below an alphanumeric one", mod(append='\n[loader]\nid = "StarMap"\nmin = "1.0.0-1"\nmax = "1.0.0-alpha"\n')),
@@ -296,6 +343,15 @@ ACCEPTED = [
     ("a forums thread link to a post in it", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/threads/test-mod.1/post-42"'))),
     ("a forums thread in the index.php form", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/index.php?threads/test-mod.1/"'))),
     ("a native TOML timestamp in a pack", pack(replace=('released_at = "2026-08-05T12:00:00Z"', "released_at = 2026-08-05T12:00:00Z"))),
+    ("a mod with an icon and a description image", mod(append=ICON + SHOT)),
+    ("an image under its own license with credit", mod(append=ICON + 'license = "CC-BY-4.0"\nattribution = "Artwork by Example Artist"\nsource = "https://example.invalid/art"\n')),
+    ("an image digest in upper case", mod(append=ICON.replace("a" * 64, "A" * 64))),
+    ("an icon at both pixel limits", mod(append=ICON.replace("width = 512\nheight = 512", "width = 1024\nheight = 1024").replace("size = 48213", "size = 262144"))),
+    ("a wide icon at the pixel limits", mod(append=ICON.replace("width = 512\nheight = 512", "width = 2048\nheight = 1024"))),
+    ("a tall icon at the pixel limits", mod(append=ICON.replace("width = 512\nheight = 512", "width = 256\nheight = 2048"))),
+    ("sixteen description images", mod(append="".join(SHOT.replace('"shot"', f'"shot-{index}"') for index in range(16)))),
+    ("a loader with an icon", loader(append=ICON)),
+    ("a pack with an icon", pack(append=ICON)),
 ]
 
 
@@ -325,15 +381,16 @@ def main():
             failures.append(f"'{name}' should be accepted, but: " + "; ".join(errors))
 
     seen = set()
-    for name, text, fragment in REJECTED:
+    for name, text, expected in REJECTED:
         checked += 1
         assert name not in seen, f"two cases are both called '{name}'"
         seen.add(name)
         errors = failures_for(text, checker)
+        fragments = (expected,) if isinstance(expected, str) else expected
         if not errors:
             failures.append(f"'{name}' should be rejected, but nothing complained")
-        elif not any(fragment in error for error in errors):
-            failures.append(f"'{name}' should be rejected for '{fragment}', but said: " + "; ".join(errors))
+        elif not any(all(fragment in error for fragment in fragments) for error in errors):
+            failures.append(f"'{name}' should be rejected for {fragments}, but said: " + "; ".join(errors))
 
     if failures:
         print("\n".join(failures))

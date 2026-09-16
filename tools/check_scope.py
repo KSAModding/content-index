@@ -19,7 +19,7 @@ KINDS = ((LISTING_KIND, LISTING), (PACK_KIND, PACK))
 
 WRITING = ("added", "modified")
 
-Change = namedtuple("Change", "path status")
+Change = namedtuple("Change", "path status previous_path", defaults=[None])
 
 
 def changes(paths, status="added"):

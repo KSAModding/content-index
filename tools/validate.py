@@ -15,13 +15,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import check_images
 import check_index
 import check_layout
 import check_license
+import check_packs
 import check_release
 import check_schema
 import check_scope
 import check_status
+import check_tags
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -68,9 +71,9 @@ def run_schema():
     return Check("schema", REJECT if errors else PASS, errors)
 
 
-def run_index(entries, skipped=()):
+def run_index(entries, skipped=(), documents=()):
     errors = check_index.check(entries)
-    messages = list(errors)
+    messages = list(errors) + check_index.notes(entries, documents)
     if skipped:
         messages.append(f"not read, they do not parse: {', '.join(skipped)}")
     return Check("index", REJECT if errors else PASS, messages)
@@ -94,6 +97,42 @@ def run_status(entries, skipped=()):
     return Check("index status", REJECT if errors else PASS, messages)
 
 
+def run_packs(changes):
+    errors = check_packs.check(changes)
+    return Check("packs", REJECT if errors else PASS, errors)
+
+
+def run_tags(documents=(), inspect_documents=True):
+    paths = [ROOT / path for path in documents] if inspect_documents else []
+    errors, notes = check_tags.check(paths)
+    return Check("tags", REJECT if errors else PASS, list(errors) + list(notes))
+
+
+def run_images(entries, documents=()):
+    """The document rules over every document, and the warnings only for the changed ones."""
+    changed = set(documents)
+    errors = []
+    notes = []
+    for entry in entries:
+        check_images.check_document(
+            entry.where, entry.document, errors, notes if entry.where in changed else []
+        )
+    return Check("images", REJECT if errors else PASS, errors + notes)
+
+
+def run_image_fetch(documents, base=None):
+    if not documents:
+        return Check("image fetch", PASS, ["the change touches no document, so no image was fetched"])
+
+    outcomes = []
+    messages = []
+    for path in documents:
+        outcome, lines = check_images.inspect_path(path, base)
+        outcomes.append(outcome)
+        messages.extend(lines)
+    return Check("image fetch", worst(outcomes), messages)
+
+
 def run_release(documents, releases=None, token=None):
     if not documents:
         return Check("release", PASS, ["the change touches no document, so no archive was inspected"])
@@ -114,31 +153,34 @@ def run_release(documents, releases=None, token=None):
     return Check("release", worst(outcomes), messages)
 
 
-def run_checks(changes, skip_release=False, releases=None, token=None):
+def run_checks(changes, skip_release=False, releases=None, token=None, base=None):
     """Every check, ordered so a later one can lean on an earlier one."""
     _, documents, _ = check_scope.evaluate(changes)
 
-    gate = [run_layout(), run_schema()]
+    layout = run_layout()
+    schema = run_schema()
+    tags = run_tags(documents, inspect_documents=schema.outcome == PASS)
+    packs = run_packs(changes)
+    gate = [layout, schema, tags, packs]
     entries, skipped = check_index.load_documents()
     checks = gate + [
-        run_index(entries, skipped),
+        run_index(entries, skipped, documents),
         run_license(entries),
         run_status(entries, skipped),
+        run_images(entries, documents),
     ]
 
     if skip_release:
         return checks
 
     if any(check.outcome == REJECT for check in gate):
-        checks.append(
-            Check(
-                "release",
-                PASS,
-                ["not inspected: the document has to pass layout and schema first"],
-            )
+        checks.extend(
+            Check(name, PASS, ["not inspected: the document has to pass layout and schema first"])
+            for name in ("image fetch", "release")
         )
         return checks
 
+    checks.append(run_image_fetch(documents, base))
     checks.append(run_release(documents, releases, token))
     return checks
 
@@ -156,7 +198,11 @@ def changed_paths(repository, number, token):
             if not isinstance(entry, dict) or "filename" not in entry:
                 raise ValueError(f"{url}: an entry carries no filename")
             changes.append(
-                check_scope.Change(entry["filename"], entry.get("status") or "modified")
+                check_scope.Change(
+                    entry["filename"],
+                    entry.get("status") or "modified",
+                    entry.get("previous_filename"),
+                )
             )
         url = _next_page(link)
     return changes
@@ -232,8 +278,11 @@ def main(argv=None):
     parser.add_argument("--releases", help="a checkout of KSAModding/content-index-releases")
     parser.add_argument("--output", type=Path, help="where to write the verdict as JSON")
     parser.add_argument(
+        "--base", help="a git revision of the base branch, so an unchanged image record only warns"
+    )
+    parser.add_argument(
         "--skip-release", action="store_true",
-        help="leave the archive inspection out, for a run with no network",
+        help="leave the archive inspection and the image fetch out, for a run with no network",
     )
     arguments = parser.parse_args(argv)
 
@@ -266,6 +315,7 @@ def main(argv=None):
             skip_release=arguments.skip_release,
             releases=arguments.releases,
             token=token,
+            base=arguments.base,
         )
     except Exception as error:
         traceback.print_exc(file=sys.stderr)

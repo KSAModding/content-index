@@ -103,6 +103,18 @@ class Document(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertTrue(errors[0].startswith("listings/Mod.toml: license: "))
 
+    def test_an_image_license_is_resolved_too(self):
+        errors = []
+        document = {"license": "MIT", "images": {"description": [{"id": "a", "license": "MTI"}]}}
+        check_license.check_document("listings/Mod.toml", document, errors)
+        self.assertEqual(len(errors), 1)
+        self.assertTrue(errors[0].startswith("listings/Mod.toml: images.description[0].license: "))
+
+    def test_an_image_without_a_license_adds_nothing(self):
+        errors = []
+        check_license.check_document("listings/Mod.toml", {"license": "MIT", "images": {"icon": {}}}, errors)
+        self.assertEqual(errors, [])
+
     def test_a_valid_document_adds_nothing(self):
         errors = []
         check_license.check_document("listings/Mod.toml", {"license": "MIT"}, errors)

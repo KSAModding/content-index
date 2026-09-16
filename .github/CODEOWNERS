@@ -1,14 +1,17 @@
 # Only the steward-owned paths are code-owned.
-# listings/ and packs/ are deliberately not, so the checks alone gate them and a
-# validated listing can merge itself without a human (RFC 0033).
+# Listing and pack version documents are deliberately not code-owned, so the
+# checks alone gate them and a validated document can merge itself without a
+# human. A pack owner record is the steward-approved exception (RFC 0033).
 #
-# CODEOWNERS itself lives under .github/, so the second line covers it.
+# CODEOWNERS itself lives under .github/, so that directory rule covers it.
 #
 # The checks are code-owned wherever they live. A pull request runs the workflow
 # and the tools as they exist on its own merge ref, so a listing that could also
 # edit the schema or the checker would be arriving with its own gate.
 
 /index-status.toml @KSAModding/content-manager-stewards
+/tags.toml        @KSAModding/content-manager-stewards
+/packs/*/owner.json @KSAModding/content-manager-stewards
 /.github/          @KSAModding/content-manager-stewards
 /tools/            @KSAModding/content-manager-stewards
 /schemas/          @KSAModding/content-manager-stewards

@@ -43,3 +43,7 @@ content-dir = "mods"
 file = "StarMapConfig.json"
 format = "json"
 game-path = "GameLocation"
+
+[provides.instance]
+flag = "-InstancePath"
+variable = "STARMAP_INSTANCE_PATH"

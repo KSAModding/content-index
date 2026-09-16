@@ -1,0 +1,48 @@
+spec_version = 1
+
+[[mod]]
+tag = "parts"
+name = "Parts"
+meaning = "New parts, engines and vehicles built from them."
+forum_prefix = "Parts"
+
+[[mod]]
+tag = "celestial"
+name = "Celestial"
+meaning = "Changes to the star system: new or changed bodies, orbits or whole systems."
+forum_prefix = "Celestial"
+
+[[mod]]
+tag = "gameplay"
+name = "Gameplay"
+meaning = "Changes to what the player can do or what happens to the vehicle: mechanics, automation, contracts, multiplayer, physics."
+forum_prefix = "Gameplay"
+
+[[mod]]
+tag = "user-interface"
+name = "User Interface"
+meaning = "Windows, readouts, HUDs and other changes to what the player sees and clicks."
+forum_prefix = "User Interface"
+
+[[mod]]
+tag = "visual"
+name = "Visual"
+meaning = "Looks without mechanics: models, textures, skins, effects, splash screens."
+forum_prefix = "Visual"
+
+[[mod]]
+tag = "audio"
+name = "Audio"
+meaning = "Music and sound."
+forum_prefix = "Audio"
+
+[[mod]]
+tag = "tools"
+name = "Tools"
+meaning = "Tools for modders and for reaching the game from outside: patchers, debug menus, telemetry bridges, editor helpers."
+forum_prefix = "Tools"
+
+[[mod]]
+tag = "library"
+name = "Library"
+meaning = "Code that other content depends on and that does nothing on its own."

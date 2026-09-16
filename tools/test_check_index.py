@@ -49,6 +49,8 @@ game_min = "2026.8.3.5117"
 forums = "https://forums.ahwoo.com/threads/x.1/"
 {extra}"""
 
+THREAD = "https://forums.ahwoo.com/threads/x.1/"
+
 
 class IndexCase(unittest.TestCase):
     """A temporary index, written one document at a time."""
@@ -62,9 +64,12 @@ class IndexCase(unittest.TestCase):
         self.packs.mkdir()
         self.addCleanup(self.folder.cleanup)
 
-    def listing(self, identifier, kind="mod", extra="", name=None):
+    def listing(self, identifier, kind="mod", extra="", name=None, forums=THREAD, abstract=None):
         path = self.listings / f"{name or identifier}.toml"
-        path.write_text(LISTING.format(id=identifier, type=kind, extra=extra), encoding="utf-8")
+        text = LISTING.format(id=identifier, type=kind, extra=extra).replace(THREAD, forums)
+        if abstract is not None:
+            text = text.replace("A listing that exists only in this test.", abstract)
+        path.write_text(text, encoding="utf-8")
         return path
 
     def pack(self, identifier, version="1.0.0", extra="", folder=None):
@@ -82,6 +87,10 @@ class IndexCase(unittest.TestCase):
     def errors(self):
         entries, _ = self.load()
         return check_index.check(entries)
+
+    def notes(self, *documents):
+        entries, _ = self.load()
+        return check_index.notes(entries, documents)
 
 
 def entry(identifier, kind="mod", holder=None, where=None):
@@ -269,6 +278,79 @@ class References(IndexCase):
     def test_a_self_reference_is_left_to_the_schema(self):
         self.listing("Mod", extra='\n[[dependencies]]\nid = "Mod"\nkind = "required"\n')
         self.assertEqual(self.errors(), [])
+
+
+class Forums(IndexCase):
+    def test_the_same_thread_under_two_url_forms_is_noted(self):
+        self.listing("Alpha", forums="https://forums.ahwoo.com/threads/alpha.783/")
+        self.listing(
+            "Beta",
+            forums="https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/beta.783/page-2",
+        )
+        notes = self.notes("listings/Beta.toml")
+        self.assertEqual(len(notes), 1)
+        self.assertIn("listings/Beta.toml: links.forums: thread 783", notes[0])
+        self.assertIn("forums thread of listings/Alpha.toml", notes[0])
+        self.assertEqual(self.errors(), [])
+
+    def test_the_index_php_form_names_the_same_thread(self):
+        self.listing("Alpha", forums="https://forums.ahwoo.com/threads/783/")
+        self.listing("Beta", forums="https://forums.ahwoo.com/index.php?threads/beta.783/")
+        self.assertEqual(len(self.notes("listings/Beta.toml")), 1)
+
+    def test_two_different_threads_are_fine(self):
+        self.listing("Alpha", forums="https://forums.ahwoo.com/threads/alpha.783/")
+        self.listing("Beta", forums="https://forums.ahwoo.com/threads/alpha.784/")
+        self.assertEqual(self.notes("listings/Beta.toml"), [])
+
+    def test_an_edit_of_the_listing_that_owns_the_thread_is_fine(self):
+        self.listing("Alpha", forums="https://forums.ahwoo.com/threads/alpha.783/")
+        self.assertEqual(self.notes("listings/Alpha.toml"), [])
+
+    def test_every_other_listing_on_the_thread_is_named(self):
+        for identifier in ("Alpha", "Beta", "Gamma"):
+            self.listing(identifier)
+        notes = self.notes("listings/Gamma.toml")
+        self.assertEqual(len(notes), 1)
+        self.assertIn("listings/Alpha.toml, listings/Beta.toml", notes[0])
+
+    def test_versions_of_one_pack_share_their_thread(self):
+        self.pack("Pack", "1.0.0")
+        self.pack("Pack", "1.1.0")
+        self.assertEqual(self.notes("packs/Pack/1.1.0.toml"), [])
+
+    def test_an_unchanged_document_is_not_noted(self):
+        self.listing("Alpha")
+        self.listing("Beta")
+        self.assertEqual(self.notes(), [])
+
+    def test_a_link_the_schema_refuses_is_not_compared(self):
+        self.listing("Alpha", forums="https://forums.ahwoo.com/")
+        self.listing("Beta", forums="https://forums.ahwoo.com/")
+        self.assertEqual(self.notes("listings/Beta.toml"), [])
+
+    def test_a_schema_rule_with_no_thread_id_is_reported(self):
+        schema = self.root / "schema.json"
+        schema.write_text('{"$defs": {"forumsUrl": {"pattern": "^https://"}}}', encoding="utf-8")
+        with self.assertRaises(ValueError):
+            check_index.thread_pattern(schema)
+
+
+class Abstracts(IndexCase):
+    def test_an_abstract_of_280_characters_is_fine(self):
+        self.listing("Mod", abstract="a" * 280)
+        self.assertEqual(self.notes("listings/Mod.toml"), [])
+
+    def test_an_abstract_of_281_characters_is_noted(self):
+        self.listing("Mod", abstract="a" * 281)
+        notes = self.notes("listings/Mod.toml")
+        self.assertEqual(len(notes), 1)
+        self.assertIn("listings/Mod.toml: abstract: 281 characters is longer than 280", notes[0])
+        self.assertEqual(self.errors(), [])
+
+    def test_an_unchanged_document_is_not_noted(self):
+        self.listing("Mod", abstract="a" * 281)
+        self.assertEqual(self.notes(), [])
 
 
 class Loading(IndexCase):

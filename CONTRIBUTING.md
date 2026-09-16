@@ -19,16 +19,62 @@ If you want to argue about the format or the index itself, open a thread in [con
    python3 tools/check_index.py
    python3 tools/check_license.py
    python3 tools/check_status.py
+   python3 tools/check_images.py
    ```
 
-   These need nothing but the repository. The remaining check downloads your latest release and stamps it, which needs the network and a checkout of [content-index-releases](https://github.com/KSAModding/content-index-releases) next to this one:
+   These need nothing but the repository. The remaining checks need the network. The first fetches your images and compares them with their records. The second downloads your latest release and stamps it, which also needs a checkout of [content-index-releases](https://github.com/KSAModding/content-index-releases) next to this one:
 
    ```sh
+   python3 tools/check_images.py listings/<id>.toml
    python3 tools/check_release.py listings/<id>.toml
    ```
 
 4. Open a pull request that adds exactly one file.
    One document merges itself. A pull request carrying two, or carrying anything besides a document, is valid but waits for a steward.
+
+## Images
+
+A listing can have one icon and the images its description shows, per [RFC 0058](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0058-listing-images-and-dates.md) and [RFC 0065](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0065-icon-center-crop.md).
+Each image stays on your own host.
+Its record gives the HTTPS `url`, and the `sha256`, `width`, `height` and `size` of the file.
+The checks fetch each image of the document you change and compare it with its record.
+
+In the description, write `![alt text](ksa-image:<id>)` to show the description image with that `id`.
+A client shows no other image in a description.
+
+A square icon of 512 by 512 pixels or more is the best choice, because you decide exactly what shows.
+An icon that is not square is also valid when its shorter side is 256 to 1024 pixels and its longer side is at most twice its shorter side.
+Clients then show only the square in its center, and the checks give a note that names this square.
+
+When you replace an image with new bytes, change its record in the same pull request.
+
+`tools/image_record.py` measures the file and prints the record for you to copy into your document.
+Give it the local file and the address where you will host it, or the address of an image you already host:
+
+```sh
+python3 tools/image_record.py icon.png --icon --url https://example.invalid/my-mod/icon.png
+python3 tools/image_record.py https://example.invalid/my-mod/settings-window.png --description settings-window
+```
+
+Add `--license`, `--attribution` and `--source` when the image needs them.
+When the image breaks a limit, the tool names the limit and prints no record.
+
+By adding an image record, you state that you have the right to publish the image and to let clients fetch, display and cache it under the record's `license`, or under the document's `license` when the record names none.
+When the image is third-party work, or its license requires credit, a license notice or a link to the original, put that into the record's `attribution` and `source`.
+
+## Claiming and updating a pack
+
+A first pack claim adds the pack version and `packs/<id>/owner.json` in the same pull request.
+The owner record names the pull request author's GitHub login and numeric account id.
+A steward must accept this first claim because a pack has no release host that can prove ownership.
+
+The accepted owner record is read only from the base branch.
+Changing owner data in a pull request cannot grant ownership or make that pull request merge itself.
+
+After the first claim, the recorded GitHub account can add one new version document at a time and that pull request can merge itself.
+An accepted pack version is immutable and cannot be edited, renamed, or deleted.
+Publish a corrected version in a new file.
+A steward retracts a broken version through its version-scoped entry in `index-status.toml`.
 
 Checks then validate the document, inspect your latest release archive, and verify that you control the release host the listing points at.
 The pull request is then labelled `listing` or `pack`, which says which kind of document it changes, and one that changes both carries both labels.

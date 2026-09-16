@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 VERIFIED = "verified"
 UNVERIFIED = "unverified"
 COULD_NOT_EVALUATE = "could-not-evaluate"
+REJECTED = "rejected"
 
 MARKER_PATH = ".github/ksa-content-index.toml"
 TOPIC = "ksa-index-{login}"
@@ -31,10 +32,11 @@ class Unavailable(Exception):
 
 
 class Result:
-    def __init__(self, state, reason, proof=None):
+    def __init__(self, state, reason, proof=None, instructions=None):
         self.state = state
         self.reason = reason
         self.proof = proof
+        self.instructions = instructions
 
     def as_dict(self):
         return {"state": self.state, "reason": self.reason, "proof": self.proof}
