@@ -60,33 +60,33 @@ min = "0.4.5"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/icon.png"
-sha256 = "febf3746545bbd7bb63771670796b54afc5ceec625f87967abcd070b41f7bdb6"
+sha256 = "11894dc1f754700b53b6a77a69b6f8b00681b2d50b41d04dc3a4e59edc60af72"
 width = 512
 height = 512
-size = 144678
+size = 33471
 attribution = "Screenshot by Caitlyn Hausam"
 source = "https://github.com/elevatorctln/KSA-Public-Telemetry"
 
 [[images.description]]
 id = "9e-hero"
 url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/9e-hero.png"
-sha256 = "a479a87dbf9c124bcc42cffedd3f6afb54aab5db96cc53c853418df1c118ec55"
+sha256 = "97695235562b6b3a89134d8004d1b4a7c8bd359ea9c72786a2505b55c73cab8d"
 width = 1796
 height = 984
-size = 1335665
+size = 351436
 
 [[images.description]]
 id = "funky"
 url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/funky.png"
-sha256 = "6efcb6993cfff7f16e2cab6e95fbf00a94de588dc2418d68f40221dde64fffd7"
+sha256 = "5f4b68b2351daa6aaf06185f090bebc3ad1173f147da99308c01e3ce0665981b"
 width = 1920
 height = 1080
-size = 1532651
+size = 431525
 
 [[images.description]]
 id = "72e"
 url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/72e.png"
-sha256 = "24711a62b640129ee3840ce468ccaef659dcac8bd9a847f58105e08864805c48"
+sha256 = "675121ad337c234c1f34df6e83e3b3c0321262771a799d70b4300493ab0900fd"
 width = 1920
 height = 1080
-size = 1779678
+size = 529232
