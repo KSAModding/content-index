@@ -1,0 +1,35 @@
+spec_version = 1
+id = "OhMyStars"
+type = "mod"
+name = "OhMyStars"
+authors = ["nanonestor"]
+abstract = "This mod adds constellation lines between stars in KSA!"
+description = """
+This mod adds constellation lines between stars in KSA!
+
+Features: 
+- Constellation (Asterism) Lines between stars  
+- Constellation Boundary lines (IAU defined) - Star informational window  
+- Star names and informational window  
+- Vehicle orientation mode to point towards stars  
+"""
+license = "GPL-2.0-only AND CC-BY-SA-4.0"
+tags = ["user-interface"]
+
+[releases]
+github = "nanonestor/OhMyStars"
+spacedock = 4537
+authority = "spacedock"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/oh-my-stars.1255"
+repository = "https://github.com/nanonestor/OhMyStars"
+spacedock = "https://spacedock.info/mod/4537/Oh%20My%20Stars"
+bugtracker = "https://github.com/nanonestor/OhMyStars/issues"
+
+[compatibility]
+game_min = "2026.9.7.5402"
+
+[loader]
+id = "StarMap"
+min = "0.4.6"
