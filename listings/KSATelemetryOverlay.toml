@@ -38,7 +38,7 @@ Toggle the overlay on and off using the **numpad period** key (I know). This can
 Settings are saved to `Documents/My Games/Kitten Space Agency/KSATelemetryOverlay/config.json`, which is safe to hand-edit.
 """
 license = "MIT"
-tags = ["ui"]
+tags = ["user-interface"]
 
 [releases]
 github = "elevatorctln/KSA-Public-Telemetry"

@@ -1,0 +1,33 @@
+spec_version = 1
+id = "ModMenu.ExampleMod"
+type = "mod"
+name = "ModMenu ExampleMod"
+authors = ["MrJeranimo"]
+abstract = "This is example KSA mod for the mod ModMenu using the StarMap modloader."
+description = """
+This is example KSA mod for the mod ModMenu using the StarMap modloader. It is being listed for testing purposes"""
+license = "MIT"
+tags = ["user-interface"]
+
+[releases]
+github = "MrJeranimo/ModMenu.ExampleMod"
+spacedock = 4055
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/modmenu-examplemod.1257/"
+repository = "https://github.com/MrJeranimo/ModMenu.ExampleMod"
+spacedock = "https://spacedock.info/mod/4055/ModMenu%20ExampleMod"
+bugtracker = "https://github.com/MrJeranimo/ModMenu.ExampleMod/issues"
+
+[compatibility]
+game_min = "2025.12.5.2976"
+
+[loader]
+id = "StarMap"
+min = "0.3.4"
+
+[[dependencies]]
+id = "ModMenu"
+kind = "required"
+min = "0.1.1"

@@ -61,6 +61,18 @@ jobs:
       - run: python3 tools/check_tags.py
       - run: python3 tools/check_images.py
 
+  page:
+    name: page
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - working-directory: site
+        run: node --test "test/*.test.js"
+
   verdict:
     name: verdict
     if: github.event_name != 'push'

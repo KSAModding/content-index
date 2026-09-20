@@ -6,6 +6,8 @@ If you want to argue about the format or the index itself, open a thread in [con
 
 ## Listing your content
 
+The [listing page](https://ksamodding.github.io/content-index/) writes or changes your listing step by step and checks it with the rules below before you open the pull request.
+
 1. Write your authored document following [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md).
    The worked examples in [`examples/`](https://github.com/KSAModding/content-manager-design/tree/main/examples) are real listings you can copy from.
 2. Put it at `listings/<id>.toml`, where `<id>` is the folder name your content installs as.

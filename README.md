@@ -29,10 +29,12 @@ https://ksamodding.github.io/content-index-releases/v1/index.json
 | `POLICY.md` | How a takedown or an id dispute is filed, and what a steward does with it. |
 | `schemas/` | What a document may contain, as JSON Schema. See its [README](schemas/README.md). |
 | `tools/` | The checks that run on every pull request. |
+| `schemas/vectors.json` | Test documents with the result the checks give, which `tools/test_vectors.py` and the tests of the listing page both run, so the page and the checks keep one rule set. |
+| `site/` | The [listing page](https://ksamodding.github.io/content-index/), which writes or changes a listing and checks it in the browser before the pull request. It uses the schema and `tags.toml` of the commit it was deployed from. |
 
 ## Getting listed
 
-Write your authored document per RFC 0031 and open a pull request that adds exactly one file.
+Write your authored document per RFC 0031, or let the [listing page](https://ksamodding.github.io/content-index/) write it, and open a pull request that adds exactly one file.
 
 Checks validate it, a further check verifies that you control the release host the listing points at, and when everything is green the pull request merges itself.
 

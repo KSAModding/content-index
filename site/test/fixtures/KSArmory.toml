@@ -48,10 +48,3 @@ game_min = "2026.8.19.5261"
 [loader]
 id = "StarMap"
 min = "0.4.6"
-
-[images.icon]
-url = "https://raw.githubusercontent.com/LaurensDeV/KSArmory/198215c3dfd047f753183d08fce0176e3e2d0a08/branding/listing-icon.png"
-sha256 = "7604ded694e3ffbd7eba6da254e6cde10055a6099f8bd5104c95d86d8e631eb7"
-width = 512
-height = 512
-size = 260331

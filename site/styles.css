@@ -1,0 +1,974 @@
+/* Latin1 subsets of the github.com/IBM/plex WOFF2 files, the same as on the Borea landing page. */
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("fonts/IBMPlexSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("fonts/IBMPlexMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* Borea "Borealis" dark, from ThemeVariant.Dark in src/Borea.App/App.axaml */
+:root {
+  --window: #171717;
+  --surface: #262626;
+  --header: #000000;
+  --raised: #333333;
+  --line: #3a3a3a;
+  --text: #ffffff;
+  --heading: #e1e1e1;
+  --text-2: #ababab;
+  --muted: #777777;
+  --accent: #cabcff;
+  --accent-soft: rgb(202 188 255 / 0.15);
+  --on-accent: #000000;
+  --positive: #c1ffb5;
+  --danger: #f07178;
+  --danger-soft: rgb(240 113 120 / 0.15);
+  --warning: #f5b35c;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --gutter: 64px;
+  --body: 880px;
+  --panel: 340px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  scroll-padding-top: 24px;
+}
+
+body {
+  margin: 0;
+  background: var(--window);
+  color: var(--text-2);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 0.2em;
+  text-decoration-color: rgb(202 188 255 / 0.4);
+}
+
+a:hover,
+a:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+code,
+textarea#output {
+  font-family: var(--mono);
+  font-size: 0.875em;
+}
+
+code {
+  overflow-wrap: anywhere;
+  color: var(--heading);
+}
+
+hr {
+  margin: 24px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.icon,
+.placeholder,
+.mark {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Page body and side panel, as on the Discover and mod pages of the App. */
+.page {
+  display: grid;
+  grid-template-columns: minmax(0, var(--body)) var(--panel);
+  justify-content: center;
+  align-items: start;
+  gap: 64px;
+  padding: 48px var(--gutter) 0;
+}
+
+.body {
+  min-width: 0;
+}
+
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 0.9375rem;
+}
+
+.crumb .logo {
+  display: flex;
+}
+
+.crumb .logo img {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+
+.crumb a {
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+.crumb a:hover {
+  color: var(--text);
+}
+
+.intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 24px 0 32px;
+}
+
+.intro p {
+  max-width: 620px;
+  color: var(--text-2);
+}
+
+h1 {
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* The pill tab bar of Discover. */
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 999px;
+  background: var(--header);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 24px;
+  border-radius: 999px;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tab:has(input:checked) {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.tab:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.status {
+  margin-bottom: 16px;
+  padding: 12px 20px;
+  border-radius: 16px;
+  background: var(--raised);
+  color: var(--text);
+}
+
+.status:empty {
+  display: none;
+}
+
+.editing {
+  margin-top: 16px;
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 0.875rem;
+}
+
+.card {
+  margin-top: 16px;
+  padding: 32px;
+  border-radius: 24px;
+  background: var(--surface);
+}
+
+.tabs + .card {
+  margin-top: 24px;
+}
+
+h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+h3 {
+  margin: 28px 0 6px;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.step {
+  flex: none;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.card > .hint + .field,
+.card > .hint + .row,
+.card > .hint + div,
+.card > .hint + .chips {
+  margin-top: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* A button next to a field lines up with the field, not with its label. */
+.row:has(> button) {
+  align-items: flex-end;
+}
+
+.row > .field,
+.row > button {
+  margin-bottom: 20px;
+}
+
+.grow {
+  flex: 1 1 220px;
+}
+
+label,
+legend {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+.choice label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+
+.toggles {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.toggles .chip {
+  cursor: pointer;
+}
+
+.toggles input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggles .chip:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.toggles .chip:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Fields sit darker than the card, with no border, like the search box of Discover. */
+input,
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 11px 16px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--window);
+  color: var(--text);
+  font: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+select {
+  appearance: none;
+  padding-right: 44px;
+  background-image: url("chevron.svg");
+  background-position: right 14px center;
+  background-repeat: no-repeat;
+  background-size: 20px;
+  cursor: pointer;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+input[type="file"] {
+  padding: 8px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+input[readonly],
+textarea[readonly] {
+  color: var(--text-2);
+}
+
+[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+textarea {
+  resize: vertical;
+}
+
+textarea#output {
+  border-radius: 16px;
+  background: var(--header);
+  line-height: 1.55;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+
+button,
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+button:hover,
+.button:hover {
+  background: #3d3d3d;
+}
+
+.primary,
+.button.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.primary:hover,
+.button.primary:hover {
+  background: #d6cbff;
+}
+
+.button.disabled {
+  background: var(--raised);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* "Add a link" and the other add actions: plain text with a plus, as in the App. */
+button.add {
+  min-height: 36px;
+  padding: 6px 0;
+  background: none;
+  color: var(--accent);
+}
+
+button.add::before {
+  content: "+";
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+button.add:hover {
+  background: none;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+button.quiet {
+  min-height: 36px;
+  padding: 6px 16px;
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-2);
+  font-weight: 400;
+}
+
+button.quiet:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: var(--text-2);
+}
+
+.messages:empty {
+  display: none;
+}
+
+.msg {
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.msg + .msg {
+  margin-top: 4px;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.msg.error,
+li.error {
+  color: var(--danger);
+}
+
+.msg.note,
+li.note {
+  color: var(--warning);
+}
+
+.msg.info {
+  color: var(--positive);
+}
+
+.item {
+  margin-bottom: 16px;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--window);
+}
+
+.item input,
+.item select,
+.item textarea {
+  background: var(--surface);
+}
+
+.item > .messages {
+  margin-top: -8px;
+}
+
+/* Chips are the mono tags of the App, not pills. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.chips:empty {
+  display: none;
+}
+
+.chip,
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: none;
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.chip:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.chip[aria-pressed="true"],
+.chip.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.chip-remove {
+  min-height: 0;
+  padding: 0 2px;
+  background: none;
+  color: var(--text-2);
+  font-family: var(--mono);
+}
+
+.chip-remove:hover {
+  background: none;
+  color: var(--text);
+}
+
+.measure {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.thumb:empty {
+  display: none;
+}
+
+.thumb img {
+  display: block;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+details {
+  margin-top: 4px;
+}
+
+summary {
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.preview {
+  margin-top: 12px;
+  padding: 20px 24px;
+  border-radius: 16px;
+  background: var(--window);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.preview > * + * {
+  margin-top: 12px;
+}
+
+.preview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+.preview pre {
+  overflow-x: auto;
+}
+
+.missing-image {
+  padding: 2px 6px;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+}
+
+.summary {
+  margin-bottom: 20px;
+}
+
+.summary > * + * {
+  margin-top: 8px;
+}
+
+.summary ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.summary li {
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+}
+
+.next {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.next li {
+  padding-left: 4px;
+}
+
+.next li::marker {
+  color: var(--muted);
+  font-family: var(--mono);
+}
+
+.next li + li {
+  margin-top: 12px;
+}
+
+.next ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.note {
+  margin: 12px 0;
+  color: var(--warning);
+}
+
+.card > p:last-child {
+  margin-top: 16px;
+}
+
+/* The side panel of Discover and the mod page, holding the preview, the steps and the action. */
+.panel {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 32px;
+  border-radius: 32px;
+  background: var(--surface);
+}
+
+.panel h2 {
+  margin-bottom: 12px;
+  font-size: 1.125rem;
+}
+
+.panel .button.primary {
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 12px;
+}
+
+.panel > .messages {
+  margin-bottom: 12px;
+}
+
+.listing-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--window);
+}
+
+.card-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(145deg, #262626, #171717);
+  color: var(--text-2);
+}
+
+.card-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-icon .placeholder {
+  width: 34px;
+  height: 34px;
+}
+
+.card-body {
+  min-width: 0;
+}
+
+.card-title {
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.card-name {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.card-by {
+  font-size: 0.875rem;
+}
+
+.card-abstract {
+  display: -webkit-box;
+  margin-top: 4px;
+  overflow: hidden;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
+}
+
+.card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.card-chips .tag {
+  min-height: 26px;
+  padding: 2px 8px;
+  font-size: 0.8125rem;
+}
+
+.steps {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-item a {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  margin: 0 -8px;
+  border-radius: 10px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.step-item a:hover {
+  background: var(--raised);
+}
+
+.step-mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+}
+
+.mark {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+.step-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.9375rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.step-detail {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+}
+
+.step-item.done .step-mark {
+  border-color: var(--positive);
+  color: var(--positive);
+}
+
+.step-item.fix .step-mark {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.step-item.fix .step-detail {
+  color: var(--danger);
+}
+
+.step-item.optional .step-name {
+  color: var(--text-2);
+}
+
+.page-footer {
+  max-width: calc(var(--body) + var(--panel) + 64px + 2 * var(--gutter));
+  margin: 64px auto 0;
+  padding: 0 var(--gutter);
+}
+
+.page-footer p {
+  padding: 32px 0 48px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+
+.page-footer a {
+  color: var(--text-2);
+}
+
+/* Below this width the panel follows the form, as the App moves its side panel below the body. */
+@media (max-width: 1240px) {
+  :root {
+    --gutter: 24px;
+  }
+
+  .page {
+    grid-template-columns: minmax(0, var(--body));
+    gap: 24px;
+  }
+
+  .panel {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --gutter: 16px;
+  }
+
+  .page {
+    padding-top: 24px;
+  }
+
+  .intro {
+    flex-direction: column;
+  }
+
+  .tab {
+    flex: 1;
+    justify-content: center;
+    padding: 0 12px;
+    text-align: center;
+  }
+
+  .card,
+  .panel {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .item {
+    padding: 14px;
+  }
+}

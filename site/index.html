@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self'; img-src 'self' blob:; font-src 'self'; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>List your mod: KSA content index</title>
+  <meta name="description" content="Write or change a listing for the Kitten Space Agency content index, checked by the rules of the index before the pull request.">
+  <meta name="theme-color" content="#171717">
+  <link rel="icon" href="img/borea.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <div class="page">
+  <main class="body">
+    <p class="crumb"><a class="logo" href="https://ksamodding.github.io/Borea/"><img src="img/borea.png" width="28" height="28" alt="Borea"></a><a href="https://github.com/KSAModding/content-index">Content index</a><span aria-hidden="true">/</span>List your mod</p>
+
+    <header class="intro">
+      <div>
+        <h1>List your mod</h1>
+        <p>Write a listing for the KSA content index, or change one that is listed. The page checks the file with the rules of the index while you type.</p>
+      </div>
+      <button type="button" id="reset" class="secondary">Start over</button>
+    </header>
+
+    <p id="status" class="status" role="status"></p>
+
+    <div class="tabs" role="radiogroup" aria-label="What do you want to do">
+      <label class="tab"><input type="radio" name="mode" value="new" checked>A new listing</label>
+      <label class="tab"><input type="radio" name="mode" value="edit">Change a listed one</label>
+    </div>
+
+    <section id="load" class="card" aria-label="Load a listing" hidden>
+      <div class="row">
+        <div class="field grow">
+          <label for="load-id">Id of the listing</label>
+          <input id="load-id" list="listed-ids" autocomplete="off" spellcheck="false">
+        </div>
+        <button type="button" id="load-button" class="primary">Load</button>
+      </div>
+      <div id="msg-load" class="messages" aria-live="polite"></div>
+    </section>
+    <p id="editing" class="editing" hidden></p>
+
+    <form id="form" novalidate>
+      <section class="card" aria-labelledby="step-id">
+        <h2 id="step-id"><span class="step">1</span>Id and type</h2>
+        <div class="field">
+          <label for="id">Id</label>
+          <input id="id" name="id" autocomplete="off" spellcheck="false" aria-describedby="hint-id msg-id">
+          <p id="hint-id" class="hint">The folder name your mod installs as, which the game sees. 1 to 64 letters, digits, <code>.</code>, <code>_</code> and <code>-</code>, starting and ending with a letter or digit. It cannot change later.</p>
+          <div id="msg-id" class="messages" aria-live="polite"></div>
+        </div>
+        <div class="field">
+          <label for="type">Type</label>
+          <select id="type" name="type" aria-describedby="msg-type">
+            <option value="mod">mod</option>
+            <option value="mod-loader">mod-loader</option>
+          </select>
+          <div id="msg-type" class="messages" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="step-releases" data-empty="Recommended">
+        <h2 id="step-releases"><span class="step">2</span>Where releases come from</h2>
+        <p class="hint">The index picks up each new release from this host by itself. You need to control the host, see step 13.</p>
+        <div class="row">
+          <div class="field grow">
+            <label for="github">GitHub repository</label>
+            <input id="github" name="github" placeholder="owner/repository" autocomplete="off" spellcheck="false" aria-describedby="msg-releases.github">
+          </div>
+          <button type="button" id="prefill" class="secondary">Fill from GitHub</button>
+        </div>
+        <div id="msg-releases.github" class="messages" aria-live="polite"></div>
+        <div id="msg-prefill" class="messages" aria-live="polite"></div>
+        <div class="field">
+          <label for="spacedock">SpaceDock mod id</label>
+          <input id="spacedock" name="spacedock" inputmode="numeric" placeholder="4054" autocomplete="off" aria-describedby="hint-spacedock msg-releases.spacedock">
+          <p id="hint-spacedock" class="hint">The number in the address of your mod on SpaceDock. SpaceDock does not let a web page read its data, so the page fills nothing from it.</p>
+          <div id="msg-releases.spacedock" class="messages" aria-live="polite"></div>
+        </div>
+        <div class="field" id="authority-field" hidden>
+          <label for="authority">Which host decides which releases exist</label>
+          <select id="authority" name="authority" aria-describedby="msg-releases.authority">
+            <option value="">Choose</option>
+            <option value="github">github</option>
+            <option value="spacedock">spacedock</option>
+          </select>
+          <div id="msg-releases.authority" class="messages" aria-live="polite"></div>
+        </div>
+        <div id="msg-releases" class="messages" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="step-text">
+        <h2 id="step-text"><span class="step">3</span>Name and description</h2>
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" name="name" autocomplete="off" aria-describedby="msg-name">
+          <div id="msg-name" class="messages" aria-live="polite"></div>
+        </div>
+        <div class="field">
+          <label for="authors">Authors</label>
+          <input id="authors" name="authors" autocomplete="off" aria-describedby="hint-authors msg-authors">
+          <p id="hint-authors" class="hint">Display names. Separate several with commas.</p>
+          <div id="msg-authors" class="messages" aria-live="polite"></div>
+        </div>
+        <div class="field">
+          <label for="abstract">Abstract</label>
+          <textarea id="abstract" name="abstract" rows="2" aria-describedby="hint-abstract msg-abstract"></textarea>
+          <p id="hint-abstract" class="hint">One or two sentences for list and search views, at most 280 characters. <span id="abstract-count"></span></p>
+          <div id="msg-abstract" class="messages" aria-live="polite"></div>
+        </div>
+        <div class="field">
+          <label for="description">Description</label>
+          <textarea id="description" name="description" rows="6" spellcheck="true" aria-describedby="hint-description msg-description"></textarea>
+          <p id="hint-description" class="hint">Markdown. Show a description image from step 10 with <code>![alt text](ksa-image:&lt;id&gt;)</code>. Clients show no other image, and no HTML.</p>
+          <div id="msg-description" class="messages" aria-live="polite"></div>
+          <details id="preview-box">
+            <summary>Preview</summary>
+            <div id="preview" class="preview"></div>
+          </details>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="step-license">
+        <h2 id="step-license"><span class="step">4</span>License</h2>
+        <div class="field">
+          <label for="license">License of your mod</label>
+          <input id="license" name="license" autocomplete="off" spellcheck="false" placeholder="MIT" aria-describedby="hint-license msg-license">
+          <p id="hint-license" class="hint">An identifier from the <a href="https://spdx.org/licenses/">SPDX license list</a>, such as <code>MIT</code> or <code>CC-BY-SA-4.0</code>. Join several with <code>AND</code>, or with <code>OR</code> when the user may choose. A license that is not on the list is <code>LicenseRef-</code> followed by a name.</p>
+          <div id="msg-license" class="messages" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="step-links">
+        <h2 id="step-links"><span class="step">5</span>Links</h2>
+        <div class="field">
+          <label for="link-forums">Forums thread</label>
+          <input id="link-forums" type="url" autocomplete="off" spellcheck="false" placeholder="https://forums.ahwoo.com/threads/my-mod.783/" aria-describedby="hint-forums msg-links.forums">
+          <p id="hint-forums" class="hint">Required. The thread of your mod on forums.ahwoo.com. It ties the listing to your forum account and settles a dispute about the id.</p>
+          <div id="msg-links.forums" class="messages" aria-live="polite"></div>
+        </div>
+        <div class="field">
+          <label for="link-repository">Repository</label>
+          <input id="link-repository" type="url" autocomplete="off" spellcheck="false" aria-describedby="msg-links.repository">
+          <div id="msg-links.repository" class="messages" aria-live="polite"></div>
+        </div>
+        <div class="field">
+          <label for="link-bugtracker">Bug tracker</label>
+          <input id="link-bugtracker" type="url" autocomplete="off" spellcheck="false" aria-describedby="msg-links.bugtracker">
+          <div id="msg-links.bugtracker" class="messages" aria-live="polite"></div>
+        </div>
+        <div id="extra-links"></div>
+        <p><button type="button" id="add-link" class="add">Add a link</button></p>
+        <div id="msg-links" class="messages" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="step-compatibility">
+        <h2 id="step-compatibility"><span class="step">6</span>Game compatibility</h2>
+        <p class="hint">A game version as the game shows it, such as <code>2026.9.10.5438</code>, or a whole month, such as <code>2026.9</code>.</p>
+        <div class="row">
+          <div class="field grow">
+            <label for="game-min">Oldest game version that works</label>
+            <input id="game-min" list="game-versions" autocomplete="off" spellcheck="false" aria-describedby="hint-game-min msg-compatibility.game_min">
+            <p id="hint-game-min" class="hint">Required. The oldest version you know your mod works on.</p>
+            <div id="msg-compatibility.game_min" class="messages" aria-live="polite"></div>
+          </div>
+          <div class="field grow">
+            <label for="game-max">Last working game version (optional)</label>
+            <input id="game-max" list="game-versions" autocomplete="off" spellcheck="false" aria-describedby="hint-game-max msg-compatibility.game_max">
+            <p id="hint-game-max" class="hint">Leave it empty unless the mod stops working on newer game builds. Players on a newer build then get a warning before they install. Every release stamped while this is set keeps the limit, because a release can only get stricter later.</p>
+            <div id="msg-compatibility.game_max" class="messages" aria-live="polite"></div>
+          </div>
+        </div>
+        <fieldset class="field">
+          <legend>Platforms known to work (optional)</legend>
+          <p class="hint">Leave all off when you know of no platform where the mod fails.</p>
+          <div class="choice toggles" id="os">
+            <label class="chip"><input type="checkbox" value="windows">Windows</label>
+            <label class="chip"><input type="checkbox" value="linux">Linux</label>
+            <label class="chip"><input type="checkbox" value="macos">macOS</label>
+          </div>
+          <div id="msg-compatibility.os" class="messages" aria-live="polite"></div>
+        </fieldset>
+        <div id="msg-compatibility" class="messages" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="step-loader" id="loader-step">
+        <h2 id="step-loader"><span class="step">7</span>Mod loader</h2>
+        <div class="field">
+          <label for="loader-id">The loader your mod needs</label>
+          <select id="loader-id" aria-describedby="hint-loader msg-loader">
+            <option value="">None, the mod runs without a loader</option>
+          </select>
+          <p id="hint-loader" class="hint">Code mods need a loader. The oldest version defaults to the newest stable release of that loader.</p>
+        </div>
+        <div class="row" id="loader-bounds">
+          <div class="field grow">
+            <label for="loader-min">Oldest loader version that works</label>
+            <input id="loader-min" autocomplete="off" spellcheck="false" placeholder="1.0.0" aria-describedby="msg-loader.min">
+            <div id="msg-loader.min" class="messages" aria-live="polite"></div>
+          </div>
+          <div class="field grow">
+            <label for="loader-max">Last working loader version (optional)</label>
+            <input id="loader-max" autocomplete="off" spellcheck="false" aria-describedby="hint-loader-max msg-loader.max">
+            <p id="hint-loader-max" class="hint">Leave it empty unless the mod stops working with newer loader versions. Every release stamped while this is set keeps the limit, because a release can only get stricter later.</p>
+            <div id="msg-loader.max" class="messages" aria-live="polite"></div>
+          </div>
+        </div>
+        <div id="msg-loader" class="messages" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="step-launch" id="launch-step" hidden>
+        <h2 id="step-launch"><span class="step">7</span>Install and launch</h2>
+        <p class="hint">Where a manager puts your loader, and what the player starts. Paths are relative to the install location, with <code>/</code> separators.</p>
+        <div class="row">
+          <div class="field grow">
+            <label for="install-target">Install location</label>
+            <select id="install-target" aria-describedby="msg-install">
+              <option value="">Not set</option>
+              <option value="standalone">standalone, a folder of its own</option>
+              <option value="game-root">game-root, the game folder</option>
+              <option value="user-data">user-data, the game's user data folder</option>
+              <option value="mods">mods, the mods folder</option>
+            </select>
+          </div>
+          <div class="field grow">
+            <label for="launch">File the player starts</label>
+            <input id="launch" autocomplete="off" spellcheck="false" placeholder="MyLoader.exe" aria-describedby="msg-provides.launch">
+            <div id="msg-provides.launch" class="messages" aria-live="polite"></div>
+          </div>
+        </div>
+        <div id="msg-install" class="messages" aria-live="polite"></div>
+        <div class="row">
+          <div class="field grow">
+            <label for="content-dir">Folder the loader reads mods from</label>
+            <select id="content-dir" aria-describedby="msg-provides.content-dir">
+              <option value="">None</option>
+              <option value="mods">mods</option>
+              <option value="user-data">user-data</option>
+              <option value="game-root">game-root</option>
+              <option value="standalone">standalone</option>
+            </select>
+          </div>
+          <div class="field grow">
+            <label for="content-path">Path below that folder (optional)</label>
+            <input id="content-path" autocomplete="off" spellcheck="false" aria-describedby="msg-provides.content-path">
+            <div id="msg-provides.content-path" class="messages" aria-live="polite"></div>
+          </div>
+        </div>
+        <fieldset class="field">
+          <legend>A different start on one platform (optional)</legend>
+          <div id="platforms"></div>
+        </fieldset>
+        <div id="msg-provides" class="messages" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="step-dependencies">
+        <h2 id="step-dependencies"><span class="step">8</span>Dependencies</h2>
+        <p class="hint">Other listed mods yours works with. Code dependencies come from the <code>mod.toml</code> in your release by themselves, so add here only bounds or kinds the release cannot say.</p>
+        <div id="dependencies"></div>
+        <p><button type="button" id="add-dependency" class="add">Add a dependency</button></p>
+        <div id="msg-dependencies" class="messages" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="step-tags">
+        <h2 id="step-tags"><span class="step">9</span>Tags</h2>
+        <p class="hint">Pick at least one tag from the list. Clients filter by these. Other tags are allowed, lowercase words joined by <code>-</code>, but no client shows them as a filter.</p>
+        <div id="curated-tags" class="chips" role="group" aria-label="Curated tags"></div>
+        <div class="row">
+          <div class="field grow">
+            <label for="tag-input">Another tag</label>
+            <input id="tag-input" autocomplete="off" spellcheck="false" aria-describedby="msg-tags">
+          </div>
+          <button type="button" id="add-tag" class="secondary">Add</button>
+        </div>
+        <div id="free-tags" class="chips"></div>
+        <div id="msg-tags" class="messages" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="step-images">
+        <h2 id="step-images"><span class="step">10</span>Images</h2>
+        <p class="hint">Images stay on your own host. Select the file so the page can measure it, and give the https address where it is or will be. PNG, JPEG or WebP, not animated.</p>
+        <h3>Icon</h3>
+        <p class="hint">256 to 1024 pixels on the shorter side, the longer side at most twice the shorter, at most 256 KiB. A square icon of 512 pixels or more is best, because clients show only the square in its center.</p>
+        <div id="icon"></div>
+        <p><button type="button" id="add-icon" class="add">Add the icon</button></p>
+        <h3>Description images</h3>
+        <p class="hint">At most 16, each at most 2048 pixels per side and 1 MiB. The description shows each with <code>![alt text](ksa-image:&lt;id&gt;)</code>.</p>
+        <div id="description-images"></div>
+        <p><button type="button" id="add-image" class="add">Add a description image</button></p>
+        <div id="msg-images" class="messages" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="step-archive">
+        <h2 id="step-archive"><span class="step">11</span>Check your release archive (optional)</h2>
+        <p class="hint">Select the zip of your latest release. The page reads the file names in it and shows the install root the index derives. It does not download your release, the check on the pull request does that.</p>
+        <div class="field">
+          <label for="archive">Release zip</label>
+          <input id="archive" type="file" accept=".zip,application/zip" aria-describedby="archive-result">
+        </div>
+        <div id="archive-result" class="messages" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="step-file" data-nav="off">
+        <h2 id="step-file"><span class="step">12</span>Your listing file</h2>
+        <div id="summary" class="summary" aria-live="polite"></div>
+        <div class="field">
+          <label for="output" id="output-label">listings/&lt;id&gt;.toml</label>
+          <textarea id="output" rows="6" readonly spellcheck="false"></textarea>
+        </div>
+        <p class="row">
+          <button type="button" id="copy" class="secondary">Copy</button>
+          <button type="button" id="save" class="secondary">Save</button>
+        </p>
+        <div id="msg-output" class="messages" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="step-pr" data-nav="off">
+        <h2 id="step-pr"><span class="step">13</span>Open the pull request</h2>
+        <ol class="next">
+          <li>GitHub asks you to sign in, makes a copy of the index in your account (a fork) and opens the pull request form. Keep one listing per pull request, so it can merge by itself.</li>
+          <li>A bot checks the file, downloads your latest release and fetches your images, then comments with its verdict.</li>
+          <li>It verifies that your GitHub account controls the release host, by one of these:
+            <ul>
+              <li>the repository in step 2 is in your own account and is not a fork,</li>
+              <li>the repository carries the topic <code>ksa-index-&lt;your-github-username&gt;</code> in lowercase, which is the easy way for an organization repository,</li>
+              <li>the repository has a file <code>.github/ksa-content-index.toml</code> that names the listing id and your username.</li>
+            </ul>
+            A SpaceDock mod proves it through the source code link on its SpaceDock page.
+          </li>
+          <li>When everything is green, the pull request merges by itself. Otherwise a steward looks at it.</li>
+        </ol>
+        <p id="organization-note" class="note" hidden></p>
+        <p class="hint">Details are in <a href="https://github.com/KSAModding/content-index/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
+      </section>
+    </form>
+
+    <datalist id="listed-ids"></datalist>
+    <datalist id="game-versions"></datalist>
+    <datalist id="mod-ids"></datalist>
+  </main>
+
+  <aside class="panel" aria-label="Your listing">
+    <h2>Preview</h2>
+    <div id="card" class="listing-card"></div>
+    <hr>
+    <h2>Steps</h2>
+    <p id="check-count" class="hint"></p>
+    <ol id="step-nav" class="steps"></ol>
+    <hr>
+    <a id="open-pr" class="button primary" href="https://github.com/KSAModding/content-index" target="_blank" rel="noopener noreferrer">Open pull request on GitHub</a>
+    <div id="msg-pr" class="messages" aria-live="polite"></div>
+    <p class="hint">GitHub opens with your file filled in. Your listing stays in this browser until then.</p>
+  </aside>
+  </div>
+
+  <footer class="page-footer">
+    <p><a href="https://github.com/KSAModding/content-index/tree/main/site">Source</a> &middot; <a href="https://github.com/KSAModding/content-index/blob/main/LICENSE-MIT">MIT licensed</a> &middot; Community project, not affiliated with RocketWerkz.</p>
+  </footer>
+</body>
+</html>

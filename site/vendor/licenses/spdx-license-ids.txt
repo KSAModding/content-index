@@ -1,0 +1,4 @@
+spdx-license-ids by Shinnosuke Watanabe, a list of SPDX license identifiers from the SPDX License List.
+
+It is dedicated to the public domain under CC0 1.0 Universal:
+https://creativecommons.org/publicdomain/zero/1.0/
