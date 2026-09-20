@@ -33,3 +33,10 @@ game_min = "2026.9.7.5402"
 [loader]
 id = "StarMap"
 min = "0.4.6"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/nanonestor/OhMyStars/refs/heads/main/photos/OMSicon-500x500.png"
+sha256 = "3c67d0e2955d7b38f4902ca68c934a9259b75591e63c05b2d74c68d9d646218f"
+width = 500
+height = 500
+size = 180538
