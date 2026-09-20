@@ -12,6 +12,16 @@ Features:
 - Constellation Boundary lines (IAU defined) - Star informational window  
 - Star names and informational window  
 - Vehicle orientation mode to point towards stars  
+
+![OMShunter](ksa-image:OMSHunter)
+
+A pointer can be enabled showing the direction to a currently selected star.  A navball marker can be enabled showing the orientation where the selected star is in relation to your vehicle's pointing!
+
+![OMS3medium](ksa-image:OhMyStars3)
+
+An orientation mode can be activated making the flight computer aim your vehicles towards the currently selected star!  Toggle the mode off to go back to the vehicle's previous orientation mode!
+
+![OMS3medium](ksa-image:OhMyStars4)
 """
 license = "GPL-2.0-only AND CC-BY-SA-4.0"
 tags = ["user-interface"]
@@ -34,9 +44,37 @@ game_min = "2026.9.7.5402"
 id = "StarMap"
 min = "0.4.6"
 
+[[dependencies]]
+id = "ModMenu"
+kind = "required"
+
 [images.icon]
 url = "https://raw.githubusercontent.com/nanonestor/OhMyStars/refs/heads/main/photos/OMSicon-500x500.png"
 sha256 = "3c67d0e2955d7b38f4902ca68c934a9259b75591e63c05b2d74c68d9d646218f"
 width = 500
 height = 500
 size = 180538
+
+[[images.description]]
+id = "OMSHunter"
+url = "https://raw.githubusercontent.com/nanonestor/OhMyStars/refs/heads/main/photos/OhMyStars.png"
+sha256 = "b5455f7e8ec67ed906b4f9058181c6b670eb903cabdf43e29b4644665030ccac"
+width = 1932
+height = 1293
+size = 819866
+
+[[images.description]]
+id = "OhMyStars3"
+url = "https://raw.githubusercontent.com/nanonestor/OhMyStars/refs/heads/main/photos/OhMyStars3%20(Large)%20(Medium).png"
+sha256 = "2bb7d0ad3853d63cbf350e86aa74f90a9dfbacec30f6be5230804b6f3fb83faf"
+width = 1126
+height = 768
+size = 720650
+
+[[images.description]]
+id = "OhMyStars4"
+url = "https://raw.githubusercontent.com/nanonestor/OhMyStars/refs/heads/main/photos/OhMyStars4%20(Large).png"
+sha256 = "88c6075ab7528ba3747818702a386a186059f924b086db268563c63d65a614af"
+width = 1920
+height = 867
+size = 581018
