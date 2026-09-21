@@ -90,6 +90,7 @@ Some rules need more than the document, and belong to the checks around it:
 | Rule | Where it belongs |
 |---|---|
 | Every SPDX identifier exists in the SPDX list | `tools/check_license.py`. The list is versioned data and must not be frozen into a schema, so it arrives as a pinned dependency instead. |
+| Two identifiers in a `license` expression have an operator between them | `tools/check_license.py`, which names the missing `AND` or `OR`. The schema pattern refuses the shape as well. |
 | The id does not collide with another listing, case-insensitively | `tools/check_index.py` |
 | A changed document names a forums thread that no other listing or pack names, compared by thread id | `tools/check_index.py` warns only. The id comes from the `links.forums` pattern, so every URL form of one thread compares equal. |
 | A changed document has an `abstract` of at most 280 characters | `tools/check_index.py` warns only. RFC 0031 calls the abstract one or two sentences, and a longer one breaks list views. |

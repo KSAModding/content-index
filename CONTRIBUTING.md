@@ -51,7 +51,7 @@ license = "GPL-2.0-only AND CC-BY-SA-4.0"
 ```
 
 When the user may choose one of several licenses, join them with `OR`, such as `MIT OR Apache-2.0`.
-A comma does not join licenses.
+A comma does not join licenses, and two identifiers written next to each other do not either, so `MIT Apache-2.0` is refused.
 
 A license that is not on the SPDX list can be named as `LicenseRef-` followed by a name of your choice, such as `LicenseRef-MyModLicense`.
 An image can have its own `license` in its record when its terms differ from those of the content, see [Images](#images).
