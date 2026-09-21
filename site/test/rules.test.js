@@ -118,6 +118,21 @@ test("license texts match the Python check", () => {
   assert.deepEqual(licenseErrors("MIT+"), [
     "'MIT+' names MIT+, which is not on the SPDX license list; the identifiers are at https://spdx.org/licenses/",
   ]);
+  assert.deepEqual(licenseErrors("MIT Apache-2.0"), [
+    "'MIT Apache-2.0' has two license identifiers with no operator between them; join several licenses with AND or OR, such as GPL-2.0-only AND CC-BY-SA-4.0",
+  ]);
+  assert.deepEqual(licenseErrors("LicenseRef-a LicenseRef-b"), [
+    "'LicenseRef-a LicenseRef-b' has two license identifiers with no operator between them; join several licenses with AND or OR, such as GPL-2.0-only AND CC-BY-SA-4.0",
+  ]);
+  assert.deepEqual(licenseErrors("MIT Classpath-exception-2.0"), [
+    "'MIT Classpath-exception-2.0' names Classpath-exception-2.0, which is not on the SPDX license list; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("GPL-2.0-only WITH Classpath-exception-2.0 Autoconf-exception-2.0"), [
+    "'GPL-2.0-only WITH Classpath-exception-2.0 Autoconf-exception-2.0' names Autoconf-exception-2.0, which is not on the SPDX license list; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("MIT WITH MIT"), [
+    "'MIT WITH MIT' names MIT, which is not on the SPDX license list; the identifiers are at https://spdx.org/licenses/",
+  ]);
 });
 
 test("a schema message is placed at the field it names", () => {

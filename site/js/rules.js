@@ -314,22 +314,61 @@ export function documentRules(document) {
   return found;
 }
 
-function isKnown(token, afterWith) {
-  return LICENSE_REF.test(token) || (afterWith ? EXCEPTIONS : LICENSES).has(token.toLowerCase());
+function onList(token, exceptionPlace) {
+  return (exceptionPlace ? EXCEPTIONS : LICENSES).has(token.toLowerCase());
+}
+
+function known(token) {
+  return onList(token, false) || onList(token, true);
+}
+
+function missingOperator(expression) {
+  return (
+    `'${expression}' has two license identifiers with no operator between them; join ` +
+    "several licenses with AND or OR, such as GPL-2.0-only AND CC-BY-SA-4.0"
+  );
+}
+
+function notOnTheList(expression, named) {
+  return `'${expression}' names ${named}, which is not on the SPDX license list; the identifiers are at ${SPDX_LIST}`;
+}
+
+function holdsAReference(name) {
+  const words = name.split(" ");
+  return words.length > 1 && words.some((word) => LICENSE_REF.test(word));
 }
 
 export function licenseErrors(expression) {
   if (typeof expression !== "string" || !expression.trim()) return [];
   const unknown = new Set();
   const tokens = [];
+  const words = [];
   let afterWith = false;
+  let sequence = false;
+  let misplaced = null;
   let run = [];
-  // Like license-expression, words with no operator between them are one name,
-  // except that a known first word stands alone and the rest becomes the name.
+  // Like license-expression, neighbouring words that neither list knows are one
+  // name, and a name beside another name is a missing operator. A name in the
+  // wrong place is read first of all, so an exception away from the place after
+  // WITH, and anything but an exception in it, are reported before the rest.
   const endRun = () => {
     if (!run.length) return;
-    const rest = isKnown(run[0], afterWith) ? run.slice(1) : run;
-    if (rest.length) unknown.add(rest.join(" "));
+    const names = [];
+    for (const word of run) {
+      const onEitherList = known(word);
+      const last = names[names.length - 1];
+      if (!onEitherList && last && !last.known) last.text += ` ${word}`;
+      else names.push({ text: word, known: onEitherList });
+    }
+    names.forEach((name, place) => {
+      const exceptionPlace = afterWith && place === 0;
+      const stray = exceptionPlace
+        ? !onList(name.text, true) && !LICENSE_REF.test(name.text)
+        : onList(name.text, true) && !onList(name.text, false);
+      if (stray && misplaced === null) misplaced = name.text;
+    });
+    if (names.length > 1) sequence = true;
+    else if (!onList(names[0].text, afterWith) && !LICENSE_REF.test(names[0].text)) unknown.add(names[0].text);
     tokens.push(afterWith ? PLACEHOLDER.exception : PLACEHOLDER.license);
     afterWith = false;
     run = [];
@@ -343,11 +382,12 @@ export function licenseErrors(expression) {
       continue;
     }
     run.push(token);
+    words.push(token);
   }
   endRun();
   try {
     if (tokens.some((token, place) => token === "(" && tokens[place + 1] === ")")) throw new Error("empty group");
-    if ([...unknown].some((name) => name.split(" ").some((word) => !SYMBOL.test(word)))) throw new Error("not a symbol");
+    if (words.some((word) => !SYMBOL.test(word))) throw new Error("not a symbol");
     parseSpdx(tokens.join(" "));
   } catch {
     return [
@@ -355,10 +395,10 @@ export function licenseErrors(expression) {
       "licenses with AND or OR, such as GPL-2.0-only AND CC-BY-SA-4.0",
     ];
   }
-  if (unknown.size) {
-    const named = [...unknown].sort().join(", ");
-    return [`'${expression}' names ${named}, which is not on the SPDX license list; the identifiers are at ${SPDX_LIST}`];
-  }
+  if (misplaced === null && sequence) return [missingOperator(expression)];
+  const named = misplaced !== null ? [misplaced] : [...unknown].sort();
+  if (named.some(holdsAReference)) return [missingOperator(expression)];
+  if (named.length) return [notOnTheList(expression, named.join(", "))];
   return [];
 }
 

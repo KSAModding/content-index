@@ -591,7 +591,47 @@
       "accepted": false,
       "noted": false,
       "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT Apache-2.0\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n",
-      "says": "names Apache-2.0"
+      "says": "'MIT Apache-2.0' has two license identifiers with no operator between them"
+    },
+    {
+      "name": "a license and a license reference with no operator between them",
+      "rule": "license",
+      "accepted": false,
+      "noted": false,
+      "says": "'MIT LicenseRef-MyModLicense' has two license identifiers with no operator between them",
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT LicenseRef-MyModLicense\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n"
+    },
+    {
+      "name": "a license reference and a license with no operator between them",
+      "rule": "license",
+      "accepted": false,
+      "noted": false,
+      "says": "'LicenseRef-MyModLicense MIT' has two license identifiers with no operator between them",
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"LicenseRef-MyModLicense MIT\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n"
+    },
+    {
+      "name": "two license references with no operator between them",
+      "rule": "license",
+      "accepted": false,
+      "noted": false,
+      "says": "'LicenseRef-MyModLicense LicenseRef-OtherLicense' has two license identifiers with no operator between them",
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"LicenseRef-MyModLicense LicenseRef-OtherLicense\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n"
+    },
+    {
+      "name": "an exception where a license belongs",
+      "rule": "license",
+      "accepted": false,
+      "noted": false,
+      "says": "'MIT Classpath-exception-2.0' names Classpath-exception-2.0, which is not on the SPDX license list",
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT Classpath-exception-2.0\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n"
+    },
+    {
+      "name": "a second exception after the one WITH names",
+      "rule": "license",
+      "accepted": false,
+      "noted": false,
+      "says": "'GPL-2.0-only WITH Classpath-exception-2.0 Autoconf-exception-2.0' names Autoconf-exception-2.0, which is not on the SPDX license list",
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"GPL-2.0-only WITH Classpath-exception-2.0 Autoconf-exception-2.0\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n"
     },
     {
       "name": "no tags",

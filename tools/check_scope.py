@@ -10,10 +10,11 @@ SUFFIX = r"\.[Tt][Oo][Mm][Ll]"
 LISTING = re.compile(rf"^listings/[^/]+{SUFFIX}(?![\s\S])")
 PACK = re.compile(rf"^packs/[^/]+/[^/]+{SUFFIX}(?![\s\S])")
 
-# One pull request stays reviewable, and each document costs its own ownership
-# check and its own release download. An author with more content than this
-# opens a second pull request.
-MAX_DOCUMENTS = 10
+# How many documents merge themselves at once. Each one costs an ownership
+# check, a handful of API calls. The validation downloads the release of every
+# document whatever this says, and a verdict job that runs out of time is safe:
+# it leaves no verdict, so the pull request gets an error status and a steward.
+MAX_DOCUMENTS = 15
 
 LISTING_KIND = "listing"
 PACK_KIND = "pack"

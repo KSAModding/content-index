@@ -117,14 +117,14 @@ def decide(verdict, candidate, ownership_result, run_url=""):
             comment=_comment(
                 "The pack ownership check rejected this change.",
                 verdict,
-                [ownership_result.reason + "."],
+                [_sentence(ownership_result.reason)],
                 run_url,
                 rerun=True,
             ),
         )
 
     if not candidate:
-        reason = verdict.get("scope_reason") or "the change is not a single document"
+        reason = verdict.get("scope_reason") or "the change is outside what merges itself"
         return Decision(
             "success",
             "validated, and a steward decides",
@@ -167,8 +167,8 @@ def decide(verdict, candidate, ownership_result, run_url=""):
                 "Validated.",
                 verdict,
                 [
-                    "The ownership check reached no verdict, so this waits for a steward: "
-                    f"{ownership_result.reason}."
+                    "The ownership check reached no verdict, so this waits for a steward.",
+                    _sentence(ownership_result.reason),
                 ],
                 run_url,
             ),
@@ -190,7 +190,7 @@ def decide(verdict, candidate, ownership_result, run_url=""):
             "Validated, and ownership is not verified, so a steward decides.",
             verdict,
             [
-                f"{ownership_result.reason}.",
+                _sentence(ownership_result.reason),
                 instructions,
             ],
             run_url,
@@ -529,17 +529,18 @@ def authored_document(api, path, ref):
 def ownership_for_all(api, pull, paths, head_sha):
     """One result for every document of the change.
 
-    Auto-merge needs every document verified, so the worst state decides and
-    its reason names the document it belongs to. The order is REJECTED,
-    COULD_NOT_EVALUATE, UNVERIFIED, VERIFIED: a rejection is about the change
-    itself, and an unverified document only waits for a steward.
+    Auto-merge needs every document verified. The worst state decides, in the
+    order REJECTED, COULD_NOT_EVALUATE, UNVERIFIED, VERIFIED: a rejection is
+    about the change itself, and an unverified document only waits for a
+    steward. The reason names every document that is not verified, so an
+    author fixes them all in one round and not one per push.
     """
     results = [(path, ownership_for(api, pull, path, head_sha)) for path in paths]
     if not results:
         return ownership.Result(ownership.UNVERIFIED, "not checked")
 
     order = [ownership.REJECTED, ownership.COULD_NOT_EVALUATE, ownership.UNVERIFIED, ownership.VERIFIED]
-    path, worst = min(results, key=lambda entry: order.index(entry[1].state))
+    _, worst = min(results, key=lambda entry: order.index(entry[1].state))
     if worst.state == ownership.VERIFIED:
         # Only a change of packs alone keeps the pack wording, because a listing
         # in it is stamped by the watcher.
@@ -548,8 +549,26 @@ def ownership_for_all(api, pull, paths, head_sha):
         ) else None
         return ownership.Result(ownership.VERIFIED, worst.reason, proof)
 
-    reason = worst.reason if len(results) == 1 else f"{path}: {worst.reason}"
+    if len(results) == 1:
+        return worst
+
+    failed = [
+        _named(path, result.reason)
+        for path, result in results
+        if result.state != ownership.VERIFIED
+    ]
+    reason = failed[0] if len(failed) == 1 else "\n".join(f"- {line}" for line in failed)
     return ownership.Result(worst.state, reason, worst.proof, worst.instructions)
+
+
+def _named(path, reason):
+    """The reason with the document it belongs to, unless it already names it first."""
+    return reason if reason.startswith(path) else f"{path}: {reason}"
+
+
+def _sentence(text):
+    """The text ending as a sentence, and a list of reasons left as it is."""
+    return text if "\n" in text or text.endswith(".") else f"{text}."
 
 
 def ownership_for(api, pull, path, head_sha):
