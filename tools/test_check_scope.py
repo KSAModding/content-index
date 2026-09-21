@@ -102,13 +102,42 @@ class Evaluate(unittest.TestCase):
         candidate, _, _ = self.evaluate(["listings/Mod.toml"], status="modified")
         self.assertTrue(candidate)
 
-    def test_two_documents_wait_for_a_steward(self):
+    def test_several_listings_merge_themselves(self):
+        # An author who lists their mods at once opens one pull request for them.
         candidate, documents, reason = self.evaluate(
-            ["listings/A.toml", "listings/B.toml"]
+            ["listings/A.toml", "listings/B.toml", "listings/C.toml"]
         )
+        self.assertTrue(candidate)
+        self.assertEqual(documents, ["listings/A.toml", "listings/B.toml", "listings/C.toml"])
+        self.assertEqual(reason, "")
+
+    def test_a_listing_and_a_pack_version_together_merge_themselves(self):
+        candidate, _, reason = self.evaluate(["listings/Mod.toml", "packs/Pack/1.0.0.toml"])
+        self.assertTrue(candidate)
+        self.assertEqual(reason, "")
+
+    def test_more_documents_than_the_limit_wait_for_a_steward(self):
+        paths = [f"listings/Mod{index}.toml" for index in range(check_scope.MAX_DOCUMENTS + 1)]
+        candidate, documents, reason = self.evaluate(paths)
+        self.assertFalse(candidate)
+        self.assertEqual(len(documents), check_scope.MAX_DOCUMENTS + 1)
+        self.assertIn(f"{check_scope.MAX_DOCUMENTS + 1} documents", reason)
+        self.assertIn(str(check_scope.MAX_DOCUMENTS), reason)
+
+    def test_the_limit_itself_still_merges_itself(self):
+        paths = [f"listings/Mod{index}.toml" for index in range(check_scope.MAX_DOCUMENTS)]
+        candidate, _, _ = self.evaluate(paths)
+        self.assertTrue(candidate)
+
+    def test_a_removed_document_beside_written_ones_waits(self):
+        changes = check_scope.changes(["listings/A.toml"]) + [
+            check_scope.Change("listings/B.toml", "removed")
+        ]
+        candidate, documents, reason = check_scope.evaluate(changes)
         self.assertFalse(candidate)
         self.assertEqual(len(documents), 2)
-        self.assertIn("2 documents", reason)
+        self.assertIn("listings/B.toml", reason)
+        self.assertIn("tombstone", reason)
 
     def test_a_document_next_to_anything_else_waits(self):
         candidate, documents, reason = self.evaluate(

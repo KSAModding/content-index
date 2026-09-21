@@ -31,3 +31,10 @@ game_min = "2026.9.7.5402"
 [loader]
 id = "StarMap"
 min = "0.4.6"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/meow-sci/Compendium/refs/heads/main/src/Photos/Compendium-icon-512x512.png"
+sha256 = "3adb3ece1ef4c2f4826e55ee8d4fc6027ab49e54bc50be754fe41b09a0e4b9e6"
+width = 512
+height = 512
+size = 184473

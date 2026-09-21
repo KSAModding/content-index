@@ -614,6 +614,77 @@ class OwnershipFor(unittest.TestCase):
         self.assertEqual(self.seen, [])
 
 
+class OwnershipForAll(unittest.TestCase):
+    """Every document of a change reaches the ownership check, and one result comes back."""
+
+    PACK = "packs/NavigationStarterPack/1.0.0.toml"
+
+    def setUp(self):
+        self.pull = {"user": {"login": "Maxi", "id": 7}, "base": {"ref": "main"}}
+        self.results = {}
+        self.seen = []
+
+        def one(api, pull, path, head_sha):
+            self.seen.append(path)
+            return self.results[path]
+
+        patch = mock.patch.object(decide, "ownership_for", one)
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def run_for(self, *paths):
+        return decide.ownership_for_all(None, self.pull, list(paths), "head1234567890")
+
+    def test_every_document_is_checked(self):
+        self.results = {"listings/A.toml": VERIFIED, "listings/B.toml": VERIFIED}
+        result = self.run_for("listings/A.toml", "listings/B.toml")
+        self.assertEqual(self.seen, ["listings/A.toml", "listings/B.toml"])
+        self.assertEqual(result.state, ownership.VERIFIED)
+
+    def test_one_unverified_document_holds_the_whole_change(self):
+        self.results = {"listings/A.toml": VERIFIED, "listings/B.toml": UNVERIFIED}
+        result = self.run_for("listings/A.toml", "listings/B.toml")
+        self.assertEqual(result.state, ownership.UNVERIFIED)
+        self.assertIn("listings/B.toml", result.reason)
+        self.assertIn(UNVERIFIED.reason, result.reason)
+
+    def test_a_rejection_wins_over_everything_else(self):
+        self.results = {self.PACK: REJECTED, "listings/B.toml": UNVERIFIED}
+        result = self.run_for(self.PACK, "listings/B.toml")
+        self.assertEqual(result.state, ownership.REJECTED)
+        self.assertIn(self.PACK, result.reason)
+
+    def test_a_host_that_did_not_answer_wins_over_an_unverified_one(self):
+        # An author who cannot prove control reads what to do; a host having a
+        # bad moment is nobody's fault and says so instead.
+        self.results = {"listings/A.toml": UNAVAILABLE, "listings/B.toml": UNVERIFIED}
+        result = self.run_for("listings/A.toml", "listings/B.toml")
+        self.assertEqual(result.state, ownership.COULD_NOT_EVALUATE)
+
+    def test_the_reason_of_a_single_document_is_not_prefixed(self):
+        self.results = {"listings/A.toml": UNVERIFIED}
+        result = self.run_for("listings/A.toml")
+        self.assertEqual(result.reason, UNVERIFIED.reason)
+
+    def test_packs_alone_keep_the_pack_proof(self):
+        pack = ownership.Result(ownership.VERIFIED, "", decide.pack_ownership.PROOF)
+        self.results = {self.PACK: pack, "packs/Other/2.0.0.toml": pack}
+        result = self.run_for(self.PACK, "packs/Other/2.0.0.toml")
+        self.assertEqual(result.proof, decide.pack_ownership.PROOF)
+
+    def test_a_listing_among_them_drops_the_pack_proof(self):
+        # The watcher stamps the listing's release, so the comment has to say so.
+        pack = ownership.Result(ownership.VERIFIED, "", decide.pack_ownership.PROOF)
+        self.results = {self.PACK: pack, "listings/A.toml": VERIFIED}
+        result = self.run_for(self.PACK, "listings/A.toml")
+        self.assertIsNone(result.proof)
+
+    def test_nothing_to_check_stays_unverified(self):
+        result = self.run_for()
+        self.assertEqual(result.state, ownership.UNVERIFIED)
+        self.assertEqual(self.seen, [])
+
+
 class SpaceDockListing(unittest.TestCase):
     """A SpaceDock-hosted listing goes through the same call, with the real check."""
 
@@ -976,8 +1047,19 @@ class Act(unittest.TestCase):
                 check_scope.Change("packs/Starter/1.0.0.toml", "added"),
             ],
         ):
-            self.assertEqual(self.act(), 0)
-        self.assertEqual(self.labelled(), ["listing", "pack", decide.STEWARD_LABEL])
+            with mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
+                self.assertEqual(self.act(), 0)
+        self.assertEqual(self.labelled(), ["listing", "pack"])
+
+    def test_more_documents_than_the_limit_wait_for_a_steward(self):
+        paths = [
+            check_scope.Change(f"listings/Mod{index}.toml", "added")
+            for index in range(check_scope.MAX_DOCUMENTS + 1)
+        ]
+        with mock.patch.object(decide, "changed_paths", lambda api, number: paths):
+            with mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
+                self.assertEqual(self.act(), 0)
+        self.assertIn(decide.STEWARD_LABEL, self.labelled())
 
     def test_a_first_pack_claim_cannot_name_another_owner(self):
         owner_path = "packs/Starter/owner.json"

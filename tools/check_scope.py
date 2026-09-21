@@ -10,6 +10,11 @@ SUFFIX = r"\.[Tt][Oo][Mm][Ll]"
 LISTING = re.compile(rf"^listings/[^/]+{SUFFIX}(?![\s\S])")
 PACK = re.compile(rf"^packs/[^/]+/[^/]+{SUFFIX}(?![\s\S])")
 
+# One pull request stays reviewable, and each document costs its own ownership
+# check and its own release download. An author with more content than this
+# opens a second pull request.
+MAX_DOCUMENTS = 10
+
 LISTING_KIND = "listing"
 PACK_KIND = "pack"
 
@@ -52,6 +57,10 @@ def kinds(changes):
 def evaluate(changes):
     """Whether this set of changes is an auto-merge candidate.
 
+    Documents only, each one added or changed, and at most MAX_DOCUMENTS of
+    them. Whether the author may write each document is the ownership check's
+    answer, not this one's.
+
     Returns (candidate, documents, reason). The reason is written for the
     author when the answer is no, and is empty when it is yes.
     """
@@ -68,15 +77,21 @@ def evaluate(changes):
         if len(other) > 5:
             listed += f", and {len(other) - 5} more"
         return False, found, f"the change also touches {listed}"
-    if len(found) > 1:
-        return False, found, f"the change touches {len(found)} documents, and one merges itself"
-
-    only = changes[0]
-    if only.status not in WRITING:
+    if len(found) > MAX_DOCUMENTS:
         return (
             False,
             found,
-            f"the change {only.status} {only.path}, and a listing is removed through "
+            f"the change touches {len(found)} documents, and at most "
+            f"{MAX_DOCUMENTS} merge themselves",
+        )
+
+    removed = [change for change in changes if change.status not in WRITING]
+    if removed:
+        first = removed[0]
+        return (
+            False,
+            found,
+            f"the change {first.status} {first.path}, and a listing is removed through "
             "index-status.toml so the entry stays as a tombstone",
         )
     return True, found, ""

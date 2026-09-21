@@ -526,6 +526,32 @@ def authored_document(api, path, ref):
         return None, f"{path} does not parse at {ref}: {error}"
 
 
+def ownership_for_all(api, pull, paths, head_sha):
+    """One result for every document of the change.
+
+    Auto-merge needs every document verified, so the worst state decides and
+    its reason names the document it belongs to. The order is REJECTED,
+    COULD_NOT_EVALUATE, UNVERIFIED, VERIFIED: a rejection is about the change
+    itself, and an unverified document only waits for a steward.
+    """
+    results = [(path, ownership_for(api, pull, path, head_sha)) for path in paths]
+    if not results:
+        return ownership.Result(ownership.UNVERIFIED, "not checked")
+
+    order = [ownership.REJECTED, ownership.COULD_NOT_EVALUATE, ownership.UNVERIFIED, ownership.VERIFIED]
+    path, worst = min(results, key=lambda entry: order.index(entry[1].state))
+    if worst.state == ownership.VERIFIED:
+        # Only a change of packs alone keeps the pack wording, because a listing
+        # in it is stamped by the watcher.
+        proof = pack_ownership.PROOF if all(
+            result.proof == pack_ownership.PROOF for _, result in results
+        ) else None
+        return ownership.Result(ownership.VERIFIED, worst.reason, proof)
+
+    reason = worst.reason if len(results) == 1 else f"{path}: {worst.reason}"
+    return ownership.Result(worst.state, reason, worst.proof, worst.instructions)
+
+
 def ownership_for(api, pull, path, head_sha):
     """Verify the pull request author against the document it touches.
 
@@ -668,9 +694,12 @@ def act(api, arguments):
     candidate, documents, reason = check_scope.evaluate(changes)
 
     result = ownership.Result(ownership.UNVERIFIED, "not checked")
-    one_pack = len(documents) == 1 and check_scope.kind_of(documents[0]) == check_scope.PACK_KIND
-    if (candidate or one_pack) and verdict.get("verdict") == PASS:
-        result = ownership_for(api, pull, documents[0], arguments.head_sha)
+    # A pack version is immutable, so its ownership check runs even when a
+    # steward decides the change anyway: it is what rejects an edit of one.
+    packs = [path for path in documents if check_scope.kind_of(path) == check_scope.PACK_KIND]
+    checked = documents if candidate else packs
+    if checked and verdict.get("verdict") == PASS:
+        result = ownership_for_all(api, pull, checked, arguments.head_sha)
 
     decision = decide({**verdict, "scope_reason": reason}, candidate, result, arguments.run_url)
 

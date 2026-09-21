@@ -33,8 +33,9 @@ The [listing page](https://ksamodding.github.io/content-index/) writes or change
 
    A release archive can be at most 4 GiB, and the release check and the watcher reject a larger one.
 
-4. Open a pull request that adds exactly one file.
-   One document merges itself. A pull request carrying two, or carrying anything besides a document, is valid but waits for a steward.
+4. Open a pull request that adds your document, or several of them.
+   Up to ten documents merge themselves, as long as you can prove that you control the release host of each one.
+   A pull request that carries anything besides documents, or more than ten of them, is valid but waits for a steward.
 
 ## The license field
 
