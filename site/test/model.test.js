@@ -30,6 +30,24 @@ test("a changed listing keeps the order of its links and adds new ones at the en
   assert.deepEqual(Object.keys(documentFromForm(form, base).links), ["forums", "homepage", "repository", "bugtracker", "wiki"]);
 });
 
+test("the standard link keys are fields of the form, not extra links", () => {
+  const links = { forums: "f", homepage: "h", repository: "r", spacedock: "s", bugtracker: "b", discussions: "d" };
+  const form = formFromDocument({ spec_version: 1, id: "M", type: "mod", links });
+  assert.deepEqual(form.extraLinks, []);
+  assert.deepEqual(form.links, links);
+  assert.deepEqual(documentFromForm(form, null).links, links);
+});
+
+test("an extra link that repeats a standard key leaves the field alone", () => {
+  const form = emptyForm();
+  form.links.homepage = "https://example.com";
+  form.links.forums = "https://forums.ahwoo.com/t/1";
+  form.extraLinks = [{ key: "homepage", url: "" }, { key: "forums", url: "https://elsewhere.example" }];
+  const links = documentFromForm(form, null).links;
+  assert.equal(links.homepage, "https://example.com");
+  assert.equal(links.forums, "https://forums.ahwoo.com/t/1");
+});
+
 test("keys the form does not edit are kept", () => {
   const base = parseDocument(fs.readFileSync(new URL("fixtures/StarMap.toml", import.meta.url), "utf8"));
   base.status = "deprecated";
