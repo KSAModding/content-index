@@ -1,0 +1,81 @@
+spec_version = 1
+id = "unscience"
+type = "mod"
+name = "unscience"
+authors = ["Alex", "aka tomservo"]
+abstract = "unscience hacks up ksa to change physics, replace colors, move parts, resize things, change effects, shaders, etc.  In general, it helps you break stuff for fun and no profit."
+description = """
+unscience lets you do *things* to KSA
+
+![thug-life](ksa-image:thug-life_01)
+
+![thug-life](ksa-image:garrys-torch_01)
+
+![thug-life](ksa-image:zippo_01)
+
+![thug-life](ksa-image:godzilla_01)
+
+![thug-life](ksa-image:godzilla_02)
+
+![thug-life](ksa-image:free-fallin_01)"""
+license = "MIT"
+tags = ["parts", "gameplay", "visual", "audio", "tools", "hacks"]
+
+[releases]
+github = "meow-sci/unscience"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/unscience-mod.1261/"
+repository = "https://github.com/meow-sci/unscience"
+bugtracker = "https://github.com/meow-sci/unscience/issues"
+
+[compatibility]
+game_min = "2026.9.10.5438"
+
+[[images.description]]
+id = "thug-life_01"
+url = "https://raw.githubusercontent.com/meow-sci/unscience/main/docs/media/thug-life_01_sm.webp"
+sha256 = "2b61615f00d2ef21f93ef47084cbd40116665a7315a3050111c4557bee4bcaea"
+width = 1920
+height = 1080
+size = 83160
+
+[[images.description]]
+id = "garrys-torch_01"
+url = "https://raw.githubusercontent.com/meow-sci/unscience/main/docs/media/garrys-torch_01_sm.webp"
+sha256 = "3ca2c9fe016e340f2f3e0df09e9c09a2d4542f2019f1982c18e41d8dfd35bea4"
+width = 1920
+height = 1080
+size = 208344
+
+[[images.description]]
+id = "zippo_01"
+url = "https://raw.githubusercontent.com/meow-sci/unscience/main/docs/media/zippo_01_sm.webp"
+sha256 = "61e3d1d1de7a437137346d38eba8f19a38ed53e518fd53de878b3e7bf52d7cde"
+width = 1920
+height = 1080
+size = 416814
+
+[[images.description]]
+id = "godzilla_01"
+url = "https://raw.githubusercontent.com/meow-sci/unscience/main/docs/media/godzilla_01_sm.webp"
+sha256 = "ab30f82c1b802dc3bdc499e4cd8a69333dd7d7b3cb97763c70f18ceeb97cc1a7"
+width = 1920
+height = 1080
+size = 445798
+
+[[images.description]]
+id = "godzilla_02"
+url = "https://raw.githubusercontent.com/meow-sci/unscience/main/docs/media/godzilla_02_sm.webp"
+sha256 = "265be747e9c9b4b3d7ec84000f48a9e1aff1c72f0cabe6d56ceb205fd24ecfa2"
+width = 1920
+height = 1080
+size = 330816
+
+[[images.description]]
+id = "free-fallin_01"
+url = "https://raw.githubusercontent.com/meow-sci/unscience/main/docs/media/free-fallin_01_sm.webp"
+sha256 = "6450a9783302d90a795eb411c1cebc1a56a3908618f1f15cc520147643002e4f"
+width = 1920
+height = 1080
+size = 294988
