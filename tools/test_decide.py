@@ -203,15 +203,15 @@ class Table(unittest.TestCase):
         self.assertIn("snapshot follows", decision.comment)
         self.assertNotIn("watcher", decision.comment)
 
-    def test_several_unverified_documents_are_listed_in_the_comment(self):
-        result = ownership.Result(
-            ownership.UNVERIFIED,
-            "- listings/A.toml: not proven\n- listings/B.toml: not proven",
-        )
-        decision = decide.decide(verdict(), True, result)
-        self.assertTrue(decision.needs_steward)
-        self.assertIn("- listings/A.toml: not proven\n- listings/B.toml: not proven\n", decision.comment)
-        self.assertNotIn("not proven.", decision.comment)
+    def test_several_documents_are_listed_in_the_comment_whatever_the_state(self):
+        # Each branch of decide that renders a reason: the list starts on its own
+        # line, so every document is a list item, and no full stop trails it.
+        reason = "- listings/A.toml: not proven\n- listings/B.toml: not proven"
+        for state in (ownership.UNVERIFIED, ownership.COULD_NOT_EVALUATE, ownership.REJECTED):
+            with self.subTest(state=state):
+                decision = decide.decide(verdict(), True, ownership.Result(state, reason))
+                self.assertIn("\n\n" + reason, decision.comment)
+                self.assertNotIn("not proven.", decision.comment)
 
     def test_a_change_that_is_not_a_candidate_waits_for_a_steward(self):
         decision = decide.decide(

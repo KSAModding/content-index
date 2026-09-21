@@ -167,8 +167,8 @@ def decide(verdict, candidate, ownership_result, run_url=""):
                 "Validated.",
                 verdict,
                 [
-                    "The ownership check reached no verdict, so this waits for a steward: "
-                    f"{ownership_result.reason}."
+                    "The ownership check reached no verdict, so this waits for a steward.",
+                    _sentence(ownership_result.reason),
                 ],
                 run_url,
             ),
