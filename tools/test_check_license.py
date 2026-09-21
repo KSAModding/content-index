@@ -83,6 +83,49 @@ class Rejected(unittest.TestCase):
     def test_an_unknown_identifier_points_at_the_list(self):
         self.assert_rejected("CC-BY-SA", check_license.SPDX_LIST)
 
+    def test_two_licenses_with_no_operator_between_them(self):
+        self.assert_rejected("MIT Apache-2.0", "no operator between them")
+
+    def test_a_license_and_a_license_reference_with_no_operator_between_them(self):
+        self.assert_rejected("MIT LicenseRef-MyModLicense", "no operator between them")
+
+    def test_a_license_reference_and_a_license_with_no_operator_between_them(self):
+        self.assert_rejected("LicenseRef-MyModLicense MIT", "no operator between them")
+
+    def test_two_license_references_with_no_operator_between_them(self):
+        self.assert_rejected(
+            "LicenseRef-MyModLicense LicenseRef-OtherLicense", "no operator between them"
+        )
+
+    def test_a_missing_operator_is_not_reported_as_an_unknown_identifier(self):
+        expressions = (
+            "MIT Apache-2.0",
+            "MIT LicenseRef-MyModLicense",
+            "LicenseRef-MyModLicense MIT",
+            "LicenseRef-MyModLicense LicenseRef-OtherLicense",
+        )
+        for expression in expressions:
+            errors = check_license.errors_for(expression)
+            self.assertFalse(any("SPDX license list" in error for error in errors), errors)
+
+    def test_an_exception_where_a_license_belongs(self):
+        self.assert_rejected("MIT Classpath-exception-2.0", "Classpath-exception-2.0")
+
+    def test_a_second_exception_after_the_one_with_names(self):
+        self.assert_rejected(
+            "GPL-2.0-only WITH Classpath-exception-2.0 Autoconf-exception-2.0",
+            "Autoconf-exception-2.0",
+        )
+
+    def test_an_exception_out_of_place_keeps_the_list_message(self):
+        expressions = (
+            "MIT Classpath-exception-2.0",
+            "GPL-2.0-only WITH Classpath-exception-2.0 Autoconf-exception-2.0",
+        )
+        for expression in expressions:
+            errors = check_license.errors_for(expression)
+            self.assertFalse(any("no operator between them" in error for error in errors), errors)
+
 
 class DoesNotCrash(unittest.TestCase):
     """The library raises several unrelated types on a broken expression.
