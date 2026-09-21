@@ -203,6 +203,16 @@ class Table(unittest.TestCase):
         self.assertIn("snapshot follows", decision.comment)
         self.assertNotIn("watcher", decision.comment)
 
+    def test_several_unverified_documents_are_listed_in_the_comment(self):
+        result = ownership.Result(
+            ownership.UNVERIFIED,
+            "- listings/A.toml: not proven\n- listings/B.toml: not proven",
+        )
+        decision = decide.decide(verdict(), True, result)
+        self.assertTrue(decision.needs_steward)
+        self.assertIn("- listings/A.toml: not proven\n- listings/B.toml: not proven\n", decision.comment)
+        self.assertNotIn("not proven.", decision.comment)
+
     def test_a_change_that_is_not_a_candidate_waits_for_a_steward(self):
         decision = decide.decide(
             verdict(reason="the change touches 2 documents"), False, VERIFIED
@@ -661,6 +671,36 @@ class OwnershipForAll(unittest.TestCase):
         result = self.run_for("listings/A.toml", "listings/B.toml")
         self.assertEqual(result.state, ownership.COULD_NOT_EVALUATE)
 
+    def test_every_document_that_is_not_verified_is_named(self):
+        # One round for the author, not one push per document.
+        self.results = {
+            "listings/A.toml": UNVERIFIED,
+            "listings/B.toml": VERIFIED,
+            "listings/C.toml": UNVERIFIED,
+        }
+        result = self.run_for("listings/A.toml", "listings/B.toml", "listings/C.toml")
+        self.assertEqual(result.state, ownership.UNVERIFIED)
+        self.assertIn("listings/A.toml", result.reason)
+        self.assertIn("listings/C.toml", result.reason)
+        self.assertNotIn("listings/B.toml", result.reason)
+        self.assertEqual(result.reason.count("\n- "), 1)
+
+    def test_a_document_of_another_state_is_named_too(self):
+        self.results = {"listings/A.toml": UNAVAILABLE, "listings/B.toml": UNVERIFIED}
+        result = self.run_for("listings/A.toml", "listings/B.toml")
+        self.assertEqual(result.state, ownership.COULD_NOT_EVALUATE)
+        self.assertIn(UNAVAILABLE.reason, result.reason)
+        self.assertIn(UNVERIFIED.reason, result.reason)
+
+    def test_a_reason_that_names_its_document_is_not_prefixed_again(self):
+        own = ownership.Result(
+            ownership.REJECTED,
+            f"{self.PACK} already exists on main; an accepted pack version is immutable",
+        )
+        self.results = {self.PACK: own, "listings/B.toml": VERIFIED}
+        result = self.run_for(self.PACK, "listings/B.toml")
+        self.assertEqual(result.reason, own.reason)
+
     def test_the_reason_of_a_single_document_is_not_prefixed(self):
         self.results = {"listings/A.toml": UNVERIFIED}
         result = self.run_for("listings/A.toml")
@@ -1039,17 +1079,27 @@ class Act(unittest.TestCase):
             self.assertEqual(self.act(), 0)
         self.assertEqual(self.labelled(), ["listing"])
 
-    def test_a_change_that_touches_both_kinds_carries_both(self):
+    def test_a_listing_and_a_pack_version_merge_themselves_and_carry_both_labels(self):
+        # The pack's owner is already accepted on the base branch, so its
+        # ownership verifies through the pack path, not through a patch.
+        self.api.files = {
+            ("listings/AutoStage.toml", "abc"): LISTING,
+            ("packs/Starter/owner.json", "main"): json.dumps({"github_login": "Maxi", "github_id": 7}),
+        }
         with mock.patch.object(
             decide, "changed_paths",
             lambda api, number: [
                 check_scope.Change("listings/AutoStage.toml", "added"),
-                check_scope.Change("packs/Starter/1.0.0.toml", "added"),
+                check_scope.Change("packs/Starter/2.0.0.toml", "added"),
             ],
         ):
             with mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
                 self.assertEqual(self.act(), 0)
+        self.assertEqual(self.api.graphql_calls, [{"id": "PR_5"}])
         self.assertEqual(self.labelled(), ["listing", "pack"])
+        comment = self.api.sent[[path for _, path, _, _ in self.api.sent].index("/issues/5/comments")][2]["body"]
+        self.assertIn("merges on its own", comment)
+        self.assertIn("watcher", comment)
 
     def test_more_documents_than_the_limit_wait_for_a_steward(self):
         paths = [
