@@ -6,7 +6,7 @@ If you want to argue about the format or the index itself, open a thread in [con
 
 ## Listing your content
 
-The [listing page](https://ksamodding.github.io/content-index/) writes or changes your listing step by step and checks it with the rules below before you open the pull request.
+The [listing page](https://ksamodding.github.io/content-index/) writes or changes your listing section by section, starting from your GitHub repository, and checks it with the rules below before you open the pull request.
 
 1. Write your authored document following [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md).
    The worked examples in [`examples/`](https://github.com/KSAModding/content-manager-design/tree/main/examples) are real listings you can copy from.
@@ -33,8 +33,9 @@ The [listing page](https://ksamodding.github.io/content-index/) writes or change
 
    A release archive can be at most 4 GiB, and the release check and the watcher reject a larger one.
 
-4. Open a pull request that adds exactly one file.
-   One document merges itself. A pull request carrying two, or carrying anything besides a document, is valid but waits for a steward.
+4. Open a pull request that adds your document, or several of them.
+   Up to 15 documents merge themselves, as long as ownership verifies for every one of them: control of the release host for a listing, the account in `packs/<id>/owner.json` for a pack.
+   A pull request that carries anything besides documents, or more than 15 of them, is valid but waits for a steward.
 
 ## The license field
 
@@ -50,7 +51,7 @@ license = "GPL-2.0-only AND CC-BY-SA-4.0"
 ```
 
 When the user may choose one of several licenses, join them with `OR`, such as `MIT OR Apache-2.0`.
-A comma does not join licenses.
+A comma does not join licenses, and two identifiers written next to each other do not either, so `MIT Apache-2.0` is refused.
 
 A license that is not on the SPDX list can be named as `LicenseRef-` followed by a name of your choice, such as `LicenseRef-MyModLicense`.
 An image can have its own `license` in its record when its terms differ from those of the content, see [Images](#images).

@@ -3,8 +3,8 @@ import { RECORD_KEYS } from "./images.js";
 export const PLATFORMS = ["windows", "linux", "macos"];
 export const KINDS = ["required", "optional", "recommends", "suggests", "conflict"];
 export const ANCHORS = ["mods", "user-data", "game-root", "standalone"];
-const FIXED_LINKS = ["forums", "repository", "bugtracker"];
-const LINK_ORDER = ["forums", "repository", "spacedock", "bugtracker"];
+const FIXED_LINKS = ["forums", "homepage", "repository", "spacedock", "bugtracker", "discussions"];
+const LINK_ORDER = FIXED_LINKS;
 
 function isObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -12,6 +12,12 @@ function isObject(value) {
 
 function text(value) {
   return value === undefined || value === null ? "" : String(value);
+}
+
+// Every standard key has its own field, so an extra link that repeats one is
+// left out of the written file and the page asks the author to remove the row.
+export function isFixedLink(key) {
+  return FIXED_LINKS.includes(trimmed(key));
 }
 
 export function emptyRecord(withId) {
@@ -31,7 +37,7 @@ export function emptyForm() {
     abstract: "",
     description: "",
     license: "",
-    links: { forums: "", repository: "", bugtracker: "" },
+    links: Object.fromEntries(FIXED_LINKS.map((key) => [key, ""])),
     extraLinks: [],
     gameMin: "",
     gameMax: "",
@@ -153,7 +159,7 @@ export function documentFromForm(form, base) {
 
   const wanted = new Map(FIXED_LINKS.map((key) => [key, trimmed(form.links[key])]));
   for (const { key, url } of form.extraLinks) {
-    if (trimmed(key)) wanted.set(trimmed(key), trimmed(url));
+    if (trimmed(key) && !isFixedLink(key)) wanted.set(trimmed(key), trimmed(url));
   }
   const order = base && isObject(base.links) ? Object.keys(base.links) : LINK_ORDER;
   const links = {};

@@ -1,0 +1,58 @@
+spec_version = 1
+id = "MPFX"
+type = "mod"
+name = "MPFX"
+authors = ["AMPW"]
+abstract = "Simple post processing shaders for KSA"
+description = """
+# MPFX
+
+A very simple post processing mod.
+
+Currently included effects in their default execution order:
+
+- Color balance using lift, gamma and gain. Either for all channels or per channel.
+- Color Temperature
+- Hue shift in YIQ color format
+- Brightness
+- Contrast
+- Saturation
+- Single color color overlay
+- Vignette
+- (RGB2HSV: converts from rgb to hsv and shows the result in rgb)
+- (HSV2RGB: converts the rgb input from hsv to rgb and shows the result)
+- (Single color: only keeps the largest rgb channels for each pixel)
+- (Single color smallest)
+- (Single solid color: same as single color but sets largest channels to max value)
+
+The execution order can be changed by changing the subpass in the MPFXAssets.xml file.
+
+All effects are separated into pre and post imgui.
+
+Effects in parathenses are just some stuff I wanted to try during development, they are not meant for real use but I wanted to include them anyway.
+"""
+license = "MIT"
+tags = ["visual"]
+
+[releases]
+github = "AMPW-german/MPFX"
+spacedock = 4165
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/mpfx-v0-2-0-simple-post-processing-effects.812/"
+repository = "https://github.com/AMPW-german/MPFX"
+spacedock = "https://spacedock.info/mod/4165/MPFX"
+bugtracker = "https://github.com/AMPW-german/MPFX/issues"
+
+[compatibility]
+game_min = "2026.9.10.5438"
+
+[[dependencies]]
+id = "ShaderExtensions"
+kind = "required"
+min = "1.0.2"
+
+[loader]
+id = "StarMap"
+min = "0.4.7"

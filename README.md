@@ -34,7 +34,7 @@ https://ksamodding.github.io/content-index-releases/v1/index.json
 
 ## Getting listed
 
-Write your authored document per RFC 0031, or let the [listing page](https://ksamodding.github.io/content-index/) write it, and open a pull request that adds exactly one file.
+Write your authored document per RFC 0031, or let the [listing page](https://ksamodding.github.io/content-index/) write it, and open a pull request that adds it. One pull request can carry several documents.
 
 Checks validate it, a further check verifies that you control the release host the listing points at, and when everything is green the pull request merges itself.
 

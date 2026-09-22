@@ -43,6 +43,11 @@
   --gutter: 64px;
   --body: 880px;
   --panel: 340px;
+  --aside: 300px;
+  /* The height the page holds free for the fixed bar. The script measures the
+     bar and writes the real height here, so these values only hold until the
+     script runs. */
+  --toolbar: 88px;
   color-scheme: dark;
 }
 
@@ -56,10 +61,12 @@
 
 html {
   scroll-padding-top: 24px;
+  scroll-padding-bottom: calc(var(--toolbar) + 24px);
 }
 
 body {
   margin: 0;
+  padding-bottom: var(--toolbar);
   background: var(--window);
   color: var(--text-2);
   font-family: var(--sans);
@@ -247,9 +254,6 @@ h1 {
 }
 
 h2 {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
   margin-bottom: 16px;
   color: var(--text);
   font-size: 1.25rem;
@@ -264,12 +268,11 @@ h3 {
   font-weight: 600;
 }
 
-.step {
-  flex: none;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 1rem;
-  font-weight: 400;
+h4 {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 
 .card > .hint + .field,
@@ -289,6 +292,37 @@ h3 {
   border: 0;
 }
 
+/* A field with an aside puts its control on the left and every hint and message
+   on the right. A field without one, such as the description, keeps the whole
+   width of the card. */
+.field:has(> .aside) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, var(--aside));
+  grid-template-areas:
+    "label aside"
+    "control aside";
+  align-items: start;
+  column-gap: 24px;
+  row-gap: 8px;
+}
+
+.field:has(> .aside) > * {
+  grid-area: control;
+}
+
+.field:has(> .aside) > label,
+.field:has(> .aside) > legend {
+  grid-area: label;
+}
+
+.field:has(> .aside) > .aside {
+  grid-area: aside;
+}
+
+.aside > * + * {
+  margin-top: 8px;
+}
+
 .row {
   display: flex;
   flex-wrap: wrap;
@@ -297,17 +331,36 @@ h3 {
 }
 
 /* A button next to a field lines up with the field, not with its label. */
-.row:has(> button) {
+.row:has(> .field):has(> button) {
   align-items: flex-end;
 }
 
+/* A row inside a field holds bare controls, so all of them take its height. */
+.field > .row {
+  align-items: stretch;
+}
+
+.field > .row > input,
+.field > .row > select {
+  flex: 1 1 220px;
+}
+
 .row > .field,
-.row > button {
-  margin-bottom: 20px;
+.item .field {
+  margin-bottom: 0;
 }
 
 .grow {
   flex: 1 1 220px;
+}
+
+/* The four fields of a dependency fit on one row. */
+.row.compact > .field {
+  flex: 1 1 140px;
+}
+
+.row.compact > .field:first-child {
+  flex: 2 1 180px;
 }
 
 label,
@@ -357,6 +410,55 @@ legend {
 }
 
 .toggles .chip:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A checkbox drawn as the switch of the App, a track with a knob. */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.switch .track {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  width: 44px;
+  height: 26px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--window);
+}
+
+.switch .track::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.switch:has(input:checked) .track {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.switch:has(input:checked) .track::before {
+  margin-left: 18px;
+  background: var(--accent);
+}
+
+.switch:has(input:focus-visible) .track {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -509,18 +611,39 @@ button.add:hover {
   text-underline-offset: 0.2em;
 }
 
-button.quiet {
-  min-height: 36px;
-  padding: 6px 16px;
-  background: none;
-  box-shadow: inset 0 0 0 1px var(--line);
-  color: var(--text-2);
-  font-weight: 400;
+/* A button next to a field is only as round as the field it stands beside. */
+button.beside {
+  flex: none;
+  border-radius: 12px;
 }
 
-button.quiet:hover {
+/* An action of a field, such as removing its row, sits inside the field. */
+button.remove {
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-2);
+}
+
+button.remove:hover {
   background: var(--raised);
   color: var(--text);
+}
+
+.postfix {
+  position: relative;
+}
+
+.postfix > input {
+  padding-right: 48px;
+}
+
+.postfix > .remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
 }
 
 .hint {
@@ -572,8 +695,15 @@ li.note {
   background: var(--surface);
 }
 
-.item > .messages {
-  margin-top: -8px;
+.item > * + * {
+  margin-top: 12px;
+}
+
+.item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 /* Chips are the mono tags of the App, not pills. */
@@ -633,7 +763,6 @@ li.note {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 20px;
 }
 
 .thumb:empty {
@@ -737,11 +866,11 @@ summary {
   margin-top: 16px;
 }
 
-/* The side panel of Discover and the mod page, holding the preview, the steps and the action. */
+/* The side panel of Discover and the mod page, holding the preview and the sections. */
 .panel {
   position: sticky;
   top: 24px;
-  max-height: calc(100vh - 48px);
+  max-height: calc(100vh - 48px - var(--toolbar));
   overflow-y: auto;
   padding: 32px;
   border-radius: 32px;
@@ -753,14 +882,38 @@ summary {
   font-size: 1.125rem;
 }
 
-.panel .button.primary {
-  width: 100%;
-  min-height: 48px;
-  margin-bottom: 12px;
+/* The main action stays in reach, in a bar fixed to the bottom of the window. */
+.toolbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  border-top: 1px solid var(--line);
+  background: var(--header);
 }
 
-.panel > .messages {
-  margin-bottom: 12px;
+.toolbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  max-width: calc(var(--body) + var(--panel) + 64px + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 14px var(--gutter);
+}
+
+.toolbar-state {
+  min-width: 0;
+}
+
+.toolbar-state > * + * {
+  margin-top: 4px;
+}
+
+.toolbar .button.primary {
+  flex: none;
+  min-height: 48px;
 }
 
 .listing-card {
@@ -837,13 +990,13 @@ summary {
   font-size: 0.8125rem;
 }
 
-.steps {
+.sections {
   margin: 12px 0 0;
   padding: 0;
   list-style: none;
 }
 
-.step-item a {
+.section-item a {
   display: grid;
   grid-template-columns: 24px 1fr auto;
   align-items: center;
@@ -855,11 +1008,11 @@ summary {
   text-decoration: none;
 }
 
-.step-item a:hover {
+.section-item a:hover {
   background: var(--raised);
 }
 
-.step-mark {
+.section-mark {
   display: grid;
   place-items: center;
   width: 22px;
@@ -874,7 +1027,7 @@ summary {
   stroke-width: 2;
 }
 
-.step-name {
+.section-name {
   min-width: 0;
   overflow: hidden;
   font-size: 0.9375rem;
@@ -882,28 +1035,28 @@ summary {
   white-space: nowrap;
 }
 
-.step-detail {
+.section-detail {
   color: var(--muted);
   font-family: var(--mono);
   font-size: 0.75rem;
 }
 
-.step-item.done .step-mark {
+.section-item.done .section-mark {
   border-color: var(--positive);
   color: var(--positive);
 }
 
-.step-item.fix .step-mark {
+.section-item.fix .section-mark {
   border-color: var(--danger);
   background: var(--danger-soft);
   color: var(--danger);
 }
 
-.step-item.fix .step-detail {
+.section-item.fix .section-detail {
   color: var(--danger);
 }
 
-.step-item.optional .step-name {
+.section-item.optional .section-name {
   color: var(--text-2);
 }
 
@@ -942,13 +1095,33 @@ summary {
   }
 }
 
+/* Below this width the card is too narrow for two columns, so the help of a
+   field goes back under it. */
+@media (max-width: 800px) {
+  .field:has(> .aside) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "label"
+      "control"
+      "aside";
+  }
+}
+
 @media (max-width: 600px) {
   :root {
     --gutter: 16px;
+    --toolbar: 132px;
   }
 
   .page {
     padding-top: 24px;
+  }
+
+  .toolbar-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px var(--gutter);
   }
 
   .intro {

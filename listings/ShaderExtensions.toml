@@ -1,0 +1,39 @@
+spec_version = 1
+id = "ShaderExtensions"
+type = "mod"
+name = "ShaderExtensions"
+authors = ["AMPW"]
+abstract = "Post Processing Shaders and uniform buffers for KSA"
+description = """
+# ShaderExtensions
+
+Post Processing Shaders and uniform buffers for KSA
+
+This mod adds nothing on its own but provides an easy way to add post processing shaders.
+Please visit the repo if you want to know more.
+"""
+license = "MIT"
+tags = ["library"]
+
+[releases]
+github = "AMPW-german/ShaderExtensions"
+spacedock = 4164
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/shaderextensions-v0-2-0-post-processing-shaders.811/"
+repository = "https://github.com/AMPW-german/ShaderExtensions"
+spacedock = "https://spacedock.info/mod/4164/ShaderExtensions"
+bugtracker = "https://github.com/AMPW-german/ShaderExtensions/issues"
+
+[compatibility]
+game_min = "2026.9.10.5438"
+
+[[dependencies]]
+id = "KittenExtensions"
+kind = "required"
+min = "0.5.0"
+
+[loader]
+id = "StarMap"
+min = "0.4.7"

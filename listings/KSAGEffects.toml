@@ -1,0 +1,38 @@
+spec_version = 1
+id = "KSAGEffects"
+type = "mod"
+name = "KSA G-Effects"
+authors = ["AMPW"]
+abstract = "Realistic G-Effects on humans"
+description = """
+# KSA G-Effects
+
+This mod aims to bring highly realistic (human) G-effects to KSA, including blackout, redout, ALoC, GLoC, death through G forces and confusion/disorientation.
+
+Please check the KSA forum for the current state.
+"""
+license = "GPL-3.0-or-later"
+tags = ["library"]
+
+[releases]
+github = "AMPW-german/KSAGEffects"
+spacedock = 4363
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/unfinished-mods/g-effects-v0-3-0.635/"
+repository = "https://github.com/AMPW-german/KSAGEffects"
+spacedock = "https://spacedock.info/mod/4363/KSA%20G%20Effects"
+bugtracker = "https://github.com/AMPW-german/KSAGEffects/issues"
+
+[compatibility]
+game_min = "2026.9.10.5438"
+
+[[dependencies]]
+id = "ShaderExtensions"
+kind = "required"
+min = "1.0.2"
+
+[loader]
+id = "StarMap"
+min = "0.4.7"

@@ -1,7 +1,7 @@
 import { createChecker, ERROR, NOTE, ABSTRACT_LIMIT } from "./rules.js";
 import { parseDocument, writeDocument } from "./toml.js";
 import { indexFacts, gameVersionChoices, SNAPSHOT_URL } from "./snapshot.js";
-import { emptyForm, emptyRecord, formFromDocument, documentFromForm, KINDS, PLATFORMS } from "./model.js";
+import { emptyForm, emptyRecord, formFromDocument, documentFromForm, isFixedLink, KINDS, PLATFORMS } from "./model.js";
 import { measure, readCapped, LIMITS, MEASURE_FACTOR, ICON, DESCRIPTION } from "./images.js";
 import { renderPreview } from "./markdown.js";
 import { zipNames, inspectArchive, StampError } from "./archive.js";
@@ -26,6 +26,7 @@ let current = { document: {}, text: "", messages: [] };
 let saveTimer = null;
 const touched = new Set();
 let tagsTouched = false;
+let needsLoader = false;
 
 function element(tag, attributes = {}, children = []) {
   const node = document.createElement(tag);
@@ -99,8 +100,11 @@ const FIELDS = {
   description: ["description"],
   license: ["license"],
   "link-forums": ["links", "forums"],
+  "link-homepage": ["links", "homepage"],
   "link-repository": ["links", "repository"],
+  "link-spacedock": ["links", "spacedock"],
   "link-bugtracker": ["links", "bugtracker"],
+  "link-discussions": ["links", "discussions"],
   "game-min": ["gameMin"],
   "game-max": ["gameMax"],
   "loader-min": ["loaderMin"],
@@ -133,18 +137,22 @@ function bindStatic() {
     input.addEventListener(event, () => {
       touched.add(input);
       writePath(path, input.value);
-      if (id === "type") renderTypeSteps();
+      if (id === "type") renderTypeSections();
       refresh();
     });
   }
+  $("needs-loader").addEventListener("change", () => {
+    needsLoader = $("needs-loader").checked;
+    chooseLoader(needsLoader ? state.form.loaderId || onlyLoader() : "");
+    renderLoaderOptions();
+    renderFields();
+    renderLoader();
+    refresh();
+  });
   $("loader-id").addEventListener("change", () => {
-    const previous = loaderDefault(state.form.loaderId);
-    state.form.loaderId = $("loader-id").value;
-    if (!state.form.loaderMin || state.form.loaderMin === previous) {
-      state.form.loaderMin = loaderDefault(state.form.loaderId) || "";
-      $("loader-min").value = state.form.loaderMin;
-    }
-    renderLoaderBounds();
+    chooseLoader($("loader-id").value);
+    renderFields();
+    renderLoader();
     refresh();
   });
   $("os").addEventListener("change", () => {
@@ -246,6 +254,22 @@ function loaderDefault(id) {
   return loader ? loader.newest : null;
 }
 
+// One known loader is the answer in almost every case, so the switch picks it.
+function onlyLoader() {
+  return index && index.loaders.length === 1 ? index.loaders[0].id : "";
+}
+
+function chooseLoader(id) {
+  const previous = loaderDefault(state.form.loaderId);
+  state.form.loaderId = id;
+  if (!id) {
+    state.form.loaderMin = "";
+    state.form.loaderMax = "";
+  } else if (!state.form.loaderMin || state.form.loaderMin === previous) {
+    state.form.loaderMin = loaderDefault(id) || "";
+  }
+}
+
 function renderLoaderOptions() {
   const select = $("loader-id");
   const ids = index ? index.loaders.map((entry) => entry.id) : [];
@@ -254,17 +278,19 @@ function renderLoaderOptions() {
   select.value = state.form.loaderId;
 }
 
-function renderLoaderBounds() {
+function renderLoader() {
+  $("needs-loader").checked = needsLoader;
+  $("loader-fields").hidden = !needsLoader;
   $("loader-bounds").hidden = !state.form.loaderId;
 }
 
-function renderTypeSteps() {
+function renderTypeSections() {
   const loader = state.form.type === "mod-loader";
-  $("loader-step").hidden = loader;
-  $("launch-step").hidden = !loader;
+  $("loader-block").hidden = loader;
+  $("launch-section").hidden = !loader;
 }
 
-function inputField(label, value, onInput, attributes = {}) {
+function inputField(label, value, onInput, attributes = {}, action = null) {
   const id = `f${Math.random().toString(36).slice(2)}`;
   const input = element("input", { id, value, autocomplete: "off", spellcheck: "false", ...attributes });
   input.value = value;
@@ -272,7 +298,8 @@ function inputField(label, value, onInput, attributes = {}) {
     onInput(input.value);
     refresh();
   });
-  return element("div", { className: "field grow" }, [element("label", { for: id, text: label }), input]);
+  const control = action ? element("div", { className: "postfix" }, [input, action]) : input;
+  return element("div", { className: "field grow" }, [element("label", { for: id, text: label }), control]);
 }
 
 function selectField(label, value, options, onChange) {
@@ -287,21 +314,21 @@ function selectField(label, value, options, onChange) {
 }
 
 function removeButton(label, onClick) {
-  return element("button", { type: "button", className: "quiet", text: "Remove", "aria-label": label, onclick: onClick });
+  return element("button", { type: "button", className: "remove", "aria-label": label, onclick: onClick }, [icon("mark", CROSS)]);
 }
 
 function renderExtraLinks() {
   $("extra-links").replaceChildren(...state.form.extraLinks.map((link, number) => {
     const messages = element("div", { className: "messages", "aria-live": "polite", "data-link": number });
+    const remove = removeButton(`Remove the link ${link.key}`, () => {
+      state.form.extraLinks.splice(number, 1);
+      renderExtraLinks();
+      refresh();
+    });
     return element("div", { className: "item" }, [
       element("div", { className: "row" }, [
-        inputField("Link name", link.key, (value) => { link.key = value; }, { placeholder: "discussions" }),
-        inputField("Address", link.url, (value) => { link.url = value; }, { type: "url" }),
-        removeButton(`Remove the link ${link.key}`, () => {
-          state.form.extraLinks.splice(number, 1);
-          renderExtraLinks();
-          refresh();
-        }),
+        inputField("Link name", link.key, (value) => { link.key = value; }, { placeholder: "wiki" }),
+        inputField("Address", link.url, (value) => { link.url = value; }, { type: "url" }, remove),
       ]),
       messages,
     ]);
@@ -334,20 +361,19 @@ function renderDependencies() {
     if (entry.kept !== undefined) {
       const names = Array.isArray(entry.kept.any_of) ? entry.kept.any_of.map((member) => member && member.id).join(" or ") : "";
       return element("div", { className: "item" }, [
-        element("p", { className: "hint", text: `${entry.kept.kind || ""} ${names}: alternatives, kept as they are.` }),
-        remove,
+        element("div", { className: "item-head" }, [
+          element("p", { className: "hint", text: `${entry.kept.kind || ""} ${names}: alternatives, kept as they are.` }),
+          remove,
+        ]),
         messages,
       ]);
     }
     return element("div", { className: "item" }, [
-      element("div", { className: "row" }, [
+      element("div", { className: "row compact" }, [
         inputField("Id", entry.id, (value) => { entry.id = value; }, { list: "mod-ids" }),
         selectField("Kind", entry.kind || "required", KINDS.map((kind) => [kind, kind]), (value) => { entry.kind = value; }),
-      ]),
-      element("div", { className: "row" }, [
         inputField("Oldest version (optional)", entry.min, (value) => { entry.min = value; }),
-        inputField("Newest version (optional)", entry.max, (value) => { entry.max = value; }),
-        remove,
+        inputField("Newest version (optional)", entry.max, (value) => { entry.max = value; }, {}, remove),
       ]),
       messages,
     ]);
@@ -463,7 +489,7 @@ async function measureFromUrl(record, role, facts, preview, messages) {
   if (bytes) await measureBytes(record, role, bytes, facts, preview, ticket);
 }
 
-function imageEditor(record, role, place, onRemove) {
+function imageEditor(record, role, place, title, onRemove) {
   const facts = element("p", { className: "hint", text: describeRecord(record) });
   const previous = measured.get(record);
   const preview = element("div", { className: "thumb" }, previous && previous.url ? [element("img", { src: previous.url, alt: "" })] : []);
@@ -488,7 +514,12 @@ function imageEditor(record, role, place, onRemove) {
     }
     await measureBytes(record, role, bytes, facts, preview, ticket);
   });
-  const children = [];
+  const children = [
+    element("div", { className: "item-head" }, [
+      element("h4", { text: title }),
+      removeButton(role === ICON ? "Remove the icon" : `Remove ${title}`, onRemove),
+    ]),
+  ];
   if (role === DESCRIPTION) {
     children.push(inputField("Image id", record.id, (value) => { record.id = value; }, { placeholder: "settings-window", "data-field": `${place}.id` }));
   }
@@ -496,7 +527,7 @@ function imageEditor(record, role, place, onRemove) {
     element("div", { className: "field" }, [element("label", { for: fileId, text: "Image file" }), file]),
     element("div", { className: "row" }, [
       inputField("Https address where it is or will be hosted", record.url, (value) => { record.url = value; }, { type: "url", "data-field": `${place}.url` }),
-      element("button", { type: "button", text: "Measure from the address", onclick: () => measureFromUrl(record, role, facts, preview, fetchMessages) }),
+      element("button", { type: "button", className: "beside", text: "Measure from the address", onclick: () => measureFromUrl(record, role, facts, preview, fetchMessages) }),
     ]),
     fetchMessages,
     element("div", { className: "measure" }, [preview, facts]),
@@ -504,10 +535,7 @@ function imageEditor(record, role, place, onRemove) {
       inputField("License of the image (optional)", record.license, (value) => { record.license = value; }, { placeholder: "the mod's license", "data-field": `${place}.license` }),
       inputField("Credit (optional)", record.attribution, (value) => { record.attribution = value; }, { "data-field": `${place}.attribution` }),
     ]),
-    element("div", { className: "row" }, [
-      inputField("Address of the original work (optional)", record.source, (value) => { record.source = value; }, { type: "url", "data-field": `${place}.source` }),
-      removeButton(role === ICON ? "Remove the icon" : "Remove this image", onRemove),
-    ]),
+    inputField("Address of the original work (optional)", record.source, (value) => { record.source = value; }, { type: "url", "data-field": `${place}.source` }),
     element("div", { id: `msg-${place}`, className: "messages", "aria-live": "polite" }),
   );
   return element("div", { className: "item" }, children);
@@ -515,14 +543,14 @@ function imageEditor(record, role, place, onRemove) {
 
 function renderImages() {
   const icon = state.form.icon;
-  $("icon").replaceChildren(...(icon ? [imageEditor(icon, ICON, "images.icon", () => {
+  $("icon").replaceChildren(...(icon ? [imageEditor(icon, ICON, "images.icon", "Icon", () => {
     state.form.icon = null;
     renderImages();
     refresh();
   })] : []));
   $("add-icon").hidden = Boolean(icon);
   $("description-images").replaceChildren(...state.form.descriptionImages.map((record, number) =>
-    imageEditor(record, DESCRIPTION, `images.description[${number}]`, () => {
+    imageEditor(record, DESCRIPTION, `images.description[${number}]`, `Image ${number + 1}`, () => {
       state.form.descriptionImages.splice(number, 1);
       renderImages();
       refresh();
@@ -619,6 +647,11 @@ function dependencyRows() {
 
 function extraMessages() {
   const found = [];
+  for (const link of state.form.extraLinks) {
+    if (!isFixedLink(link.key)) continue;
+    const key = link.key.trim();
+    found.push({ level: ERROR, path: `links.${key}`, text: `'${key}' has its own field above, so this row is not written. Remove the row and fill that field.` });
+  }
   const records = [];
   if (state.form.icon) records.push(["images.icon", state.form.icon]);
   state.form.descriptionImages.forEach((record, number) => records.push([`images.description[${number}]`, record]));
@@ -716,6 +749,7 @@ function icon(className, shapes) {
 }
 
 const PUZZLE = [["path", { d: "M5 8h3.5a2 2 0 1 1 4 0H16v3.5a2 2 0 1 1 0 4V19H5v-3.5a2 2 0 1 0 0-4z" }]];
+const CROSS = [["path", { d: "M7 7l10 10" }], ["path", { d: "M17 7L7 17" }]];
 const STATUS_ICONS = {
   done: [["path", { d: "M7 12.5l3.5 3.5L17 9" }]],
   fix: [["path", { d: "M12 7.5v5.5" }], ["circle", { cx: "12", cy: "16.5", r: "0.5" }]],
@@ -745,7 +779,7 @@ function renderCard() {
   $("card").replaceChildren(picture, body);
 }
 
-function renderSteps() {
+function renderSections() {
   const errors = new Map();
   for (const entry of current.messages) {
     if (entry.level !== ERROR || entry.path === "archive") continue;
@@ -758,8 +792,7 @@ function renderSteps() {
   for (const section of $("form").querySelectorAll(":scope > section")) {
     if (section.hidden || section.dataset.nav === "off") continue;
     const heading = section.querySelector("h2");
-    const number = heading.querySelector(".step").textContent;
-    const title = [...heading.childNodes].filter((node) => node.nodeType === Node.TEXT_NODE).map((node) => node.textContent).join("").trim();
+    const title = heading.textContent.trim();
     const shown = section.querySelectorAll(".msg.error").length;
     const filled = [...section.querySelectorAll("input, select, textarea")].some((field) =>
       field.type === "checkbox" ? field.checked : field.type !== "file" && field.type !== "radio" && field.value.trim() && field.tagName !== "SELECT")
@@ -768,16 +801,16 @@ function renderSteps() {
     const kind = count && shown ? "fix" : count ? "open" : filled ? "done" : "optional";
     if (kind === "fix" || kind === "open") open += 1;
     const detail = kind === "fix" ? `${count} to fix` : kind === "open" ? "To do" : kind === "done" ? "Done" : section.dataset.empty || "Optional";
-    items.push(element("li", { className: `step-item ${kind}` }, [
+    items.push(element("li", { className: `section-item ${kind}` }, [
       element("a", { href: `#${heading.id}` }, [
-        element("span", { className: "step-mark" }, [icon("mark", STATUS_ICONS[kind])]),
-        element("span", { className: "step-name", text: `${number}. ${title}` }),
-        element("span", { className: "step-detail", text: detail }),
+        element("span", { className: "section-mark" }, [icon("mark", STATUS_ICONS[kind])]),
+        element("span", { className: "section-name", text: title }),
+        element("span", { className: "section-detail", text: detail }),
       ]),
     ]));
   }
-  $("step-nav").replaceChildren(...items);
-  $("check-count").textContent = open ? `${open} step(s) still need something.` : "Every step passes the checks of this page.";
+  $("section-nav").replaceChildren(...items);
+  $("check-count").textContent = open ? `${open} section(s) still need something.` : "Every section passes the checks of this page.";
 }
 
 function renderOutput() {
@@ -811,7 +844,7 @@ function refresh() {
   renderMessages();
   renderSummary();
   renderCard();
-  renderSteps();
+  renderSections();
   renderOutput();
   renderArchiveResult();
   renderDescriptionPreview();
@@ -819,11 +852,12 @@ function refresh() {
 }
 
 function renderAll() {
+  needsLoader = Boolean(state.form.loaderId);
   renderMode();
   renderFields();
   renderLoaderOptions();
-  renderLoaderBounds();
-  renderTypeSteps();
+  renderLoader();
+  renderTypeSections();
   renderExtraLinks();
   renderPlatforms();
   renderDependencies();
@@ -925,6 +959,7 @@ async function prefill() {
       filled.push(label);
     }
   };
+  fill("id", ["id"], facts.name);
   fill("name", ["name"], facts.name);
   fill("abstract", ["abstract"], facts.abstract);
   fill("license", ["license"], facts.license);
@@ -932,7 +967,7 @@ async function prefill() {
   fill("bug tracker", ["links", "bugtracker"], facts.bugtracker);
   renderFields();
   const notes = [filled.length ? `Filled ${filled.join(", ")}. Check each value.` : "Nothing to fill, the fields already have values."];
-  if (facts.fork) notes.push("The repository is a fork, so the first ownership proof in step 13 does not apply.");
+  if (facts.fork) notes.push("The repository is a fork, so the first ownership proof, a repository in your own account, does not apply.");
   say("msg-prefill", null, notes.join(" "));
   $("organization-note").hidden = !facts.organization;
   $("organization-note").textContent = facts.organization
@@ -1028,8 +1063,26 @@ async function loadText(url) {
   return response.text();
 }
 
+// The bar is fixed to the bottom of the window and the page holds that much
+// space free for it. Its height grows with the message inside it, most of all
+// on a narrow window, so the reserve follows the height that is measured.
+function trackToolbar() {
+  const bar = document.querySelector(".toolbar");
+  if (!bar || typeof ResizeObserver !== "function") return;
+  let written = null;
+  const reserve = () => {
+    const height = Math.ceil(bar.getBoundingClientRect().height);
+    if (height === written || !height) return;
+    written = height;
+    document.documentElement.style.setProperty("--toolbar", `${height}px`);
+  };
+  new ResizeObserver(reserve).observe(bar);
+  reserve();
+}
+
 async function start() {
   bindStatic();
+  trackToolbar();
   restore();
   status("Loading the rules of the index.");
   try {
