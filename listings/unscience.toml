@@ -9,17 +9,17 @@ unscience lets you do *things* to KSA
 
 ![thug-life](ksa-image:thug-life_01)
 
-![thug-life](ksa-image:garrys-torch_01)
+![garrys-torch](ksa-image:garrys-torch_01)
 
-![thug-life](ksa-image:zippo_01)
+![zippo](ksa-image:zippo_01)
 
-![thug-life](ksa-image:godzilla_01)
+![godzilla1](ksa-image:godzilla_01)
 
-![thug-life](ksa-image:godzilla_02)
+![godzilla2](ksa-image:godzilla_02)
 
-![thug-life](ksa-image:free-fallin_01)"""
+![free-fallin](ksa-image:free-fallin_01)"""
 license = "MIT"
-tags = ["parts", "gameplay", "visual", "audio", "tools", "hacks"]
+tags = ["parts", "gameplay", "visual", "audio", "tools"]
 
 [releases]
 github = "meow-sci/unscience"
@@ -31,6 +31,13 @@ bugtracker = "https://github.com/meow-sci/unscience/issues"
 
 [compatibility]
 game_min = "2026.9.10.5438"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/meow-sci/unscience/main/docs/media/icon_1024.webp"
+sha256 = "4740277db35cb09e0dd3e13cb587cfe296ed31b88983d66e1a85db542024ef71"
+width = 1024
+height = 1024
+size = 174644
 
 [[images.description]]
 id = "thug-life_01"
