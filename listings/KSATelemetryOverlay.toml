@@ -47,6 +47,7 @@ authority = "github"
 
 [links]
 forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/webcast-telemetry-overlay.1237/"
+homepage = "https://linktr.ee/caitlynlh"
 repository = "https://github.com/elevatorctln/KSA-Public-Telemetry/"
 spacedock = "https://spacedock.info/mod/4552/Webcast%20Telemetry%20Overlay#info"
 bugtracker = "https://github.com/elevatorctln/KSA-Public-Telemetry/issues"
@@ -58,14 +59,16 @@ game_min = "2026.9.7.5402"
 id = "StarMap"
 min = "0.4.5"
 
+[[dependencies]]
+id = "ModMenu"
+kind = "recommends"
+
 [images.icon]
 url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/icon.png"
 sha256 = "11894dc1f754700b53b6a77a69b6f8b00681b2d50b41d04dc3a4e59edc60af72"
 width = 512
 height = 512
 size = 33471
-attribution = "Screenshot by Caitlyn Hausam"
-source = "https://github.com/elevatorctln/KSA-Public-Telemetry"
 
 [[images.description]]
 id = "9e-hero"
