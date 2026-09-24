@@ -196,6 +196,23 @@ class Resolves(StatusCase):
         self.assertEqual(self.errors(block(id="Pack", state="retracted", version="1.1.0")), [])
 
 
+class Delisted(StatusCase):
+    def test_only_delisted_ids_are_read_casefolded(self):
+        path = self.entries(
+            block(id="Gone", state="delisted"),
+            block(id="Argued", state="disputed"),
+            block(id="Pack", state="retracted", version="1.0.0"),
+        )
+        self.assertEqual(check_status.delisted(path), {"gone"})
+
+    def test_no_status_file_delists_nothing(self):
+        self.assertEqual(check_status.delisted(self.root / "absent.toml"), set())
+
+    def test_a_file_that_does_not_parse_raises(self):
+        with self.assertRaises(ValueError):
+            check_status.delisted(self.status("entries = ["))
+
+
 class Schema(unittest.TestCase):
     def test_the_schema_itself_is_valid(self):
         check_status.validator()
