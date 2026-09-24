@@ -43,13 +43,18 @@ class Outcome:
         return self.outcome == REJECT
 
 
+def releases_root(releases=None):
+    """The checkout of the generated repository."""
+    return Path(releases or os.environ.get("CONTENT_INDEX_RELEASES") or DEFAULT_RELEASES)
+
+
 def load_stamper(releases=None):
     """The stamper and the hosts from the generated repository.
 
     Raises Unavailable when the checkout is missing. The caller reports that as
     could-not-evaluate: a missing checkout says nothing about the listing.
     """
-    root = Path(releases or os.environ.get("CONTENT_INDEX_RELEASES") or DEFAULT_RELEASES)
+    root = releases_root(releases)
     tools = root / "tools" if (root / "tools").is_dir() else root
     if not (tools / "stamp_release.py").is_file():
         raise Unavailable(
@@ -70,8 +75,7 @@ def load_stamper(releases=None):
 
 def load_game_versions(releases=None):
     """The game release list an authored month bound resolves against."""
-    root = Path(releases or os.environ.get("CONTENT_INDEX_RELEASES") or DEFAULT_RELEASES)
-    path = root / "game-versions.json"
+    path = releases_root(releases) / "game-versions.json"
     try:
         return json.loads(path.read_text(encoding="utf-8"))["versions"]
     except (OSError, ValueError, KeyError) as error:
