@@ -1,7 +1,9 @@
 # Only the steward-owned paths are code-owned.
-# Listing and pack version documents are deliberately not code-owned, so the
-# checks alone gate them and a validated document can merge itself without a
-# human. A pack owner record is the steward-approved exception (RFC 0033).
+# Listing and pack documents are deliberately not code-owned, so the checks
+# alone gate them and a validated document can merge itself without a human.
+# That includes a pack owner record, because the checks let a pull request add
+# one only with the first version of its pack, and any other change to one
+# waits for a steward.
 #
 # CODEOWNERS itself lives under .github/, so that directory rule covers it.
 #
@@ -11,7 +13,6 @@
 
 /index-status.toml @KSAModding/content-manager-stewards
 /tags.toml        @KSAModding/content-manager-stewards
-/packs/*/owner.json @KSAModding/content-manager-stewards
 /.github/          @KSAModding/content-manager-stewards
 /tools/            @KSAModding/content-manager-stewards
 /schemas/          @KSAModding/content-manager-stewards
