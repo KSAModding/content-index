@@ -45,12 +45,43 @@ class Api:
 
 
 class PackOwnership(unittest.TestCase):
-    def test_a_first_claim_always_waits_for_a_steward(self):
+    def test_a_first_claim_by_its_own_author_verifies(self):
         api = Api({(OWNER, HEAD): owner()})
         result = pack_ownership.verify(api, pull(), PATH, HEAD)
+        self.assertEqual(result.state, ownership.VERIFIED)
+        self.assertEqual(result.proof, pack_ownership.PROOF)
+
+    def test_a_first_claim_matches_the_login_in_any_case(self):
+        api = Api({(OWNER, HEAD): owner("maxi")})
+        result = pack_ownership.verify(api, pull("Maxi"), PATH, HEAD)
+        self.assertEqual(result.state, ownership.VERIFIED)
+
+    def test_a_first_claim_must_name_the_login_of_the_author_too(self):
+        api = Api({(OWNER, HEAD): owner("Somebody", 7)})
+        result = pack_ownership.verify(api, pull(), PATH, HEAD)
+        self.assertEqual(result.state, ownership.REJECTED)
+
+    def test_a_pack_folder_without_a_record_on_the_base_branch_is_no_first_claim(self):
+        api = Api({(OWNER, HEAD): owner()}, {("packs", BASE): [("Starter", "dir")]})
+        result = pack_ownership.verify(api, pull(), PATH, HEAD)
         self.assertEqual(result.state, ownership.UNVERIFIED)
-        self.assertIn("first claim", result.reason)
+        self.assertIn("already held", result.reason)
         self.assertIn("steward", result.instructions)
+        self.assertNotIn((OWNER, HEAD), api.reads)
+
+    def test_an_id_held_in_another_case_is_no_first_claim(self):
+        for folders in (
+            {("packs", BASE): [("starter", "dir")]},
+            {("listings", BASE): [("STARTER.toml", "file")]},
+        ):
+            with self.subTest(folders=folders):
+                api = Api({(OWNER, HEAD): owner()}, folders)
+                result = pack_ownership.verify(api, pull(), PATH, HEAD)
+                self.assertEqual(result.state, ownership.UNVERIFIED)
+
+    def test_a_base_branch_that_cannot_be_listed_reaches_no_verdict(self):
+        result = pack_ownership.verify(UnreadableApi({(OWNER, HEAD): owner()}), pull(), PATH, HEAD)
+        self.assertEqual(result.state, ownership.COULD_NOT_EVALUATE)
 
     def test_a_first_claim_must_record_the_pull_request_author(self):
         api = Api({(OWNER, HEAD): owner("Attacker", 9)})

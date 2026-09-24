@@ -267,11 +267,11 @@ class Table(unittest.TestCase):
     def test_pack_guidance_does_not_suggest_a_release_host_proof(self):
         result = ownership.Result(
             ownership.UNVERIFIED,
-            "this is the first claim",
-            instructions="A steward must accept the first claim.",
+            "Somebody is not the recorded owner of this pack",
+            instructions="A steward decides whether the recorded pack owner must change.",
         )
         decision = decide.decide(verdict(), True, result)
-        self.assertIn("steward must accept", decision.comment)
+        self.assertIn("recorded pack owner must change", decision.comment)
         self.assertNotIn("release repository", decision.comment)
 
     def test_ownership_that_could_not_be_checked_waits_too(self):
@@ -906,35 +906,53 @@ class SpaceDockApi(unittest.TestCase):
 class FolderApi(unittest.TestCase):
     """How `Api.folder` lists a folder of the index on a branch."""
 
-    def fetch(self, answer=None, error=None):
+    def fetch(self, answer=None, error=None, ref="main"):
         opener = mock.Mock(side_effect=error) if error else mock.Mock(return_value=answer)
         api = decide.Api("KSAModding/content-index", "app", public_token="workflow")
         with mock.patch.object(decide.urllib.request, "urlopen", opener):
-            result = api.folder("packs", "main")
+            result = api.folder("packs", ref)
         return result, opener
 
+    @staticmethod
+    def tree(entries, truncated=False):
+        return Answer(json.dumps({"sha": "t0", "tree": entries, "truncated": truncated}).encode())
+
     def test_the_entries_come_back_as_names_and_types(self):
-        body = json.dumps([{"name": "Starter", "type": "dir"}, {"name": "README.md", "type": "file"}])
-        entries, opener = self.fetch(answer=Answer(body.encode()))
+        answer = self.tree([{"path": "Starter", "type": "tree"}, {"path": "README.md", "type": "blob"}])
+        entries, opener = self.fetch(answer=answer)
         self.assertEqual(entries, [("Starter", "dir"), ("README.md", "file")])
         request = opener.call_args.args[0]
         self.assertEqual(
             request.full_url,
-            "https://api.github.com/repos/KSAModding/content-index/contents/packs?ref=main",
+            "https://api.github.com/repos/KSAModding/content-index/git/trees/main%3Apacks",
         )
+
+    def test_a_branch_with_a_slash_is_one_path_segment(self):
+        _, opener = self.fetch(answer=self.tree([]), ref="stack/base")
+        self.assertEqual(
+            opener.call_args.args[0].full_url,
+            "https://api.github.com/repos/KSAModding/content-index/git/trees/stack%2Fbase%3Apacks",
+        )
+
+    def test_more_than_a_thousand_entries_are_listed(self):
+        answer = self.tree([{"path": f"p{n}", "type": "tree"} for n in range(1500)])
+        entries, _ = self.fetch(answer=answer)
+        self.assertEqual(len(entries), 1500)
 
     def test_a_folder_that_is_not_there_has_no_entries(self):
         entries, _ = self.fetch(error=http_error(404))
         self.assertEqual(entries, [])
 
-    def test_a_listing_the_api_may_cut_short_is_unavailable(self):
-        body = json.dumps([{"name": f"p{n}", "type": "dir"} for n in range(1000)])
+    def test_a_listing_the_api_cut_short_is_unavailable(self):
+        answer = self.tree([{"path": "Starter", "type": "tree"}], truncated=True)
         with self.assertRaises(ownership.Unavailable):
-            self.fetch(answer=Answer(body.encode()))
+            self.fetch(answer=answer)
 
     def test_a_file_is_not_a_folder(self):
         with self.assertRaises(ownership.Unavailable):
-            self.fetch(answer=Answer(b'{"name": "packs", "type": "file"}'))
+            self.fetch(error=http_error(422))
+        with self.assertRaises(ownership.Unavailable):
+            self.fetch(answer=Answer(b'{"sha": "b0", "content": "", "encoding": "base64"}'))
 
 
 class MergeBaseApi(unittest.TestCase):
@@ -1256,6 +1274,60 @@ class Act(unittest.TestCase):
             self.assertEqual(self.act(), 0)
         self.assertEqual(self.statuses()[-1]["state"], "failure")
         self.assertEqual(self.api.graphql_calls, [])
+
+    def test_a_first_pack_claim_by_its_author_merges_itself(self):
+        owner_path = "packs/Starter/owner.json"
+        self.api.files = {
+            (owner_path, "abc"): json.dumps({"github_login": "Maxi", "github_id": 7})
+        }
+        with mock.patch.object(
+            decide,
+            "changed_paths",
+            lambda api, number: [
+                check_scope.Change("packs/Starter/1.0.0.toml", "added"),
+                check_scope.Change(owner_path, "added"),
+            ],
+        ):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.api.graphql_calls, [{"id": "PR_5"}])
+        self.assertEqual(self.statuses()[-1]["state"], "success")
+        self.assertEqual(self.labelled(), ["pack"])
+
+    def test_a_first_pack_claim_of_an_id_a_listing_holds_waits(self):
+        owner_path = "packs/Starter/owner.json"
+        self.api.files = {
+            (owner_path, "abc"): json.dumps({"github_login": "Maxi", "github_id": 7})
+        }
+        self.api.folders = {("listings", "main"): [("starter.toml", "file")]}
+        with mock.patch.object(
+            decide,
+            "changed_paths",
+            lambda api, number: [
+                check_scope.Change("packs/Starter/1.0.0.toml", "added"),
+                check_scope.Change(owner_path, "added"),
+            ],
+        ):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.api.graphql_calls, [])
+        self.assertIn(decide.STEWARD_LABEL, self.labelled())
+
+    def test_a_later_version_cannot_change_the_recorded_pack_owner(self):
+        owner_path = "packs/Starter/owner.json"
+        self.api.files = {
+            (owner_path, "main"): json.dumps({"github_login": "Maxi", "github_id": 7}),
+            (owner_path, "abc"): json.dumps({"github_login": "Other", "github_id": 9}),
+        }
+        with mock.patch.object(
+            decide,
+            "changed_paths",
+            lambda api, number: [
+                check_scope.Change("packs/Starter/2.0.0.toml", "added"),
+                check_scope.Change(owner_path, "modified"),
+            ],
+        ):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.api.graphql_calls, [])
+        self.assertIn(decide.STEWARD_LABEL, self.labelled())
 
     def test_the_recorded_pack_owner_can_merge_a_new_version(self):
         owner_path = "packs/Starter/owner.json"
