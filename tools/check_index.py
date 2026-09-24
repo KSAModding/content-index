@@ -9,6 +9,8 @@ import sys
 import tomllib
 from pathlib import Path
 
+import check_schema
+
 ROOT = Path(__file__).resolve().parent.parent
 LISTINGS = ROOT / "listings"
 PACKS = ROOT / "packs"
@@ -19,6 +21,10 @@ LOADER_TYPE = "mod-loader"
 MOD_TYPE = "mod"
 
 PINNED_SECTIONS = ("mods", "vehicles", "saves")
+MEMBER_SECTION = "mods"
+
+REQUIRED = "required"
+CONFLICT = "conflict"
 
 THREAD_ID = "[0-9]+"
 ABSTRACT_LIMIT = 280
@@ -122,12 +128,17 @@ def check_collisions(entries):
     return errors
 
 
-def check_references(entries):
-    """Every reference that resolves to a listed id has to name the right type."""
+def _targets(entries):
+    """The holder each id resolves to, keyed casefolded."""
     targets = {}
     for entry in entries:
         targets.setdefault(entry.folded, entry)
+    return targets
 
+
+def check_references(entries):
+    """Every reference that resolves to a listed id has to name the right type."""
+    targets = _targets(entries)
     errors = []
     for entry in entries:
         _check_successor(entry, targets, entry.where, errors)
@@ -207,21 +218,151 @@ def _check_dependency_id(entry, targets, where, value, errors):
 
 
 def _check_pins(entry, targets, where, errors):
+    for section, index, member in _pins(entry):
+        found = _resolved(entry, targets, member.get("id"), f"{where}: {section}[{index}]", errors)
+        if found == PACK_TYPE:
+            errors.append(
+                f"{where}: {section}[{index}]: '{member['id']}' is itself a pack, "
+                "and a pack does not nest in spec_version 1"
+            )
+
+
+def check_members(entries, documents, delisted, releases):
+    """The pins of each changed pack version, against the listings and the stamped releases.
+
+    `releases` is the release folder of the generated repository, and one that
+    cannot be read raises OSError or ValueError.
+    """
+    changed = [entry for entry in entries if entry.where in documents and entry.type == PACK_TYPE]
+    if not changed:
+        return []
+    if not releases.is_dir():
+        raise FileNotFoundError(f"there is no release folder at {releases}")
+
+    targets = _targets(entries)
+    semver = re.compile(_schema_pattern("semver"))
+    errors = []
+    for entry in changed:
+        pinned = {}
+        stamped = []
+        for section, index, member in _pins(entry):
+            where = f"{entry.where}: {section}[{index}]"
+            problem, release = _member(section, member, targets, delisted, releases, semver)
+            if problem:
+                errors.append(f"{where}: {problem}")
+            elif release is not None:
+                stamped.append((where, member, release))
+            if section == MEMBER_SECTION and all(isinstance(member.get(key), str) for key in ("id", "version")):
+                pinned.setdefault(member["id"].casefold(), member)
+        for where, member, release in stamped:
+            errors.extend(f"{where}: {problem}" for problem in _incomplete(member, release, pinned))
+    return errors
+
+
+def _pins(entry):
     for section in PINNED_SECTIONS:
         pinned = entry.document.get(section)
         if not isinstance(pinned, list):
             continue
         for index, member in enumerate(pinned):
-            if not isinstance(member, dict):
-                continue
-            found = _resolved(
-                entry, targets, member.get("id"), f"{where}: {section}[{index}]", errors
-            )
-            if found == PACK_TYPE:
-                errors.append(
-                    f"{where}: {section}[{index}]: '{member['id']}' is itself a pack, "
-                    "and a pack does not nest in spec_version 1"
+            if isinstance(member, dict):
+                yield section, index, member
+
+
+def _member(section, member, targets, delisted, releases, semver):
+    """Why a pin is refused, or else the release it pins when there is one to read."""
+    identifier = member.get("id")
+    version = member.get("version")
+    if not isinstance(identifier, str) or not isinstance(version, str):
+        return None, None
+    if section != MEMBER_SECTION:
+        return f"'{identifier}' cannot be pinned, because no content type for {section} is defined yet", None
+
+    target = targets.get(identifier.casefold())
+    if target is None:
+        return f"'{identifier}' is not a listed mod, and a pack pins only listed mods", None
+    if target.type == PACK_TYPE:
+        return None, None  # check_references reports a nested pack.
+    if target.type != MOD_TYPE:
+        return f"'{identifier}' is listed as a {target.type}, and a pack pins only mods", None
+    if target.folded in delisted:
+        return f"'{identifier}' is delisted, and a pack pins only listed mods", None
+
+    if not semver.match(version):
+        return None, None  # check_schema reports it, and it must never become a path.
+
+    path = releases / target.identifier / f"{version}.json"
+    if not path.is_file():
+        return f"'{identifier}' has no stamped release {version}", None
+    release = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(release, dict) or not isinstance(release.get("dependencies", []), list):
+        raise ValueError(f"{path} is not a release file")
+    if release.get("yanked") is True:
+        return f"'{identifier}' {version} is yanked", None
+    return None, release
+
+
+def _incomplete(member, release, pinned):
+    """The dependencies of one pinned release that the other pins do not meet."""
+    problems = []
+    for dependency in release.get("dependencies", []):
+        if not isinstance(dependency, dict):
+            continue
+        kind = dependency.get("kind")
+        if kind == REQUIRED:
+            options = dependency.get("any_of", [dependency])
+            if not any(_pinned_within(option, pinned) for option in options):
+                problems.append(
+                    f"{_named(member)} requires {_wanted(options)}, and the pack "
+                    f"{_pinned_instead(options, pinned)}"
                 )
+        elif kind == CONFLICT and _folded(dependency) != member["id"].casefold():
+            if _pinned_within(dependency, pinned):
+                problems.append(
+                    f"{_named(member)} conflicts with {_wanted([dependency])}, and the pack "
+                    f"pins {_named(pinned[_folded(dependency)])}"
+                )
+    return problems
+
+
+def _folded(dependency):
+    identifier = dependency.get("id")
+    return identifier.casefold() if isinstance(identifier, str) else None
+
+
+def _pinned_within(dependency, pinned):
+    member = pinned.get(_folded(dependency))
+    version = check_schema.semver_key(member.get("version")) if member else None
+    low = check_schema.semver_key(dependency.get("min"))
+    high = check_schema.semver_key(dependency.get("max"))
+    return version is not None and (low is None or low <= version) and (high is None or version <= high)
+
+
+def _wanted(options):
+    described = [f"'{option.get('id')}'{_bounds(option)}" for option in options]
+    return described[0] if len(described) == 1 else f"one of {', '.join(described)}"
+
+
+def _bounds(option):
+    low, high = option.get("min"), option.get("max")
+    if low and high:
+        return f" {low} to {high}"
+    if low:
+        return f" {low} or newer"
+    if high:
+        return f" {high} or older"
+    return ""
+
+
+def _pinned_instead(options, pinned):
+    found = [_named(pinned[key]) for key in map(_folded, options) if key in pinned]
+    if found:
+        return f"pins {' and '.join(found)}"
+    return "does not pin it" if len(options) == 1 else "pins none of them"
+
+
+def _named(member):
+    return f"'{member['id']}' {member['version']}"
 
 
 def check(entries):
@@ -229,9 +370,13 @@ def check(entries):
     return check_collisions(entries) + check_references(entries)
 
 
+def _schema_pattern(name, schema=SCHEMA):
+    return json.loads(schema.read_text(encoding="utf-8"))["$defs"][name]["pattern"]
+
+
 def thread_pattern(schema=SCHEMA):
     """The schema's rule for links.forums, with the thread id captured."""
-    rule = json.loads(schema.read_text(encoding="utf-8"))["$defs"]["forumsUrl"]["pattern"]
+    rule = _schema_pattern("forumsUrl", schema)
     if rule.count(THREAD_ID) != 1:
         raise ValueError(f"{_relative(schema, ROOT)}: forumsUrl has no single thread id to capture")
     return re.compile(rule.replace(THREAD_ID, f"({THREAD_ID})"))
