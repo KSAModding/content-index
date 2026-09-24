@@ -9,6 +9,7 @@ from collections import namedtuple
 SUFFIX = r"\.[Tt][Oo][Mm][Ll]"
 LISTING = re.compile(rf"^listings/[^/]+{SUFFIX}(?![\s\S])")
 PACK = re.compile(rf"^packs/[^/]+/[^/]+{SUFFIX}(?![\s\S])")
+OWNER = re.compile(r"^packs/[^/]+/owner\.json(?![\s\S])")
 
 # How many documents merge themselves at once. Each one costs an ownership
 # check, a handful of API calls. The validation downloads the release of every
@@ -49,6 +50,17 @@ def documents(changes):
     return [change.path for change in changes if is_document(change.path)]
 
 
+def claims(changes):
+    """The pack owner records added together with a version of their own pack.
+
+    Only the shape is read here. Whether the pack id is still free is read from
+    the base branch by the ownership check.
+    """
+    added = [change.path for change in changes if change.status == "added"]
+    folders = {path.rsplit("/", 1)[0] for path in added if kind_of(path) == PACK_KIND}
+    return [path for path in added if OWNER.match(path) and path.rsplit("/", 1)[0] in folders]
+
+
 def kinds(changes):
     """The kinds of document `changes` touches, in the order KINDS names them."""
     found = {kind_of(change.path) for change in changes}
@@ -59,15 +71,21 @@ def evaluate(changes):
     """Whether this set of changes is an auto-merge candidate.
 
     Documents only, each one added or changed, and at most MAX_DOCUMENTS of
-    them. Whether the author may write each document is the ownership check's
-    answer, not this one's.
+    them. The owner record of a first pack claim comes with its pack. Whether
+    the author may write each document is the ownership check's answer, not
+    this one's.
 
     Returns (candidate, documents, reason). The reason is written for the
     author when the answer is no, and is empty when it is yes.
     """
     changes = list(changes)
     found = documents(changes)
-    other = [change.path for change in changes if not is_document(change.path)]
+    claimed = set(claims(changes))
+    other = [
+        change.path
+        for change in changes
+        if not is_document(change.path) and change.path not in claimed
+    ]
 
     if not changes:
         return False, [], "the change touches no file at all"

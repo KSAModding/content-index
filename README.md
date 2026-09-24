@@ -23,7 +23,7 @@ https://ksamodding.github.io/content-index-releases/v1/index.json
 |---|---|
 | `listings/<id>.toml` | One authored document per mod or mod loader. |
 | `packs/<id>/<version>.toml` | One authored document per mod pack version. |
-| `packs/<id>/owner.json` | The steward-approved GitHub account that owns a pack id. |
+| `packs/<id>/owner.json` | The GitHub account that owns a pack id, recorded by its first claim. |
 | `index-status.toml` | The index's own voice about a listing. Stewards only. |
 | `tags.toml` | The curated tag vocabulary that clients use for filters. Stewards only. |
 | `POLICY.md` | How a takedown or an id dispute is filed, and what a steward does with it. |

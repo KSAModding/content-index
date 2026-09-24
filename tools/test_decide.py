@@ -245,11 +245,11 @@ class Table(unittest.TestCase):
     def test_pack_guidance_does_not_suggest_a_release_host_proof(self):
         result = ownership.Result(
             ownership.UNVERIFIED,
-            "this is the first claim",
-            instructions="A steward must accept the first claim.",
+            "Somebody is not the recorded owner of this pack",
+            instructions="A steward decides whether the recorded pack owner must change.",
         )
         decision = decide.decide(verdict(), True, result)
-        self.assertIn("steward must accept", decision.comment)
+        self.assertIn("recorded pack owner must change", decision.comment)
         self.assertNotIn("release repository", decision.comment)
 
     def test_ownership_that_could_not_be_checked_waits_too(self):
@@ -1127,6 +1127,42 @@ class Act(unittest.TestCase):
             self.assertEqual(self.act(), 0)
         self.assertEqual(self.statuses()[-1]["state"], "failure")
         self.assertEqual(self.api.graphql_calls, [])
+
+    def test_a_first_pack_claim_by_its_author_merges_itself(self):
+        owner_path = "packs/Starter/owner.json"
+        self.api.files = {
+            (owner_path, "abc"): json.dumps({"github_login": "Maxi", "github_id": 7})
+        }
+        with mock.patch.object(
+            decide,
+            "changed_paths",
+            lambda api, number: [
+                check_scope.Change("packs/Starter/1.0.0.toml", "added"),
+                check_scope.Change(owner_path, "added"),
+            ],
+        ):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.api.graphql_calls, [{"id": "PR_5"}])
+        self.assertEqual(self.statuses()[-1]["state"], "success")
+        self.assertEqual(self.labelled(), ["pack"])
+
+    def test_a_later_version_cannot_change_the_recorded_pack_owner(self):
+        owner_path = "packs/Starter/owner.json"
+        self.api.files = {
+            (owner_path, "main"): json.dumps({"github_login": "Maxi", "github_id": 7}),
+            (owner_path, "abc"): json.dumps({"github_login": "Other", "github_id": 9}),
+        }
+        with mock.patch.object(
+            decide,
+            "changed_paths",
+            lambda api, number: [
+                check_scope.Change("packs/Starter/2.0.0.toml", "added"),
+                check_scope.Change(owner_path, "modified"),
+            ],
+        ):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.api.graphql_calls, [])
+        self.assertIn(decide.STEWARD_LABEL, self.labelled())
 
     def test_the_recorded_pack_owner_can_merge_a_new_version(self):
         owner_path = "packs/Starter/owner.json"

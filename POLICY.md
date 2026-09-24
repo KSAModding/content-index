@@ -53,9 +53,25 @@ For a legal takedown of the files themselves, the release host's own process is 
 The index then delists the listing on the rights holder's request, or once the host has removed the files.
 Scrubbing this repository's history is a separate and heavier operation, done only when it is legally required.
 
+## Leaving a pack
+
+A pack pins only listed mods, and the author of a pinned mod can ask to leave the pack, per [RFC 0080](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0080-pack-claims-and-members.md).
+Use the [takedown form](https://github.com/KSAModding/content-index/issues/new?template=takedown.yml), and name the pack and your mod.
+
+What a steward does:
+
+1. Checks that the request comes from the owner of the mod's listing, by the ownership proof the listing uses or by its forums account.
+2. Asks the pack author on the issue to publish a new pack version without the mod, through the ordinary pull request.
+3. Retracts every accepted version of the pack that pins the mod, with one `retracted` entry per version and a reason that names the request.
+
+The steward does step 3 also when the pack author does not answer.
+A pack whose versions are all retracted stays listed, and its next version brings it back.
+A retracted version stays installed where it is, and a client stops offering it, as for a yanked release.
+
 ## Filing an id dispute
 
 The id is the folder name the game installs a mod as, so two mods cannot share one, and the index gives an id to the first pull request that claims it and verifies.
+A pack id is given the same way, and a squatted pack id, such as a generic `StarterPack`, is an id dispute like any other.
 
 Use the [id dispute form](https://github.com/KSAModding/content-index/issues/new?template=id-dispute.yml) when a listed id is one you believe is yours, or when the ownership of a listing is contested, for example after a handover.
 
