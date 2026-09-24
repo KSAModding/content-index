@@ -96,6 +96,8 @@ Some rules need more than the document, and belong to the checks around it:
 | A changed document has an `abstract` of at most 280 characters | `tools/check_index.py` warns only. RFC 0031 calls the abstract one or two sentences, and a longer one breaks list views. |
 | The document sits at the path its id and type say | `tools/check_layout.py` |
 | `[loader].id` references content of type `mod-loader`, a dependency id references a `mod`, and a pack member is not itself a pack | `tools/check_index.py` |
+| Each pin of a changed pack version names a listed `mod` that is not delisted, at a stamped release that is not yanked, and `[[vehicles]]` and `[[saves]]` stay empty | `tools/check_index.py`, against the release files of the generated repository, per [RFC 0080](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0080-pack-claims-and-members.md) |
+| The pins of a changed pack version are a complete set: every `required` dependency of a pinned release names another pinned mod inside its bounds, one member of an `any_of` is enough, and no `conflict` entry matches another pinned mod | `tools/check_index.py`, from the dependencies in the stamped release files, so a derived entry counts like an authored one |
 | A named `any_of` member carried `Optional = true` in the archive's own `mod.toml` | the stamper ([content-index-releases#13](https://github.com/KSAModding/content-index-releases/issues/13)), which is the only place the archive is read |
 | `[provides].launch` and the `launch` of each `[provides.platform]` entry name a file the release actually contains | the stamper |
 | `install.root` is derivable, and the archive downloads and hashes | `tools/check_release.py`, which reaches the answer by running the stamper against the real archive rather than by repeating its rules |
@@ -106,7 +108,7 @@ Some rules need more than the document, and belong to the checks around it:
 | Each image of a changed document downloads safely and matches its record | `tools/check_images.py` with the document path, by the fetch rules of RFC 0058 |
 | An image record's `license` names identifiers on the SPDX list | `tools/check_license.py` |
 | An id in `index-status.toml` names a listing or a pack that exists, and a retracted version exists on that pack | `tools/check_status.py` |
-| The author controls the release host, or owns the pack id | the ownership workflow ([#4](https://github.com/KSAModding/content-index/issues/4)); pack ownership is read from the steward-owned `packs/<id>/owner.json` on the base branch |
+| The author controls the release host, or owns the pack id | the ownership workflow ([#4](https://github.com/KSAModding/content-index/issues/4)); pack ownership is read from `packs/<id>/owner.json` on the base branch by numeric account id, or from the pull request for a first claim, which adds the owner record together with the first version |
 
 ## Where the schema is stricter than the RFC text
 

@@ -35,7 +35,7 @@ The [listing page](https://ksamodding.github.io/content-index/) writes or change
 
 4. Open a pull request that adds your document, or several of them.
    Up to 15 documents merge themselves, as long as ownership verifies for every one of them: control of the release host for a listing, the account in `packs/<id>/owner.json` for a pack.
-   A pull request that carries anything besides documents, or more than 15 of them, is valid but waits for a steward.
+   A pull request that carries anything besides documents and the owner record of a new pack, or more than 15 documents, is valid but waits for a steward.
 
 ## The license field
 
@@ -107,17 +107,38 @@ Every `launch` must be in your release archive, or the release is rejected.
 
 ## Claiming and updating a pack
 
-A first pack claim adds the pack version and `packs/<id>/owner.json` in the same pull request.
-The owner record names the pull request author's GitHub login and numeric account id.
-A steward must accept this first claim because a pack has no release host that can prove ownership.
+A pack id is first come, first served, as a listing id is, per [RFC 0080](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0080-pack-claims-and-members.md).
+To claim one, open one pull request that adds the first pack version and `packs/<id>/owner.json` with your GitHub login and numeric account id, see [packs/README.md](packs/README.md) for an example.
+When the id is free and the checks pass, the pull request merges itself and the id is yours.
+An owner record that names another account than the one that opened the pull request is rejected.
 
-The accepted owner record is read only from the base branch.
-Changing owner data in a pull request cannot grant ownership or make that pull request merge itself.
+When somebody else says a pack id is theirs, they use the [id dispute form](https://github.com/KSAModding/content-index/issues/new?template=id-dispute.yml), as for a mod.
+The forums thread that announced the pack first is the tiebreaker, see [POLICY.md](POLICY.md#filing-an-id-dispute).
 
-After the first claim, the recorded GitHub account can add one new version document at a time and that pull request can merge itself.
+The owner record is read only from the base branch, by its numeric account id.
+A pull request can add an owner record only together with the first version of its pack.
+A pull request that changes or deletes an owner record never merges itself, and a steward merges it, for example for a handover.
+
+Open the pull requests for later versions from the same account, and they merge themselves.
 An accepted pack version is immutable and cannot be edited, renamed, or deleted.
 Publish a corrected version in a new file.
 A steward retracts a broken version through its version-scoped entry in `index-status.toml`.
+
+Every entry in `[[mods]]` names a listed mod, in its canonical spelling and not delisted, at a release the index has stamped and that is not yanked.
+The pinned set must also be complete:
+
+- Every `required` dependency of a pinned release names another pinned mod whose pinned version is inside the dependency's bounds. For an `any_of` entry, one of its members is enough.
+- No pinned release has a `conflict` entry that matches another pinned mod.
+- `optional`, `recommends` and `suggests` dependencies are not required. Pin one when you want it in the pack.
+
+The checks read the dependencies from the stamped release files, so a dependency the stamper derived counts like one the mod author wrote.
+A mod's loader is not a dependency, and a pack does not pin it.
+The checks refuse every other entry and name it, and they name each missing or conflicting mod together with the pinned release that needs it.
+They also refuse `[[vehicles]]` and `[[saves]]` until those content types exist.
+A pinned mod that is `disputed` passes, and a client warns about it.
+
+When a pinned mod has newer releases, test them and publish a new pack version.
+When a mod author asks to leave your pack, publish a version without that mod, see [POLICY.md](POLICY.md#leaving-a-pack).
 
 Checks then validate the document, inspect your latest release archive, and verify that you control the release host the listing points at.
 The pull request is then labelled `listing` or `pack`, which says which kind of document it changes, and one that changes both carries both labels.
