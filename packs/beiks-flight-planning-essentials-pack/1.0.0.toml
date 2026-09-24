@@ -10,6 +10,7 @@ description = """
 Included mods:
 
 Compendium v0.9.13 by nanonestor
+
 Adds a window, toggled through ModMenu, that lists the bodies in the loaded solar system.
 
 * Bodies are grouped by category, with moons listed under their parent body
@@ -17,11 +18,14 @@ Adds a window, toggled through ModMenu, that lists the bodies in the loaded sola
 * Each body has a page of stats
 
 Forum: https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/compendium.647/
+
 SpaceDock: https://spacedock.info/mod/4074/Compendium
+
 (MIT license)
 
 
 DeltaVMap v1.2.6 by Maxi
+
 An interactive delta-v subway map and transfer-window planner. The map is built from the loaded solar system, so it works with stock and modded systems without setup.
 
 * The map is centered on your current body, and transfers use Hohmann calculations
@@ -30,11 +34,14 @@ An interactive delta-v subway map and transfer-window planner. The map is built 
 * Open it from View → Delta-V Map in flight, or from its tab in the editor
 
 Forum: https://forums.ahwoo.com/threads/deltavmap.978/
+
 SpaceDock: https://spacedock.info/mod/4294/DeltaVMap
+
 (MIT license)
 
 
 Advanced Flight Computer v0.8.0 by Maxi
+
 Maneuver planning, burn execution and closed-loop guidance.
 
 * Quick tools for common maneuvers, plus flyby targeting (hyperbolic orbits supported)
@@ -43,7 +50,9 @@ Maneuver planning, burn execution and closed-loop guidance.
 * Powered guidance for ascent, boostback and landing
 
 Forum: https://forums.ahwoo.com/threads/advanced-flight-computer.783/
+
 SpaceDock: https://spacedock.info/mod/4253/AdvancedFlightComputer
+
 (MIT license)
 
 
@@ -58,7 +67,10 @@ Installation
 2. Find Flight Planning Essentials under Mod Packs
 3. Install. Borea installs the three mods and their dependencies.
 
-Credits and support All credit goes to the mod authors. Report bugs in a mod on its own tracker, and problems with the pack in this thread.
+Credits and support
+- All credit goes to the mod authors. Report bugs in a mod on its own tracker, and problems with the pack in this thread.
+- Icon image is from Tycho Brahe's observations of the Great Comet of 1577, public domain.
+
 """
 
 license = "MIT"
@@ -72,11 +84,11 @@ repository = "https://github.com/renancamm/ksa-beiks-flight-planning-essentials-
 game_min = "2026.9.10.5438"
 
 [images.icon]
-url = "https://raw.githubusercontent.com/renancamm/ksa-beiks-skycharts-modpack/refs/heads/main/listing/pack-icon.jpg"
-sha256 = "bf6a99215b07588315ed80dbaca70910f6876a86e82d9f1297f8c2f6a1b05a5e"
+url = "https://raw.githubusercontent.com/renancamm/ksa-beiks-skycharts-modpack/refs/heads/main/listing/pack-icon.png"
+sha256 = "66114162c33d8ad7c43ab5521bb62b174e865e199385051410980eff7d82f802"
 width = 500
 height = 500
-size = 202704
+size = 237977
 
 [[mods]]
 id = "DeltaVMap"
