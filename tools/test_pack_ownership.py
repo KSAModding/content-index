@@ -39,12 +39,21 @@ class Api:
 
 
 class PackOwnership(unittest.TestCase):
-    def test_a_first_claim_always_waits_for_a_steward(self):
+    def test_a_first_claim_by_its_own_author_verifies(self):
         api = Api({(OWNER, HEAD): owner()})
         result = pack_ownership.verify(api, pull(), PATH, HEAD)
-        self.assertEqual(result.state, ownership.UNVERIFIED)
-        self.assertIn("first claim", result.reason)
-        self.assertIn("steward", result.instructions)
+        self.assertEqual(result.state, ownership.VERIFIED)
+        self.assertEqual(result.proof, pack_ownership.PROOF)
+
+    def test_a_first_claim_matches_the_login_in_any_case(self):
+        api = Api({(OWNER, HEAD): owner("maxi")})
+        result = pack_ownership.verify(api, pull("Maxi"), PATH, HEAD)
+        self.assertEqual(result.state, ownership.VERIFIED)
+
+    def test_a_first_claim_must_name_the_login_of_the_author_too(self):
+        api = Api({(OWNER, HEAD): owner("Somebody", 7)})
+        result = pack_ownership.verify(api, pull(), PATH, HEAD)
+        self.assertEqual(result.state, ownership.REJECTED)
 
     def test_a_first_claim_must_record_the_pull_request_author(self):
         api = Api({(OWNER, HEAD): owner("Attacker", 9)})

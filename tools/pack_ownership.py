@@ -66,8 +66,9 @@ def _read(api, path, ref):
 def verify(api, pull, document_path, head_sha):
     """Verify a pack version against the owner recorded on the base branch.
 
-    A submitted owner record can describe a first claim, but it can never
-    verify that claim. A steward must accept it before it becomes authority.
+    Only when the base branch records no owner is the pack id free, and then the
+    submitted owner record claims it for the account that opened the pull
+    request, first come, first served. After that, only the base branch counts.
     """
     base_ref = (pull.get("base") or {}).get("ref") or ""
     if not base_ref:
@@ -118,8 +119,4 @@ def verify(api, pull, document_path, head_sha):
             ownership.REJECTED,
             f"{path} must name the account that opened the pull request",
         )
-    return ownership.Result(
-        ownership.UNVERIFIED,
-        "this is the first claim for the pack id",
-        instructions="Packs have no release host, so a steward must accept the first claim.",
-    )
+    return ownership.Result(ownership.VERIFIED, "", PROOF)
