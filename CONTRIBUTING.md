@@ -193,6 +193,12 @@ Handing a listing to somebody:
 - **You transfer the repository itself.** The redirect above carries your consent, and the release host moved with it, so the new owner updates the listing without a steward.
 - **You point the listing at a separate repository.** Nobody controls both hosts, so a steward applies it, unless you first put the incoming account's proof on your own repository, for example their `ksa-index-<username>` topic.
 
+An edit to `[compatibility]`, the `[loader]` bounds or `[[dependencies]]` also reaches your newest release that is neither yanked nor `dev`, with the next watcher tick after the merge, per [RFC 0081](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0081-listing-narrowing.md).
+While a pull request that adds a release of your listing is open in content-index-releases, the edit waits and lands in that release.
+Older releases keep their stamp, and an amendment pull request to content-index-releases can change them.
+The comment on your pull request names the release before you merge.
+If you edit the listing for a release that is not out yet, tag it first, or open its release pull request first when your listing has no `[releases]`.
+
 When somebody else changes your listing or your pack, the bot's comment on their pull request mentions you, see [who is told](POLICY.md#who-is-told).
 
 ## After you are listed

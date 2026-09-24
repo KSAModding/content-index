@@ -101,7 +101,7 @@ class Run(unittest.TestCase):
             patch = mock.patch.object(validate, name, passing(name))
             patch.start()
             self.addCleanup(patch.stop)
-        for name in ("run_index", "run_license", "run_status", "run_images"):
+        for name in ("run_index", "run_license", "run_status", "run_images", "run_edits"):
             patch = mock.patch.object(validate, name, passing(name))
             patch.start()
             self.addCleanup(patch.stop)
@@ -165,6 +165,7 @@ class Run(unittest.TestCase):
                 "run_license",
                 "run_status",
                 "run_images",
+                "run_edits",
                 "run_image_fetch",
                 "release",
             ],
@@ -223,7 +224,7 @@ class ShortCircuit(unittest.TestCase):
     """
 
     def setUp(self):
-        for name in ("run_index", "run_license", "run_status", "run_images"):
+        for name in ("run_index", "run_license", "run_status", "run_images", "run_edits"):
             patch = mock.patch.object(validate, name, passing(name))
             patch.start()
             self.addCleanup(patch.stop)
@@ -468,6 +469,15 @@ class IndexWiring(unittest.TestCase):
         ) as notes:
             result = validate.run_index([], documents=["listings/Mod.toml"])
         notes.assert_called_once_with([], ["listings/Mod.toml"])
+        self.assertEqual(result.outcome, validate.PASS)
+        self.assertEqual(result.messages, ["note"])
+
+
+class EditWiring(unittest.TestCase):
+    def test_the_note_on_a_listing_edit_never_rejects(self):
+        with mock.patch.object(validate.check_edits, "notes", return_value=["note"]) as notes:
+            result = validate.run_edits([], ["listings/Mod.toml"], "HEAD^1", "releases")
+        notes.assert_called_once_with([], ["listings/Mod.toml"], "HEAD^1", "releases")
         self.assertEqual(result.outcome, validate.PASS)
         self.assertEqual(result.messages, ["note"])
 

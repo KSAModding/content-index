@@ -15,6 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import check_edits
 import check_images
 import check_index
 import check_layout
@@ -120,6 +121,10 @@ def run_images(entries, documents=()):
     return Check("images", REJECT if errors else PASS, errors + notes)
 
 
+def run_edits(entries, documents=(), base=None, releases=None):
+    return Check("listing edit", PASS, check_edits.notes(entries, documents, base, releases))
+
+
 def run_image_fetch(documents, base=None):
     if not documents:
         return Check("image fetch", PASS, ["the change touches no document, so no image was fetched"])
@@ -168,6 +173,7 @@ def run_checks(changes, skip_release=False, releases=None, token=None, base=None
         run_license(entries),
         run_status(entries, skipped),
         run_images(entries, documents),
+        run_edits(entries, documents, base, releases),
     ]
 
     if skip_release:
