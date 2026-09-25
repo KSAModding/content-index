@@ -28,7 +28,7 @@ Aim a multiple-warhead ballistic missile at a point on any body and it flies its
 Detonations, nuclear fireballs and mushroom clouds standing in the world, motor plumes and smoke trails, tracers, muzzle flashes and spatialised gunfire, all through the engine's own renderers.
 """
 license = "MIT"
-tags = ["parts", "weapons", "physics"]
+tags = ["parts", "gameplay", "user-interface", "audio", "weapons", "physics"]
 
 [releases]
 github = "LaurensDeV/KSArmory"
