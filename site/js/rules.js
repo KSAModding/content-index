@@ -183,7 +183,9 @@ export function semverCompare(left, right) {
     const core = dash < 0 ? withoutBuild : withoutBuild.slice(0, dash);
     const pre = dash < 0 ? "" : withoutBuild.slice(dash + 1);
     const numbers = core.split(".");
-    if (numbers.length !== 3 || !numbers.every((part) => /^[0-9]+$/.test(part))) return null;
+    if (numbers.length > 3 || !numbers.every((part) => /^[0-9]+$/.test(part))) return null;
+    // RFC 0072: a missing number reads as 0, so 0.5 and 0.5.0 are the same version.
+    while (numbers.length < 3) numbers.push("0");
     return { core: numbers.map(Number), pre: pre ? pre.split(".") : null };
   };
   const a = key(left);
