@@ -120,7 +120,7 @@ def inspect(document, stamp_release, hosts, game_versions, http):
             REJECT,
             [
                 f"{authority.key} offers {len(offered)} release(s) and none of them carries a "
-                "version that parses as SemVer 2.0.0, so nothing can ever be stamped"
+                "version the index can read, such as 1.2.3 or 0.5, so nothing can ever be stamped"
             ],
         )
 
