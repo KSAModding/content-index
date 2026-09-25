@@ -108,6 +108,17 @@ test("SemVer precedence follows SemVer 2.0.0", () => {
   assert.equal(semverCompare("v1.0.0", "1.0.0"), null);
 });
 
+test("a version with one or two numbers is filled with zero before it is compared", () => {
+  assert.equal(semverCompare("0.5", "0.5.0"), 0);
+  assert.equal(semverCompare("1", "1.0.0"), 0);
+  assert.equal(semverCompare("0.5", "0.5.1"), -1);
+  assert.equal(semverCompare("2", "1.9.9"), 1);
+  assert.equal(semverCompare("1.2-rc.1", "1.2.0"), -1);
+  assert.equal(semverCompare("1.2+build.7", "1.2.0"), 0);
+  assert.equal(semverCompare("0.5.0.1", "0.5.0"), null);
+  assert.equal(semverCompare("", "0.5.0"), null);
+});
+
 test("license texts match the Python check", () => {
   assert.deepEqual(licenseErrors("MIT OR Apache-2.0"), []);
   assert.deepEqual(licenseErrors("MIT WITH LicenseRef-x"), []);

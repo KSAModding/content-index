@@ -119,14 +119,18 @@ def check_schema(path, document, validator, errors):
 
 
 def semver_key(version):
-    """Sort key for a release version, per SemVer 2.0.0. None when it does not parse."""
+    """Sort key for a version, per SemVer 2.0.0. None when it does not parse.
+
+    RFC 0072 lets a version name one or two numbers, and a missing one reads
+    as 0, so 0.5 and 0.5.0 are the same version.
+    """
     if not isinstance(version, str):
         return None
     core, _, pre = version.partition("+")[0].partition("-")
     numbers = core.split(".")
-    if len(numbers) != 3 or not all(part.isdecimal() for part in numbers):
+    if not 1 <= len(numbers) <= 3 or not all(part.isdecimal() for part in numbers):
         return None
-    core_key = tuple(int(part) for part in numbers)
+    core_key = tuple(int(part) for part in numbers) + (0,) * (3 - len(numbers))
     if not pre:
         # A release outranks every pre-release of the same core version.
         return (core_key, (1,))

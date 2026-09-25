@@ -1,6 +1,6 @@
 # Schemas
 
-`authored.schema.json` is the machine-readable form of the authored document defined by [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md) and extended by [RFC 0035](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0035-content-install-descriptor.md), [RFC 0049](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0049-instance-handover.md), [RFC 0058](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0058-listing-images-and-dates.md) and [RFC 0067](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0067-per-platform-launch.md), and amended by [RFC 0065](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0065-icon-center-crop.md).
+`authored.schema.json` is the machine-readable form of the authored document defined by [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md) and extended by [RFC 0035](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0035-content-install-descriptor.md), [RFC 0049](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0049-instance-handover.md), [RFC 0058](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0058-listing-images-and-dates.md) and [RFC 0067](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0067-per-platform-launch.md), and amended by [RFC 0065](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0065-icon-center-crop.md) and [RFC 0072](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0072-version-forms.md).
 
 It is JSON Schema 2020-12, and it covers all three types the format defines today: `mod`, `mod-loader` and `modpack`.
 
@@ -74,11 +74,20 @@ The platform names are `windows`, `linux` and `macos`.
 Each entry needs `launch`, a path relative to the loader's install location, and can add `runtime = "dotnet"`, which starts `dotnet` with `launch` as its first argument.
 A platform without an entry starts `[provides].launch`, so the table is valid only next to it.
 
+## Version bounds
+
+A `min` or `max` on `[loader]`, on a dependency entry, or on an `any_of` alternative is a version with one, two or three numbers, per RFC 0072.
+A missing number reads as `0`, so `0.5` is `0.5.0` and `1` is `1.0.0`.
+The SemVer 2.0.0 pre-release and build parts are allowed, as in `1.2-rc.1`.
+Four numbers, a leading zero, and a leading `v` are refused.
+
+The pack `version` and the `version` of a pin keep all three numbers, because they name a release as the index stores it.
+
 ## What the schema does not cover
 
 Some rules cannot be expressed in JSON Schema at all. `check_schema.py` applies these after the schema passes:
 
-- a `max` below its `min`, on `[loader]`, on a dependency entry, and on an `any_of` alternative,
+- a `max` below its `min`, on `[loader]`, on a dependency entry, and on an `any_of` alternative, compared after a short bound is filled with `0`,
 - a `game_max` older than its `game_min`, where both name a revision or both name a month. RFC 0017 makes a month bound the first and last revision of that calendar month, and revisions ascend across the shipped history, so calendar order is revision order. A month against a revision stays uncomparable here: resolving it needs the game release list, which lives in the generated repository,
 - a `released_at` that matches the shape but names no real moment, such as `2026-13-45T12:00:00Z`,
 - unbalanced parentheses in a `license` expression,
@@ -122,7 +131,7 @@ They are collected here so any one of them can be argued down on its own.
 | A `mod` may not set `install.path`, and may only set `install.target = "mods"` | RFC 0035: "a mod's install location is not the author's to choose in the first place", because the folder name is the identity `Mod.MakeUsing` assigns. |
 | A `modpack` may not carry `[releases]`, `[loader]` or `[[dependencies]]` | RFC 0031 lists these under what a pack does not have, and RFC 0035 already makes `[install]` on a pack invalid. A section that does nothing is a section its author believed in. |
 | A `mod-loader` carrying `[install]` must state `target` | RFC 0035's Relationship section claims every RFC 0031 file stays valid, but its own table requires `target` on a type with no default, and `mod-loader` has none. The normative table wins. |
-| Authored SemVer bounds reject a leading `v` | Only a release tag gets its `v` stripped, and that happens at stamp time. An authored bound is not a tag. |
+| Authored version bounds reject a leading `v` | Only a release tag gets its `v` stripped, and that happens at stamp time. An authored bound is not a tag. |
 | Game bounds reject a suffix or a `+hash`, take a four-digit year, and take a month of 1 to 12 | RFC 0017 puts builds carrying a suffix outside the compatibility model, and a bound has to resolve to a revision. |
 | An `any_of` entry may not carry `min` or `max` of its own | RFC 0031 puts the bounds on each alternative. An outer pair would have no defined meaning against a set. |
 | A path may not run through a reserved Windows device name | Not in any RFC. A segment naming `NUL` or `CON` swallows every write on Windows, so a manager writing `[provides.configure]` there reports success and configures nothing, which is the failure that section exists to prevent. |
