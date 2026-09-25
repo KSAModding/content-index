@@ -86,6 +86,16 @@ When the image breaks a limit, the tool names the limit and prints no record.
 By adding an image record, you state that you have the right to publish the image and to let clients fetch, display and cache it under the record's `license`, or under the document's `license` when the record names none.
 When the image is third-party work, or its license requires credit, a license notice or a link to the original, put that into the record's `attribution` and `source`.
 
+## Version bounds
+
+A `min` or `max` on `[loader]`, on a dependency, or on an `any_of` alternative is a version, such as `1.2.3`.
+You can leave out the last numbers, per [RFC 0072](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0072-version-forms.md).
+A missing number reads as `0`, so `min = "0.5"` means `0.5.0` and `min = "1"` means `1.0.0`.
+A pre-release works the same way, so `1.2-rc.1` means `1.2.0-rc.1`.
+Four numbers, a number with a leading zero such as `01.2`, and a leading `v` are refused.
+
+A pack pins each member to its full version, such as `0.7.0`, and its own `version` has all three numbers too.
+
 ## Launching a mod loader
 
 A `mod-loader` listing names the file a player starts in `[provides].launch`.
