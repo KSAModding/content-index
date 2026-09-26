@@ -113,6 +113,25 @@ class Url(unittest.TestCase):
             self.assertIsNone(ownership.github_repository(url), url)
 
 
+class Advice(unittest.TestCase):
+    """The one text both decide.py files show an author whose proof is missing."""
+
+    def test_a_github_repository_gets_the_topic_and_the_marker_file(self):
+        self.assertIn("`ksa-index-<your-github-username>`", ownership.ADVICE)
+        self.assertIn(f"commit `{ownership.MARKER_PATH}` naming your username", ownership.ADVICE)
+
+    def test_a_fork_is_told_the_marker_file_does_not_count(self):
+        self.assertIn(f"when it is not a fork, commit `{ownership.MARKER_PATH}`", ownership.ADVICE)
+        self.assertIn("A fork also passes when your account owns it", ownership.ADVICE)
+
+    def test_a_spacedock_mod_is_told_to_set_its_source_code_link(self):
+        self.assertIn(
+            "For a SpaceDock host, set your GitHub repository as the mod's source code "
+            "link on SpaceDock, and put the proof on that repository.",
+            ownership.ADVICE,
+        )
+
+
 class Authority(unittest.TestCase):
     def test_one_host_is_the_authority(self):
         kind, target, _ = ownership.authority(LISTING)
