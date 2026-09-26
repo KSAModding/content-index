@@ -15,9 +15,10 @@ No game files are modified. At launch the mod builds patched copies of the game'
 
 ### Stars
 
-- 83,337 stars from the Hipparcos catalogue, to magnitude 9, coloured from their B−V index
+- 123,568 stars from the AT-HYG catalogue, to magnitude 9, coloured from their B−V index
 - Brightness from magnitude, drawn with a realistic point spread function
 - Parallax: stars sit at their real distances and shift as you travel
+- Proper motion: stars are placed for the game's date and move on as time passes
 - Twinkling through atmospheres, stronger and more colourful toward the horizon, following simulation time
 
 ### Planets
@@ -29,18 +30,20 @@ No game files are modified. At launch the mod builds patched copies of the game'
 
 ### The Sun
 
-- Drawn as a star at every distance, at its real angular size, blending into the 3D sphere up close
+- Drawn as a star at every distance, at its real angular size, shrinking into the 3D sphere up close
 - Sphere at its real size and photosphere colour, with limb darkening
 - Dims as it fills more of the screen
 - Replaces the stock sun sprite and lens flare
 
 ### Occlusion and starbursts
 
-- Stars, planets and the Sun fade behind planets, atmospheres and vessels
-- Starbursts modelled on the human eye, on the Sun and on planets brighter than magnitude −3
+- Stars, planets and the Sun fade behind planets, atmospheres and vessels, and the Sun's starburst behind clouds
+- Starbursts modelled on a simulation of the human eye: about a thousand fine needles with coloured fringes, on the Sun, the bright planets and the brightest stars
+- A soft glow around bright sources, the eye's veiling glare, gives the Sun a corona
+- The Sun's starburst comes from the part of the Sun still in view, in the colour of the sunlight reaching you
 - Starbursts fade as their source is covered or leaves the screen
 - The Sun's starburst is drawn over everything else
-- Starbursts follow the game's lens flare setting
+- Starbursts follow the game's lens flare setting, and the game's bloom settings no longer bury them
 
 ## Screenshots
 
@@ -65,15 +68,16 @@ To uninstall, delete `mods\RealStars`.
 
 ## Building
 
-`deploy.ps1` builds the mod and installs it into your mods folder. `package.ps1 -Version x.y.z -GameBuild vYYYY.M.D.NNNN` builds a release archive in `dist\`. Set `StarMapDir` to your StarMap folder. `make_star_binary.py` rebuilds the star catalogue from the Hipparcos main catalogue (`hip_main.dat`).
+`deploy.ps1` builds the mod and installs it into your mods folder. `package.ps1 -Version x.y.z -GameBuild vYYYY.M.D.NNNN` builds a release archive in `dist\`. Set `StarMapDir` to your StarMap folder. `make_star_binary.py` rebuilds the star catalogue from AT-HYG v3.2 (`athyg_32_reduced_m10.csv.gz`, in `assets`) and the Hipparcos main catalogue (`hip_main.dat`).
 
 ## Credits
 
-- Star catalogue built from the Hipparcos Catalogue (ESA 1997, ESA SP-1200), retrieved from [VizieR](https://vizier.cds.unistra.fr/) (CDS, Strasbourg), catalogue I/239.
+- Star catalogue built from [AT-HYG](https://www.astronexus.com/projects/at-hyg) v3.2 by David Nash (CC BY-SA 4.0), with positions from the Hipparcos Catalogue (ESA 1997, ESA SP-1200), retrieved from [VizieR](https://vizier.cds.unistra.fr/) (CDS, Strasbourg), catalogue I/239. Most distances and motions in AT-HYG come from ESA's Gaia DR3.
+- Starbursts after T. Ritschel, M. Ihrke, J. R. Frisvad, J. Coppens, K. Myszkowski and H.-P. Seidel, "Temporal Glare: Real-Time Dynamic Simulation of the Scattering in the Human Eye", Eurographics 2009.
 
-The code is MIT. [CREDITS.md](https://github.com/Brimfyr/RealStars/blob/main/CREDITS.md) gives the source and terms of the shipped catalogue.
+The code is MIT; the star catalogue is CC BY-SA 4.0. [CREDITS.md](https://github.com/Brimfyr/RealStars/blob/main/CREDITS.md) gives its sources and terms.
 '''
-license = "MIT"
+license = "MIT AND CC-BY-SA-4.0"
 tags = ["visual"]
 
 [releases]
@@ -101,23 +105,23 @@ size = 95493
 [[images.description]]
 id = "earth-and-orion"
 url = "https://raw.githubusercontent.com/Brimfyr/RealStars/refs/heads/main/content/earth-and-orion.jpg"
-sha256 = "38e78df49f77240a970c6fcd72b6c2919918e0e8379bee4c72bbacdbd3bafd47"
+sha256 = "3a33b59470c6e74ee8a78364fabf6e8c586c06b0a1116c609b601f2bef60203b"
 width = 1920
 height = 1080
-size = 279474
+size = 472506
 
 [[images.description]]
 id = "moon-surface"
 url = "https://raw.githubusercontent.com/Brimfyr/RealStars/refs/heads/main/content/moon-surface.jpg"
-sha256 = "7bfceab07ace0a846e76c45f64c125e5c6ab9f9f8f54a56a1cb91412c3306b34"
+sha256 = "3f29ef18e137a793228da847142a15fc27c808877058dd8b45edd58f406ae0bf"
 width = 1920
 height = 1080
-size = 434635
+size = 436252
 
 [[images.description]]
 id = "orbit-sunset"
 url = "https://raw.githubusercontent.com/Brimfyr/RealStars/refs/heads/main/content/orbit-sunset.jpg"
-sha256 = "a9c00b19d5061eaaa3cd21d569a194b157ab7def7d68d13a579b30995594ee00"
+sha256 = "47d54bd8a94bcc684ca82d6b796da7c3ba2d9b92a9d599d0328a0660705dc123"
 width = 1920
 height = 1080
-size = 175966
+size = 287764
