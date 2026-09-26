@@ -21,6 +21,18 @@ REJECTED = "rejected"
 MARKER_PATH = ".github/ksa-content-index.toml"
 TOPIC = "ksa-index-{login}"
 
+# What an unverified pull request tells its author. content-index-releases
+# imports this module and shows the same text.
+ADVICE = (
+    "The proof is something only you can put on the release repository, which "
+    "is what says you agree to it being indexed. Either set the topic "
+    f"`{TOPIC.format(login='<your-github-username>')}` on it, or, when it "
+    f"is not a fork, commit `{MARKER_PATH}` naming your username. A fork "
+    "also passes when your account owns it. For a SpaceDock host, set "
+    "your GitHub repository as the mod's source code link on SpaceDock, and put "
+    "the proof on that repository."
+)
+
 GITHUB_NAME = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$")
 LOGIN = re.compile(r"^(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
 
