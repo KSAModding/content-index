@@ -389,6 +389,11 @@ class PinnedConnection(unittest.TestCase):
         self.assertEqual(tls.verify_mode, ssl.CERT_REQUIRED)
         self.assertTrue(tls.check_hostname)
 
+    def test_tls_before_1_2_is_refused_whatever_the_default(self):
+        with mock.patch.object(images.ssl, "create_default_context", return_value=mock.Mock()):
+            tls = images.PinnedConnection("example.invalid", 443, PUBLIC, lambda: 5).tls
+        self.assertEqual(tls.minimum_version, ssl.TLSVersion.TLSv1_2)
+
     def test_the_response_reads_through_the_time_limit(self):
         connection = images.PinnedConnection("example.invalid", 443, PUBLIC, lambda: 5)
         response = connection.response_class(mock.Mock(), method="GET")

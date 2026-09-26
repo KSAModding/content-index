@@ -140,8 +140,10 @@ class PinnedConnection(http.client.HTTPSConnection):
     """HTTPS to one checked address, with the certificate verified for the host name."""
 
     def __init__(self, host, port, address, remaining):
-        self.tls = ssl.create_default_context()
-        super().__init__(host, port, context=self.tls)
+        tls = ssl.create_default_context()
+        tls.minimum_version = ssl.TLSVersion.TLSv1_2
+        super().__init__(host, port, context=tls)
+        self.tls = tls
         self.address = address
         self.remaining = remaining
 
