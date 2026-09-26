@@ -16,3 +16,10 @@ spacedock = "https://spacedock.info/mod/4593/Sea%20Dragon"
 
 [compatibility]
 game_min = "2026.9.22.5482"
+
+[images.icon]
+url = "https://github.com/Spaceman3d/KSA-Mods/blob/main/Screenshot%202026-09-26%20120749.jpg"
+sha256 = "e7c1fd510224706b7b30081ec8b8def1b183fadce2f00ab0eb52e1db7f3aa57b"
+width = 841
+height = 1662
+size = 100670
