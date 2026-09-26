@@ -18,7 +18,7 @@ spacedock = "https://spacedock.info/mod/4593/Sea%20Dragon"
 game_min = "2026.9.22.5482"
 
 [images.icon]
-url = "https://aa5e8942dc923bc6bb7f40be4f2e4a41.r2.cloudflarestorage.com/forums-production-public-data/attachments/2/2038-5c0024f6e359bdf5b3d5f532408a6cdc.data?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=5957d47e4aaceae7f1cbe5a8a160c95d%2F20260926%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260926T131045Z&X-Amz-Expires=60&X-Amz-SignedHeaders=host&response-content-disposition=inline%3B%20filename%3D%22Screenshot%202026-09-26%20120749.jpg%22&response-content-type=image%2Fjpeg&X-Amz-Signature=583477b3fe8c92f1d76480072d671b4197962fbfa5d2832f9cb76a28d40d71d1"
+url = "https://raw.githubusercontent.com/Spaceman3d/KSA-Mods/refs/heads/main/Screenshot%202026-09-26%20120749.jpg"
 sha256 = "88305f1d5ab5f42c9b2f71f0ba2e065e382bd9a7f324dd11c66cfc021776bf40"
 width = 431
 height = 431
