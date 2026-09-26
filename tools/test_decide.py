@@ -259,6 +259,11 @@ class Table(unittest.TestCase):
         self.assertIn(f"when it is not a fork, commit `{ownership.MARKER_PATH}`", decision.comment)
         self.assertIn("A fork also passes when your account owns it", decision.comment)
 
+    def test_the_comment_carries_the_advice_of_the_ownership_module(self):
+        # content-index-releases shows ownership.ADVICE too, so both flows say the same.
+        decision = decide.decide(verdict(), True, UNVERIFIED)
+        self.assertIn(ownership.ADVICE, decision.comment)
+
     def test_pack_guidance_does_not_suggest_a_release_host_proof(self):
         result = ownership.Result(
             ownership.UNVERIFIED,

@@ -164,15 +164,7 @@ def decide(verdict, candidate, ownership_result, run_url="", advice=()):
             ),
         )
 
-    instructions = ownership_result.instructions or (
-        "The proof is something only you can put on the release repository, which "
-        "is what says you agree to it being indexed. Either set the topic "
-        f"`{ownership.TOPIC.format(login='<your-github-username>')}` on it, or, when it "
-        f"is not a fork, commit `{ownership.MARKER_PATH}` naming your username. A fork "
-        "also passes when your account owns it. For a SpaceDock host, set "
-        "your GitHub repository as the mod's source code link on SpaceDock, and put "
-        "the proof on that repository."
-    )
+    instructions = ownership_result.instructions or ownership.ADVICE
     return Decision(
         "success",
         "validated, ownership not verified",
