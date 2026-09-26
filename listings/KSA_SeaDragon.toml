@@ -18,9 +18,8 @@ spacedock = "https://spacedock.info/mod/4593/Sea%20Dragon"
 game_min = "2026.9.22.5482"
 
 [images.icon]
-url = "https://aa5e8942dc923bc6bb7f40be4f2e4a41.r2.cloudflarestorage.com/forums-production-public-data/attachments/2/2036-2cd3ccfe9e51bdac68bab01d2db66a25.data?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=5957d47e4aaceae7f1cbe5a8a160c95d%2F20260926%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260926T120010Z&X-Amz-Expires=60&X-Amz-SignedHeaders=host&response-content-disposition=inline%3B%20filename%3D%22Screenshot%202026-09-26%20120749.jpg%22&response-content-type=image%2Fjpeg&X-Amz-Signature=525672490581ae690c195a91e5b503666626f88865d20520ee0ee8259f60fac5"
-sha256 = "b4cdc196eec34090815fed79b4e3f4d35585d846707226359bceec7dd9ce952f"
-width = 841
-height = 1000
-size = 74708
-attribution = "Spaceman 3D"
+url = "https://aa5e8942dc923bc6bb7f40be4f2e4a41.r2.cloudflarestorage.com/forums-production-public-data/attachments/2/2037-08a6fbd3e703f77a4f59a633d42f4c4f.data?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=5957d47e4aaceae7f1cbe5a8a160c95d%2F20260926%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260926T130431Z&X-Amz-Expires=60&X-Amz-SignedHeaders=host&response-content-disposition=inline%3B%20filename%3D%22Screenshot%202026-09-26%20120749.jpg%22&response-content-type=image%2Fjpeg&X-Amz-Signature=c61e5be0638114e9e15ddc7753b047924ab8eac9caa32289b573e80aa0119f1e"
+sha256 = "6b7fde299b14757d6cb285e4c7777bdfa2cf0394a3c4932202e3e86c27ec00cc"
+width = 431
+height = 512
+size = 30710
