@@ -1,0 +1,63 @@
+spec_version = 1
+id = "MacOSMoltenPatcher"
+type = "mod"
+name = "ksa-macos-molten-patcher"
+authors = ["Beik"]
+abstract = "Kitten Space Agency mod that makes the Windows game run on macOS in a Sikarugir (Wine) wrapper"
+description = """
+## ⚠️ Warning
+
+- Only for macOS users running KSA inside a **Sikarugir** wrapper, using the `WS12WineSikarugir10.0_6` engine.
+- This is a highly experimental project. Proceed with caution.
+- macOS is still not officially supported. Leave the devs alone.
+
+---
+
+A Kitten Space Agency mod that lets the Windows version of the game run on macOS in a Sikarugir (Wine) wrapper. A StarMap hook runs it before the game starts. It applies the patches in its `patches/` folder to the wrapper and the game files.
+
+Each patch is a plain text file that says what it changes and why:
+[ksa-macos-molten-patcher/patches](https://github.com/renancamm/ksa-macos-molten-patcher/tree/main/patches)
+
+> 💬 *Have you figured out a new way to improve the macOS experience in KSA? Propose a new patch!*
+
+---
+
+## How to revert changes
+
+The patches edit files in your wrapper and game folder. **Removing the mod does not undo them.**
+
+Before changing a file, the mod saves the original next to it as `<file>.orig`, so every changed file has one. To revert:
+
+1. Remove the mod.
+2. Copy each `.orig` file back over its original.
+
+---
+
+## Licenses
+
+Mod code: MIT. Bundled third-party files come with their licenses in the `licenses/` folder.
+"""
+license = "MIT"
+tags = ["tools"]
+
+[releases]
+github = "renancamm/ksa-macos-molten-patcher"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/macos-molten-patcher.1310/"
+repository = "https://github.com/renancamm/ksa-macos-molten-patcher"
+bugtracker = "https://github.com/renancamm/ksa-macos-molten-patcher/issues"
+
+[compatibility]
+game_min = "2026.9.22.5482"
+
+[loader]
+id = "StarMap"
+min = "0.4.7"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/renancamm/ksa-macos-molten-patcher/refs/heads/main/icon.jpg"
+sha256 = "7499ce1753c5dd82b83d49ba689db48b32070e7d3f8c49cdac118174cb78448a"
+width = 512
+height = 512
+size = 169550
