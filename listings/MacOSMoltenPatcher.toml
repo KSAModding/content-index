@@ -1,7 +1,7 @@
 spec_version = 1
 id = "MacOSMoltenPatcher"
 type = "mod"
-name = "ksa-macos-molten-patcher"
+name = "macOS Molten Patcher"
 authors = ["Beik"]
 abstract = "Kitten Space Agency mod that makes the Windows game run on macOS in a Sikarugir (Wine) wrapper"
 description = """
@@ -16,9 +16,9 @@ description = """
 A Kitten Space Agency mod that lets the Windows version of the game run on macOS in a Sikarugir (Wine) wrapper. A StarMap hook runs it before the game starts. It applies the patches in its `patches/` folder to the wrapper and the game files.
 
 Each patch is a plain text file that says what it changes and why:
-[ksa-macos-molten-patcher/patches](https://github.com/renancamm/ksa-macos-molten-patcher/tree/main/patches)
+https://github.com/renancamm/ksa-macos-molten-patcher/tree/main/patches
 
-> 💬 *Have you figured out a new way to improve the macOS experience in KSA? Propose a new patch!*
+ 💬  Have you figured out a new way to improve the macOS experience in KSA? Propose a new patch!
 
 ---
 
