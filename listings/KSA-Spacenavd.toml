@@ -1,0 +1,33 @@
+spec_version = 1
+id = "KSA-Spacenavd"
+type = "mod"
+name = "KSA-Spacenavd"
+authors = ["KenwoodFox"]
+abstract = "Drive your space-craft with your SpaceMouse spacenavd compatable input."
+description = """
+SpaceMouse input for Kitten Space Agency, through the [spacenavd](https://spacenav.sourceforge.net/) daemon.
+"""
+license = "MIT"
+tags = ["gameplay"]
+
+[releases]
+github = "KenwoodFox/KSA-spacenavd"
+
+[links]
+repository = "https://github.com/KenwoodFox/KSA-spacenavd"
+bugtracker = "https://github.com/KenwoodFox/KSA-spacenavd/issues"
+
+[compatibility]
+game_min = "2026.9.10.5438"
+os = ["linux"]
+
+[loader]
+id = "StarMap"
+min = "0.4.7"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/KenwoodFox/KSA-spacenavd/refs/heads/main/Static/spacenavdlogo.png"
+sha256 = "69790b2849316d33a5d3bd1e65c76795fdf4171dc0b8863e08bf0d884e5be32f"
+width = 512
+height = 512
+size = 162019
