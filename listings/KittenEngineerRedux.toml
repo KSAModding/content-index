@@ -31,18 +31,15 @@ bugtracker = "https://github.com/BarneyCompiler/Kitten-Engineer-Redux/issues"
 
 [compatibility]
 game_min = "2026.10.7.5541"
-game_max = "2026.10.7.5541"
 
 [loader]
 id = "StarMap"
 min = "0.4.7"
-max = "0.4.7"
 
 [[dependencies]]
 id = "ModMenu"
 kind = "required"
 min = "0.2.2"
-max = "0.2.2"
 
 [images.icon]
 url = "https://i.imgur.com/YQXQrtm.png"
