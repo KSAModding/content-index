@@ -98,6 +98,23 @@ test("two release hosts keep the authority, one host drops it", () => {
   assert.deepEqual(documentFromForm(form, null).releases, { github: "a/b" });
 });
 
+test("since is written next to a release host and dropped without one", () => {
+  const form = emptyForm();
+  Object.assign(form, { spacedock: "12", since: " 1.2 " });
+  assert.deepEqual(documentFromForm(form, null).releases, { spacedock: 12, since: "1.2" });
+  form.spacedock = "";
+  assert.equal(documentFromForm(form, null).releases, undefined);
+});
+
+test("since comes back from a loaded listing and is written after the hosts", () => {
+  const text = "[releases]\ngithub = \"a/b\"\nspacedock = 12\nauthority = \"github\"\nsince = \"0.5\"\n";
+  const base = parseDocument(text);
+  const form = formFromDocument(base);
+  assert.equal(form.since, "0.5");
+  const written = writeDocument(documentFromForm(form, base));
+  assert.match(written, /\[releases\]\ngithub = "a\/b"\nspacedock = 12\nauthority = "github"\nsince = "0\.5"\n/);
+});
+
 test("the new-file address carries the file until it gets too long", () => {
   const short = newFileUrl(listingPath("MyMod"), "id = \"MyMod\"\n");
   assert.equal(short.filled, true);
