@@ -183,6 +183,12 @@ REJECTED = [
     ("unknown authority", mod(append='\n[releases]\ngithub = "a/b"\nauthority = "forums"\n'), "releases.authority: 'forums' is not one of"),
     ("spacedock id as a string", mod(append='\n[releases]\nspacedock = "4253"\n'), "releases.spacedock: '4253' is not of type 'integer'"),
     ("spacedock id of zero", mod(append="\n[releases]\nspacedock = 0\n"), "releases.spacedock: 0 is less than the minimum"),
+    ("since that is not a version", mod(append='\n[releases]\ngithub = "a/b"\nsince = "latest"\n'), "releases.since: 'latest' is not a version such as 1.2.3, 0.5 or 2.0.0-rc.1"),
+    ("since with a leading v", mod(append='\n[releases]\ngithub = "a/b"\nsince = "v1.2"\n'), "releases.since: 'v1.2' is not a version"),
+    ("since with four numbers", mod(append='\n[releases]\ngithub = "a/b"\nsince = "1.2.3.4"\n'), "releases.since: '1.2.3.4' is not a version"),
+    ("since written as a number", mod(append='\n[releases]\ngithub = "a/b"\nsince = 1.2\n'), "releases.since: 1.2 is not of type 'string'"),
+    ("since with no host", mod(append='\n[releases]\nsince = "1.2"\n'), "releases: {'since': '1.2'} is not valid under any"),
+    ("since as the authority", mod(append='\n[releases]\ngithub = "a/b"\nsince = "1.2"\nauthority = "since"\n'), "releases.authority: 'since' is not one of"),
     (
         "github host that is not owner/repo",
         mod(append='\n[releases]\ngithub = "repository"\n'),
@@ -338,6 +344,9 @@ REJECTED = [
 # Small positive variations that would be wasteful as their own file.
 ACCEPTED = [
     ("a mod with no releases section", MOD),
+    ("since in its short form", mod(append='\n[releases]\ngithub = "a/b"\nsince = "1.2"\n')),
+    ("since as a pre-release", mod(append='\n[releases]\ngithub = "a/b"\nsince = "0.5.0-rc.1"\n')),
+    ("since next to two hosts and an authority", mod(append='\n[releases]\ngithub = "a/b"\nspacedock = 4253\nauthority = "spacedock"\nsince = "1"\n')),
     ("a deprecated mod with a successor", mod(keys='status = "deprecated"\nsuperseded_by = "TestModNG"\n')),
     ("a month as the lower bound", mod(replace=(GAME_MIN, 'game_min = "2026.7"'))),
     ("two month bounds in order", mod(replace=(GAME_MIN, 'game_min = "2026.7"\ngame_max = "2026.8"'))),

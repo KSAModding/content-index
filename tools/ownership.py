@@ -45,6 +45,10 @@ CURRENT_HOST = "the authority the listing already names"
 NEW_HOST = "the authority this change moves to"
 RENAMED_HOST = "the repository the listing's host was renamed into"
 
+# The keys of [releases] that name no host. `since` only says which releases the
+# watcher stamps (RFC 0079), so it never counts as a host.
+NOT_HOSTS = ("authority", "since")
+
 
 class Unavailable(Exception):
     """The host could not answer, so the check reached no verdict."""
@@ -117,7 +121,7 @@ def authority(document):
     """The release host ownership binds to, as (kind, target, reason)."""
     releases = document.get("releases")
     if isinstance(releases, dict) and releases:
-        hosts = {key: value for key, value in releases.items() if key != "authority"}
+        hosts = {key: value for key, value in releases.items() if key not in NOT_HOSTS}
         if not hosts:
             return None, None, "the [releases] section names no host"
         if len(hosts) == 1:

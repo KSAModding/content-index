@@ -159,6 +159,19 @@ class Authority(unittest.TestCase):
         self.assertEqual(kind, "gitlab")
         self.assertIn("no ownership proof", reason)
 
+    def test_since_is_not_a_host(self):
+        document = {"releases": {"github": "a/b", "since": "1.2"}}
+        self.assertEqual(ownership.authority(document), ("github", "a/b", ""))
+
+    def test_since_next_to_two_hosts_leaves_the_authority_key_in_charge(self):
+        document = {"releases": {"github": "a/b", "spacedock": 42, "authority": "spacedock", "since": "1.2"}}
+        self.assertEqual(ownership.authority(document), ("spacedock", "42", ""))
+
+    def test_since_alone_names_no_host(self):
+        kind, _, reason = ownership.authority({"releases": {"since": "1.2"}})
+        self.assertIsNone(kind)
+        self.assertIn("names no host", reason)
+
     def test_nothing_to_bind_to(self):
         self.assertIsNone(ownership.authority({"id": "X"})[0])
 
@@ -637,6 +650,10 @@ class SameAuthority(unittest.TestCase):
         linked = {"links": {"repository": "https://github.com/Maxi/Mod"}}
         hosted = dict(hosted_at("Maxi/Other"), links=linked["links"])
         self.assertFalse(ownership.same_authority(linked, hosted))
+
+    def test_setting_since_is_not_a_move(self):
+        opted = {"id": "AutoStage", "releases": {"github": "Maxi/Mod", "since": "0.5"}}
+        self.assertTrue(ownership.same_authority(hosted_at("Maxi/Mod"), opted))
 
     def test_two_documents_binding_to_nothing_are_the_same(self):
         self.assertTrue(ownership.same_authority({"id": "A"}, {"id": "A"}))
