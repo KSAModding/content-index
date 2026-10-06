@@ -2,7 +2,7 @@ spec_version = 1
 id = "AdvancedFlightComputer"
 type = "mod"
 name = "Advanced Flight Computer"
-authors = ["Maxi"]
+authors = ["Maxi", "cairn5"]
 abstract = "Maneuver planning, burn execution and closed-loop guidance for Kitten Space Agency."
 description = '''
 Adds quick-tools to the Transfer Planner (set Pe/Ap, match/set inclination, circularize), flyby targeting so a Hohmann transfer arrives as a flyby instead of an impact, multi-pass burn splitting for Oberth-efficient departures, RCS-only burn execution, automatic staging with spent-booster drop and configurable staging delays, automatic removal of finished burns, and enables the planner to target interstellar comets on hyperbolic orbits (Oumuamua, 2I/Borisov, 3I/ATLAS).
