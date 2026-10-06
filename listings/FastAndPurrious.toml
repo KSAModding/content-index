@@ -1,0 +1,63 @@
+spec_version = 1
+id = "FastAndPurrious"
+type = "mod"
+name = "Fast & Purrious"
+authors = ["Laurens"]
+abstract = "Drivable cars for Kitten Space Agency, with their own springs, tyres and engine."
+description = """
+Cars for Kitten Space Agency. KSA has no wheels, so these bring their own: springs, tyres, an engine and a gearbox, all simulated by the mod and driven with the keys you already fly with.
+
+## The cars
+
+**Beach Buggy**: a fibreglass dune buggy on long-travel coil-overs, with a Beetle engine behind the seats and two kittens up front.
+
+**???**: there is a second car in the garage. Who's that car? You'll have to find out.
+
+## What you get
+
+- Real suspension and tyre grip: the car leans, squats and slides, and the gearbox shifts on its own.
+- An engine you can hear, cut from recordings of the real thing.
+- The driver kitten holds the steering wheel and turns it.
+- Kittens can get out on EVA and climb back in through the doors.
+- Headlights with dipped and main beam, and tail lights that brighten when you brake.
+- An Unflip button for when you end up on your roof.
+- Cars bounce instead of breaking up in a hard landing or a crash.
+- Move any craft with the mouse: click to pick it up, click again to set it down.
+
+## Driving
+
+Find the cars under Vehicles in the editor, or launch one from the vehicle list, and fill the seats in the launch window.
+
+| Control | Default key | |
+| --- | --- | --- |
+| pitch | W / S | throttle, and brake then reverse |
+| yaw | A / D | steer |
+
+The Fast & Purrious panel is on screen while you are in a car.
+"""
+license = "MIT"
+tags = ["parts", "gameplay", "audio", "vehicles"]
+
+[releases]
+github = "LaurensDeV/KSACars"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/fastandpurrious.1355/"
+homepage = "https://github.com/LaurensDeV/KSACars"
+repository = "https://github.com/LaurensDeV/KSACars"
+bugtracker = "https://github.com/LaurensDeV/KSACars/issues"
+discussions = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/fastandpurrious.1355/"
+
+[compatibility]
+game_min = "2026.10.7.5541"
+
+[loader]
+id = "StarMap"
+min = "0.4.7"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/LaurensDeV/KSACars/fcc63e03cbc30b03542b35dcc4d59328213a1fd2/media/FastAndPurrious-teaser.png"
+sha256 = "216c53bede89095bf85f7c3f8d6a4a757aafd6ba17aec92daae55593d9ace197"
+width = 1024
+height = 1024
+size = 35820
