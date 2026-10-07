@@ -259,6 +259,23 @@ def check_members(entries, documents, delisted, releases):
     return errors
 
 
+def member_notes(entries, documents, disputed):
+    """A pin of a changed pack version that names a disputed mod, which passes with a warning."""
+    targets = _targets(entries)
+    notes = []
+    for entry in entries:
+        if entry.where not in documents or entry.type != PACK_TYPE:
+            continue
+        for section, index, member in _pins(entry):
+            identifier = member.get("id")
+            target = targets.get(identifier.casefold()) if isinstance(identifier, str) else None
+            if section == MEMBER_SECTION and target and target.type == MOD_TYPE and target.folded in disputed:
+                notes.append(
+                    f"{entry.where}: {section}[{index}]: '{identifier}' is disputed, and a client warns about it"
+                )
+    return notes
+
+
 def _pins(entry):
     for section in PINNED_SECTIONS:
         pinned = entry.document.get(section)
@@ -283,10 +300,10 @@ def _member(section, member, targets, delisted, releases, semver):
         return f"'{identifier}' is not a listed mod, and a pack pins only listed mods", None
     if target.type == PACK_TYPE:
         return None, None  # check_references reports a nested pack.
-    if target.type != MOD_TYPE:
-        return f"'{identifier}' is listed as a {target.type}, and a pack pins only mods", None
     if target.folded in delisted:
         return f"'{identifier}' is delisted, and a pack pins only listed mods", None
+    if target.type != MOD_TYPE:
+        return f"'{identifier}' is listed as a {target.type}, and a pack pins only mods", None
 
     if not semver.match(version):
         return None, None  # check_schema reports it, and it must never become a path.

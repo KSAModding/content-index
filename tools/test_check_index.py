@@ -9,6 +9,7 @@ once this repository holds real listings.
 import json
 import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -501,6 +502,90 @@ class CompleteSet(MemberCase):
         errors = self.members(("Alpha", "1.0.0"), ("Beta", "3.0.0"))
         self.assertEqual(len(errors), 1)
         self.assertIn("'Beta' has no stamped release 3.0.0", errors[0])
+
+
+PACK_VECTORS = Path(__file__).resolve().parent.parent / "schemas" / "pack-vectors.json"
+VECTOR_KEYS = {"name", "snapshot", "pack", "accepted", "errors", "notes"}
+SNAPSHOT_KEYS = {"listings", "delisted", "disputed"}
+
+
+class PackVectors(MemberCase):
+    """schemas/pack-vectors.json, the member cases that site/test/ runs on the page too."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.vectors = json.loads(PACK_VECTORS.read_text(encoding="utf-8"))["vectors"]
+
+    def run_vector(self, vector, extra=""):
+        """The errors and notes of the vector, each without the path of the pack file."""
+        snapshot = vector["snapshot"]
+        for listed in snapshot["listings"]:
+            self.listing(listed["id"], kind=listed["type"])
+            folder = self.releases / listed["id"]
+            folder.mkdir(exist_ok=True)
+            for release in listed["releases"]:
+                (folder / f"{release['version']}.json").write_text(json.dumps(release), encoding="utf-8")
+        document = tomllib.loads(vector["pack"])
+        where = f"packs/{document['id']}/{document['version']}.toml"
+        folder = self.packs / document["id"]
+        folder.mkdir(exist_ok=True)
+        (folder / f"{document['version']}.toml").write_text(vector["pack"] + extra, encoding="utf-8")
+        entries, skipped = self.load()
+        self.assertEqual(skipped, [])
+        delisted = {identifier.casefold() for identifier in snapshot.get("delisted", [])}
+        disputed = {identifier.casefold() for identifier in snapshot.get("disputed", [])}
+        errors = check_index.check_members(entries, [where], delisted, self.releases)
+        notes = check_index.member_notes(entries, [where], disputed)
+        for line in errors + notes:
+            self.assertTrue(line.startswith(f"{where}: "), line)
+        return [line[len(where) + 2:] for line in errors], [line[len(where) + 2:] for line in notes]
+
+    def test_each_vector_is_well_formed(self):
+        names = [vector["name"] for vector in self.vectors]
+        self.assertEqual(len(names), len(set(names)), "vector names are unique")
+        for vector in self.vectors:
+            with self.subTest(vector["name"]):
+                self.assertLessEqual(VECTOR_KEYS, set(vector))
+                self.assertLessEqual(set(vector), VECTOR_KEYS | {"adds"})
+                self.assertLessEqual(set(vector["snapshot"]), SNAPSHOT_KEYS)
+                self.assertEqual(vector["accepted"], not vector["errors"])
+
+    def test_the_checks_agree_with_each_vector(self):
+        for vector in self.vectors:
+            with self.subTest(vector["name"]):
+                self.setUp()
+                self.assertEqual(self.run_vector(vector), (vector["errors"], vector["notes"]))
+
+    def test_the_pins_the_page_adds_make_a_set_that_passes(self):
+        adding = [vector for vector in self.vectors if vector.get("adds")]
+        self.assertTrue(adding)
+        for vector in adding:
+            with self.subTest(vector["name"]):
+                self.setUp()
+                extra = "".join(
+                    f'\n[[mods]]\nid = "{pin["id"]}"\nversion = "{pin["version"]}"\n' for pin in vector["adds"]
+                )
+                errors, _ = self.run_vector(vector, extra)
+                self.assertEqual(errors, [])
+
+    def test_the_pack_of_content_index_117_is_the_file_on_main(self):
+        path = Path(__file__).resolve().parent.parent / "packs" / "beiks-flight-planning-essentials-pack" / "1.0.0.toml"
+        packs = [vector["pack"] for vector in self.vectors if "content-index#117" in vector["name"]]
+        self.assertEqual(packs, [path.read_text(encoding="utf-8")])
+
+
+class DisputedMembers(MemberCase):
+    def test_a_disputed_mod_is_noted_and_other_pins_are_not(self):
+        self.listing("Alpha")
+        self.listing("Beta")
+        self.listing("Loader", kind="mod-loader")
+        self.pack("Pack", extra=pins(("Alpha", "1.0.0"), ("Beta", "1.0.0"), ("Loader", "1.0.0")))
+        entries, _ = self.load()
+        self.assertEqual(
+            check_index.member_notes(entries, ["packs/Pack/1.0.0.toml"], {"alpha", "loader"}),
+            ["packs/Pack/1.0.0.toml: mods[0]: 'Alpha' is disputed, and a client warns about it"],
+        )
+        self.assertEqual(check_index.member_notes(entries, [], {"alpha"}), [])
 
 
 class Forums(IndexCase):

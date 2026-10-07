@@ -126,6 +126,7 @@ Some rules need more than the document, and belong to the checks around it:
 | `[loader].id` references content of type `mod-loader`, a dependency id references a `mod`, and a pack member is not itself a pack | `tools/check_index.py` |
 | Each pin of a changed pack version names a listed `mod` that is not delisted, at a stamped release that is not yanked, and `[[vehicles]]` and `[[saves]]` stay empty | `tools/check_index.py`, against the release files of the generated repository, per [RFC 0080](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0080-pack-claims-and-members.md) |
 | The pins of a changed pack version are a complete set: every `required` dependency of a pinned release names another pinned mod inside its bounds, one member of an `any_of` is enough, and no `conflict` entry matches another pinned mod | `tools/check_index.py`, from the dependencies in the stamped release files, so a derived entry counts like an authored one |
+| A pin of a changed pack version names a `disputed` mod | `tools/check_index.py` warns only, because RFC 0080 lets a disputed member pass and a client warns about it |
 | A named `any_of` member carried `Optional = true` in the archive's own `mod.toml` | the stamper ([content-index-releases#13](https://github.com/KSAModding/content-index-releases/issues/13)), which is the only place the archive is read |
 | `[provides].launch` and the `launch` of each `[provides.platform]` entry name a file the release actually contains | the stamper |
 | `install.root` is derivable, and the archive downloads and hashes | `tools/check_release.py`, which reaches the answer by running the stamper against the real archive rather than by repeating its rules |
@@ -137,6 +138,33 @@ Some rules need more than the document, and belong to the checks around it:
 | An image record's `license` names identifiers on the SPDX list | `tools/check_license.py` |
 | An id in `index-status.toml` names a listing or a pack that exists, and a retracted version exists on that pack | `tools/check_status.py` |
 | The author controls the release host, or owns the pack id | the ownership workflow ([#4](https://github.com/KSAModding/content-index/issues/4)); pack ownership is read from `packs/<id>/owner.json` on the base branch by numeric account id, or from the pull request for a first claim, which adds the owner record together with the first version of an id that no listing or pack on the base branch holds in any case |
+
+## Pack member vectors
+
+`pack-vectors.json` holds small cases of the pack member rules of RFC 0080, with the result that `check_index.check_members` and `check_index.member_notes` give.
+`tools/test_check_index.py` writes each mini snapshot into a temporary index and release folder and runs the checks, and `site/test/pack-vectors.test.js` runs the same cases through the listing page.
+Borea is to hold a copy of the file and run it in its own tests ([Borea#567](https://github.com/KSAModding/Borea/issues/567)), so once that lands, a change here needs the same change there.
+
+The file is an object with one key, `vectors`, a list of cases.
+Each case has these keys:
+
+| Key | What it holds |
+|---|---|
+| `name` | What the case shows. Unique in the file. |
+| `snapshot` | The mini snapshot the case runs against, see below. |
+| `pack` | The text of the pack version document, in TOML. |
+| `accepted` | `true` when the member rules give no error. |
+| `errors` | Every error, in order, as `<section>[<n>]: <message>`. The checks put the path of the pack file in front, and a vector leaves it out. |
+| `notes` | Every warning, in the same form. A note does not refuse the pack. |
+| `adds` | Optional. The pins that "Add the missing dependencies" of the listing page appends, each as `id` and `version`, in order. Absent means none. With them appended, the pack has no error. |
+
+The mini snapshot has these keys:
+
+| Key | What it holds |
+|---|---|
+| `listings` | Each listing as `id`, `type` and `releases`. `releases` holds the stamped release files of the listing, with only the fields the rules read: `version`, `release_status`, and where the case needs them `yanked`, `dependencies` and `download`. A bound of a dependency is full SemVer, as the stamper writes it, so a runner can read the releases as release files without a stamping step. A case can also carry other fields of a release file, such as `yanked_reason` or the `source` of a dependency, which the rules do not read. |
+| `delisted` | Optional. The ids that `index-status.toml` delists. In a real snapshot such a listing is a tombstone. |
+| `disputed` | Optional. The ids that `index-status.toml` marks disputed. In a real snapshot such a listing ships whole, with `index_status.state` set to `disputed`. |
 
 ## Where the schema is stricter than the RFC text
 

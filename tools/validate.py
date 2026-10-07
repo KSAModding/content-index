@@ -91,9 +91,10 @@ def run_members(entries, documents=(), releases=None):
             check_status.delisted(),
             check_release.releases_root(releases) / "releases",
         )
+        notes = check_index.member_notes(entries, documents, check_status.disputed())
     except (OSError, ValueError) as error:
         return Check("pack members", COULD_NOT_EVALUATE, [f"the pins could not be checked: {error}"])
-    return Check("pack members", REJECT if errors else PASS, errors)
+    return Check("pack members", REJECT if errors else PASS, errors + notes)
 
 
 def run_license(entries):
