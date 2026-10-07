@@ -56,8 +56,8 @@ id = "StarMap"
 min = "0.4.7"
 
 [images.icon]
-url = "https://raw.githubusercontent.com/LaurensDeV/KSACars/fcc63e03cbc30b03542b35dcc4d59328213a1fd2/media/FastAndPurrious-teaser.png"
-sha256 = "216c53bede89095bf85f7c3f8d6a4a757aafd6ba17aec92daae55593d9ace197"
-width = 1024
-height = 1024
-size = 35820
+url = "https://raw.githubusercontent.com/LaurensDeV/KSACars/56683ad9e818fa8196be1145a60a4725e0aaea60/media/FastAndPurrious-icon.png"
+sha256 = "b4d9669e071ecbbd80c8ada179deeb88d0b80e7d6b58d5b1c0bfc44ae84dee58"
+width = 512
+height = 512
+size = 218634
