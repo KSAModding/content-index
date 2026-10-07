@@ -11,7 +11,7 @@ Cars for Kitten Space Agency. KSA has no wheels, so these bring their own: sprin
 
 **Beach Buggy**: a fibreglass dune buggy on long-travel coil-overs, with a Beetle engine behind the seats and two kittens up front.
 
-**???**: there is a second car in the garage. Who's that car? You'll have to find out.
+**Cadillac Eldorado**: a red 1976 convertible with the top down, four seats, a whitewall on every corner and a V8 that sounds like one. It floats on its springs and leans into a turn. It also flies, on rockets hidden under its floor.
 
 ## What you get
 
@@ -24,16 +24,36 @@ Cars for Kitten Space Agency. KSA has no wheels, so these bring their own: sprin
 - Cars bounce instead of breaking up in a hard landing or a crash.
 - Move any craft with the mouse: click to pick it up, click again to set it down.
 
+The Eldorado adds:
+
+- Four lift rockets under the floor: half throttle hovers, more climbs.
+- Two boost rockets on the tail.
+- Downward thrusters that press it onto the ground for grip, which is what makes it drivable on Luna.
+- A hover hold: with the lift rockets and the downward thrusters on together it keeps its height.
+- A scoop on the nose in three sizes, 3.4 m, 6 m and 10 m, for shoving rocks about, with a slider for how heavy the rocks are.
+
 ## Driving
 
-Find the cars under Vehicles in the editor, or launch one from the vehicle list, and fill the seats in the launch window.
+Find **Beach Buggy** or **Cadillac Eldorado** under Vehicles in the editor, or launch one from the vehicle list, and fill the seats in the launch window.
 
 | Control | Default key | |
 | --- | --- | --- |
 | pitch | W / S | throttle, and brake then reverse |
 | yaw | A / D | steer |
 
-The Fast & Purrious panel is on screen while you are in a car.
+## Flying the Eldorado
+
+| Control | Default key | |
+| --- | --- | --- |
+| engine start / shutdown | Z / X | light and cut the lift rockets |
+| throttle up / down | Up / Down | half hovers, more climbs |
+| pitch | W / S | in the air, lean forward or back |
+| yaw | A / D | in the air, bank left or right |
+| roll | Q / E | in the air, turn left or right |
+| sprint | Left Shift | hold to fire the boost rockets |
+| toggle RCS | R | switch the downward thrusters |
+
+The Fast & Purrious panel is on screen while you are in a car, with the headlights, the scoop size, the rock weight and Unflip.
 """
 license = "MIT"
 tags = ["parts", "gameplay", "audio", "vehicles"]
@@ -56,8 +76,8 @@ id = "StarMap"
 min = "0.4.7"
 
 [images.icon]
-url = "https://raw.githubusercontent.com/LaurensDeV/KSACars/fcc63e03cbc30b03542b35dcc4d59328213a1fd2/media/FastAndPurrious-teaser.png"
-sha256 = "216c53bede89095bf85f7c3f8d6a4a757aafd6ba17aec92daae55593d9ace197"
-width = 1024
-height = 1024
-size = 35820
+url = "https://raw.githubusercontent.com/LaurensDeV/KSACars/56683ad9e818fa8196be1145a60a4725e0aaea60/media/FastAndPurrious-icon.png"
+sha256 = "b4d9669e071ecbbd80c8ada179deeb88d0b80e7d6b58d5b1c0bfc44ae84dee58"
+width = 512
+height = 512
+size = 218634
