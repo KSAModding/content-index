@@ -7,7 +7,7 @@ const ORDER = {
     "releases", "links", "compatibility", "loader", "dependencies", "install", "provides", "images",
     "mods", "vehicles", "saves",
   ],
-  releases: ["github", "spacedock", "authority"],
+  releases: ["github", "spacedock", "authority", "since"],
   compatibility: ["game_min", "game_max", "os"],
   loader: ["id", "min", "max"],
   "dependencies[]": ["id", "any_of", "kind", "min", "max"],

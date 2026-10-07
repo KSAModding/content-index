@@ -240,6 +240,30 @@ Releases are picked up on their own.
 
 Correcting metadata is a change here, not a new release of your content.
 
+## Listing your older releases
+
+When your listing is new, the watcher stamps your newest release and then every release after it.
+To get older releases into the index too, set `since` under `[releases]` to the oldest version you want, per [RFC 0079](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0079-author-freedom.md):
+
+```toml
+[releases]
+github = "owner/repository"
+since = "1.2"
+```
+
+The watcher then also stamps every release of the authority host whose version is at least `since` and that is not in the index yet.
+`since` is a version in the forms of [Version bounds](#version-bounds), so `1.2` means `1.2.0`, and `latest` or a leading `v` is refused.
+`since` is not a release host, so it does not count when `[releases]` names more than one host, and with several hosts it applies to the one that `authority` names.
+Each older release goes through the same checks as every stamp, and a release that fails them is reported in your listing's issue without stopping the others.
+A long back catalogue arrives over several ticks of the watcher.
+
+The watcher stamps an older release with the facts your listing states at the time of the stamp, such as the game versions, the loader bounds and the dependencies.
+So a bound that you wrote for your newest release lands on the old ones too.
+When an old release needs other facts, you correct them with an [amendment](https://github.com/KSAModding/content-index-releases/blob/main/CONTRIBUTING.md#an-amendment) in content-index-releases, which can make the release stricter or wider.
+
+A lower `since` later stamps more releases.
+A higher `since` removes no release that is already stamped.
+
 ## no rename possible
 
 The id is the folder name the game installs your content as, so a new id is new content and renaming the file is not an operation here.

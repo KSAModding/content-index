@@ -104,6 +104,7 @@ const FIELDS = {
   github: ["github"],
   spacedock: ["spacedock"],
   authority: ["authority"],
+  since: ["since"],
   name: ["name"],
   authors: ["authors"],
   abstract: ["abstract"],
@@ -926,7 +927,7 @@ function renderSections() {
     const title = heading.textContent.trim();
     const shown = section.querySelectorAll(".msg.error").length;
     const filled = [...section.querySelectorAll("input, select, textarea")].some((field) =>
-      field.type === "checkbox" ? field.checked : field.type !== "file" && field.type !== "radio" && field.value.trim() && field.tagName !== "SELECT")
+      !field.closest("[hidden]") && (field.type === "checkbox" ? field.checked : field.type !== "file" && field.type !== "radio" && field.value.trim() && field.tagName !== "SELECT"))
       || section.querySelector(".item, [aria-pressed=true]") !== null;
     const count = errors.get(section) || 0;
     const kind = count && shown ? "fix" : count ? "open" : filled ? "done" : "optional";
@@ -982,6 +983,7 @@ function refresh() {
   const count = Array.from(state.form.abstract.trim()).length;
   $("abstract-count").textContent = `${count} of ${ABSTRACT_LIMIT}.`;
   $("authority-field").hidden = !(state.form.github.trim() && state.form.spacedock.trim());
+  $("since-field").hidden = !(state.form.github.trim() || state.form.spacedock.trim());
   renderMessages();
   renderSummary();
   renderCard();

@@ -98,6 +98,14 @@
             <div id="msg-releases.authority" class="messages" aria-live="polite"></div>
           </div>
         </div>
+        <div class="field" id="since-field" hidden>
+          <label for="since">Oldest release to list (optional)</label>
+          <input id="since" name="since" placeholder="1.2" autocomplete="off" spellcheck="false" aria-describedby="hint-since msg-releases.since">
+          <div class="aside">
+            <p id="hint-since" class="hint">Leave it empty and the index picks up your newest release and every release after it. Set a version, such as 1.2, and the watcher also stamps every older release from that version on, with the facts this listing states today, such as the game versions and the dependencies. When an old release needs other facts, correct them with an amendment pull request in <a href="https://github.com/KSAModding/content-index-releases">content-index-releases</a>. A lower version later stamps more releases, and a higher one removes none.</p>
+            <div id="msg-releases.since" class="messages" aria-live="polite"></div>
+          </div>
+        </div>
         <div class="field">
           <label for="archive">Release zip (optional)</label>
           <input id="archive" type="file" accept=".zip,application/zip" aria-describedby="hint-archive archive-result">
@@ -291,7 +299,7 @@
           <label for="game-max">Last working game version (optional)</label>
           <input id="game-max" list="game-versions" autocomplete="off" spellcheck="false" aria-describedby="hint-game-max msg-compatibility.game_max">
           <div class="aside">
-            <p id="hint-game-max" class="hint">Leave it empty unless the <span class="noun">mod</span> stops working on newer game builds. Players on a newer build then get a warning before they install. Every release stamped while this is set keeps the limit, because a release can only get stricter later.</p>
+            <p id="hint-game-max" class="hint">Leave it empty unless the <span class="noun">mod</span> stops working on newer game builds. Players on a newer build then get a warning before they install. Every release stamped while this is set keeps the limit until you change that release with an amendment pull request.</p>
             <div id="msg-compatibility.game_max" class="messages" aria-live="polite"></div>
           </div>
         </div>
@@ -337,7 +345,7 @@
                 <label for="loader-max">Last working loader version (optional)</label>
                 <input id="loader-max" autocomplete="off" spellcheck="false" aria-describedby="hint-loader-max msg-loader.max">
                 <div class="aside">
-                  <p id="hint-loader-max" class="hint">Leave it empty unless the mod stops working with newer loader versions. Every release stamped while this is set keeps the limit, because a release can only get stricter later.</p>
+                  <p id="hint-loader-max" class="hint">Leave it empty unless the mod stops working with newer loader versions. Every release stamped while this is set keeps the limit until you change that release with an amendment pull request.</p>
                   <div id="msg-loader.max" class="messages" aria-live="polite"></div>
                 </div>
               </div>

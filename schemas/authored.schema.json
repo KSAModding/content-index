@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/KSAModding/content-index/main/schemas/authored.schema.json",
   "title": "KSA content index: authored document",
-  "description": "One authored TOML document per listing or pack version, per RFC 0031, RFC 0035, RFC 0049, RFC 0058, RFC 0067 and RFC 0072. Validate the parsed document.",
+  "description": "One authored TOML document per listing or pack version, per RFC 0031, RFC 0035, RFC 0049, RFC 0058, RFC 0067, RFC 0072 and RFC 0079. Validate the parsed document.",
   "type": "object",
   "additionalProperties": false,
 
@@ -141,6 +141,10 @@
         "authority": {
           "description": "Which host defines which releases exist. Required when more than one host is named.",
           "enum": ["github", "spacedock"]
+        },
+        "since": {
+          "description": "The oldest version the watcher stamps, per RFC 0079. Every release of the authority at or above it is stamped with the listing facts that stand at stamp time. Absent means the watcher starts at the newest release of a new listing. It is not a host.",
+          "$ref": "#/$defs/versionBound"
         }
       },
       "anyOf": [

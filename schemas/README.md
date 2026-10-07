@@ -1,6 +1,6 @@
 # Schemas
 
-`authored.schema.json` is the machine-readable form of the authored document defined by [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md) and extended by [RFC 0035](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0035-content-install-descriptor.md), [RFC 0049](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0049-instance-handover.md), [RFC 0058](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0058-listing-images-and-dates.md) and [RFC 0067](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0067-per-platform-launch.md), and amended by [RFC 0065](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0065-icon-center-crop.md) and [RFC 0072](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0072-version-forms.md).
+`authored.schema.json` is the machine-readable form of the authored document defined by [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md) and extended by [RFC 0035](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0035-content-install-descriptor.md), [RFC 0049](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0049-instance-handover.md), [RFC 0058](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0058-listing-images-and-dates.md) and [RFC 0067](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0067-per-platform-launch.md), and amended by [RFC 0065](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0065-icon-center-crop.md), [RFC 0072](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0072-version-forms.md) and [RFC 0079](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0079-author-freedom.md).
 
 It is JSON Schema 2020-12, and it covers all three types the format defines today: `mod`, `mod-loader` and `modpack`.
 
@@ -83,6 +83,25 @@ Four numbers, a leading zero, and a leading `v` are refused.
 
 The pack `version` and the `version` of a pin keep all three numbers, because they name a release as the index stores it.
 
+## Older releases
+
+`[releases]` can carry `since`, a version in the same forms as a bound, per [RFC 0079](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0079-author-freedom.md):
+
+```toml
+[releases]
+github = "owner/repository"
+since = "1.2"
+```
+
+The watcher in content-index-releases then also stamps every release of the authority host whose version is at least `since` and that has no release file yet.
+Without `since`, it stamps the newest release of a new listing and every release after it.
+`since` names no host, so it does not count toward the hosts that make `authority` required, `[releases]` with only `since` is refused, and `tools/ownership.py` reads the authority without it.
+A change of `since` alone is not a change of release host.
+
+An older release is stamped with the listing facts that stand when it is stamped, so a bound written for the newest release lands on it too.
+The owner corrects the facts of an old release with an amendment in content-index-releases, which may make the release stricter or wider.
+A lower `since` stamps more releases, and a higher one removes none.
+
 ## What the schema does not cover
 
 Some rules cannot be expressed in JSON Schema at all. `check_schema.py` applies these after the schema passes:
@@ -138,7 +157,7 @@ They are collected here so any one of them can be argued down on its own.
 | An `any_of` entry may not carry `min` or `max` of its own | RFC 0031 puts the bounds on each alternative. An outer pair would have no defined meaning against a set. |
 | A path may not run through a reserved Windows device name | Not in any RFC. A segment naming `NUL` or `CON` swallows every write on Windows, so a manager writing `[provides.configure]` there reports success and configures nothing, which is the failure that section exists to prevent. |
 | A `[provides.instance]` key may not carry a Unicode control character, U+0000 to U+001F or U+007F to U+009F | RFC 0049 forbids only whitespace. A manager hands the value to a process start as an argument or a variable name, where a control character that is not whitespace, such as a NUL, cuts the value short or makes the start fail. The paths and keys elsewhere in the schema exclude the control characters below U+0020 for the same reason. |
-| `[releases]` must name at least one host | A section carrying only `authority` names an authority for nothing. Implied by RFC 0031 rather than stated. |
+| `[releases]` must name at least one host | A section carrying only `authority` or `since` names an authority or a first release for nothing. Implied by RFC 0031 rather than stated. |
 | `tags` are lowercase, and a word or words joined by `-` | RFC 0031 says "free-form lowercase tags". The casing is the RFC's; the separator is this schema's, so a filter list cannot end up holding both `user-interface` and `user_interface`. |
 | `[[mods]]` and `authors` need at least one entry, and `name`, `abstract` and `changelog` may not be empty | A required field present but empty is the same absence with none of the reporting. |
 

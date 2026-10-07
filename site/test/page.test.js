@@ -60,6 +60,20 @@ function body(start) {
   return app.slice(from, app.indexOf("\n}\n", from));
 }
 
+test("the since field shows next to a release host and tells what the watcher stamps", () => {
+  const input = html.match(/<input id="since"[^>]*>/);
+  assert.ok(input && /aria-describedby="[^"]*\bmsg-releases\.since\b/.test(input[0]), "the since input does not name msg-releases.since");
+  assert.match(app, /\n  since: \["since"\],\n/, "the since input is not bound to state.form.since");
+  assert.match(body("function refresh()"), /\$\("since-field"\)\.hidden = !\(state\.form\.github\.trim\(\) \|\| state\.form\.spacedock\.trim\(\)\);/);
+  const hint = /<p id="hint-since"[^>]*>([\s\S]*?)<\/p>/.exec(html)[1];
+  assert.match(hint, /stamps every older release from that version on, with the facts this listing states today/);
+  assert.match(hint, /amendment/);
+});
+
+test("a hidden field does not mark its section as done", () => {
+  assert.match(body("function renderSections()"), /const filled = \[\.\.\.section\.querySelectorAll\("input, select, textarea"\)\]\.some\(\(field\) =>\s+!field\.closest\("\[hidden\]"\) && /);
+});
+
 test("a refused tag shows at the tag input and does not outlive its form", () => {
   const input = html.match(/<input id="tag-input"[^>]*>/);
   assert.ok(input && /aria-describedby="[^"]*\bmsg-tags\b/.test(input[0]), "the tag input does not name msg-tags");

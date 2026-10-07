@@ -35,6 +35,7 @@ export function emptyForm() {
     github: "",
     spacedock: "",
     authority: "",
+    since: "",
     name: "",
     authors: "",
     abstract: "",
@@ -101,6 +102,7 @@ export function formFromDocument(document) {
   form.github = text(releases.github);
   form.spacedock = text(releases.spacedock);
   form.authority = text(releases.authority);
+  form.since = text(releases.since);
   form.name = text(document.name);
   form.authors = Array.isArray(document.authors) ? document.authors.map(text).join(", ") : "";
   form.abstract = text(document.abstract);
@@ -190,6 +192,8 @@ export function documentFromForm(form, base) {
   set(releases, "github", trimmed(form.github));
   set(releases, "spacedock", integerOr(form.spacedock));
   set(releases, "authority", releases.github !== undefined && releases.spacedock !== undefined ? trimmed(form.authority) : "");
+  // since picks releases of a host, so it is written only next to one.
+  set(releases, "since", releases.github !== undefined || releases.spacedock !== undefined ? trimmed(form.since) : "");
   set(document, "releases", releases);
 
   if (form.type === "modpack") {
