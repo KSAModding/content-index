@@ -84,3 +84,19 @@ test("a refused tag shows at the tag input and does not outlive its form", () =>
     assert.match(body(start), /clearTagEntry\(\);/, `${start} keeps the refused tag of the earlier form`);
   }
 });
+
+test("the member rules run on every refresh, and the missing dependencies are one button away", () => {
+  assert.match(body("function refresh()"), /\.\.\.memberMessages\(current\.document, index\),/);
+  assert.match(body("function refresh()"), /renderMemberFix\(\);/);
+  const fix = body("function renderMemberFix()");
+  assert.match(fix, /\$\("add-missing"\)\.hidden = !pins\.length;/);
+  assert.match(fix, /\$\("msg-members-fix"\)\.replaceChildren\(\.\.\.notes\.map\(\(text\) => line\(NOTE, text\)\)\);/);
+  assert.match(body("function addMissing()"), /state\.form\.members\.push\(\.\.\.pins\.map/);
+  assert.match(app, /\$\("add-missing"\)\.addEventListener\("click", addMissing\);/);
+  assert.match(app, /const MANUAL = new Set\(\[[^\]]*"msg-members-fix"/);
+  assert.match(html, /<button type="button" id="add-missing"[^>]*hidden>Add the missing dependencies<\/button>/);
+});
+
+test("Pin <newer> shows only for a newer release that the other pins accept", () => {
+  assert.match(body("function renderMessages()"), /if \(entry\.newer && entry\.fits\) target\.append\(element\("button", \{ type: "button", text: `Pin \$\{entry\.newer\}`/);
+});

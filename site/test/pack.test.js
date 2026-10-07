@@ -7,6 +7,7 @@ import { parseDocument, writeDocument } from "../js/toml.js";
 import { emptyForm, formFromDocument, documentFromForm, sectionsOf, nounOf, releaseTime } from "../js/model.js";
 import {
   memberChoices, versionChoices, defaultVersion, pinNotes, gameMinNotes, packOf, ownIds, raiseVersion, nextPackForm, freeVersion, newerNotes, nextVersionNotes, forumLines,
+  memberMessages, missingDependencies,
 } from "../js/pack.js";
 import { pullRequestLink, copyAndOpen, documentPath, rawPackUrl, URL_LIMIT, PASTE_NEW } from "../js/github.js";
 
@@ -118,7 +119,154 @@ test("a pack form writes a valid document at packs/<id>/<version>.toml, the one 
   assert.equal(writeDocument(document), read(`fixtures/${documentPath(document)}`));
   assert.deepEqual(checker.check(document, { index }).filter((entry) => entry.level === ERROR), []);
   assert.deepEqual(pinNotes(document, index), []);
+  assert.deepEqual(memberMessages(document, index), []);
   assert.deepEqual(gameMinNotes(document, index), []);
+});
+
+const needing = indexFacts({
+  listings: [
+    {
+      id: "ShaderExtensions",
+      authored: { type: "mod" },
+      releases: [
+        { version: "1.0.5", release_status: "stable", dependencies: [{ id: "KittenExtensions", kind: "required", min: "0.5.0", source: "authored" }] },
+        { version: "1.0.2", release_status: "stable", dependencies: [] },
+      ],
+    },
+    {
+      id: "Telescope",
+      authored: { type: "mod" },
+      releases: [{ version: "2.0.0", release_status: "stable", dependencies: [{ kind: "required", any_of: [{ id: "LensA" }, { id: "LensB" }] }] }],
+    },
+    {
+      id: "Alpha",
+      authored: { type: "mod" },
+      releases: [{
+        version: "1.0.0",
+        release_status: "stable",
+        dependencies: [
+          { id: "Beta", kind: "required", min: "1.5", max: "2.0.0", source: "authored" },
+          { id: "Gamma", kind: "optional", source: "authored" },
+          { kind: "required", any_of: [{ id: "Beta" }, { id: "Gamma" }] },
+        ],
+      }],
+    },
+    {
+      id: "Beta",
+      authored: { type: "mod" },
+      releases: [
+        { version: "3.0.0", release_status: "stable" },
+        { version: "2.0.1", release_status: "stable" },
+        { version: "2.0.0-rc.1", release_status: "testing" },
+        { version: "1.9.0", release_status: "stable", yanked: true },
+        { version: "1.8.0", release_status: "stable", download: { unavailable_since: "2026-09-23T10:24:00Z" } },
+        { version: "1.7.0", release_status: "stable" },
+        { version: "1.0.0", release_status: "stable" },
+      ],
+    },
+    { id: "Gamma", authored: { type: "mod" }, releases: [{ version: "1.0.0", release_status: "stable" }] },
+    {
+      id: "Delta",
+      authored: { type: "mod" },
+      releases: [{
+        version: "1.0.0",
+        release_status: "stable",
+        dependencies: [
+          { id: "Beta", kind: "required", min: "2.5.0", source: "authored" },
+          { id: "KittenExtensions", kind: "required", source: "derived" },
+          { kind: "required", any_of: [{ id: "LensA" }, { id: "Gamma" }] },
+        ],
+      }],
+    },
+  ],
+  packs: [],
+}, checker.threadPattern);
+
+test("the picker marks a release whose required dependency is not a listed mod, and does not choose it", () => {
+  assert.deepEqual(versionChoices(needing, "ShaderExtensions"), [
+    ["1.0.5", "1.0.5 (stable, cannot be pinned, because it needs 'KittenExtensions')"],
+    ["1.0.2", "1.0.2 (stable)"],
+  ]);
+  assert.deepEqual(versionChoices(needing, "Telescope"), [["2.0.0", "2.0.0 (stable, cannot be pinned, because it needs one of 'LensA', 'LensB')"]]);
+  assert.deepEqual(versionChoices(needing, "Alpha"), [["1.0.0", "1.0.0 (stable)"]]);
+  assert.equal(defaultVersion(needing, "ShaderExtensions"), "1.0.2");
+  assert.equal(defaultVersion(needing, "Telescope"), "2.0.0");
+});
+
+test("Add the missing dependencies pins the newest stable release inside the bounds, and the set then passes", () => {
+  const document = { type: "modpack", mods: [{ id: "Alpha", version: "1.0.0" }] };
+  assert.deepEqual(levels(memberMessages(document, needing), ERROR), [
+    "mods[0]: 'Alpha' 1.0.0 requires 'Beta' 1.5 to 2.0.0, and the pack does not pin it",
+    "mods[0]: 'Alpha' 1.0.0 requires one of 'Beta', 'Gamma', and the pack pins none of them",
+  ]);
+  const missing = missingDependencies(document, needing);
+  assert.deepEqual(missing, { pins: [{ id: "Beta", version: "1.7.0" }], notes: [] });
+  assert.deepEqual(memberMessages({ ...document, mods: [...document.mods, ...missing.pins] }, needing), []);
+  assert.deepEqual(missingDependencies({ ...document, mods: [...document.mods, { id: "beta" }] }, needing), { pins: [], notes: [] });
+});
+
+test("what Add the missing dependencies cannot pin stays a note for the author", () => {
+  const document = { type: "modpack", mods: [{ id: "Delta", version: "1.0.0" }, { id: "Alpha", version: "1.0.0" }, { id: "Telescope", version: "2.0.0" }] };
+  assert.deepEqual(missingDependencies(document, needing), {
+    pins: [],
+    notes: [
+      "'Delta' 1.0.0 requires 'Beta' 2.5.0 or newer, and no stable release of it is inside the bounds of every member that requires it",
+      "'Delta' 1.0.0 requires 'KittenExtensions', and no listed mod meets this, so no pack can pin this release",
+      "'Delta' 1.0.0 requires one of 'LensA', 'Gamma', so pin the one you want",
+      "'Alpha' 1.0.0 requires 'Beta' 1.5 to 2.0.0, and no stable release of it is inside the bounds of every member that requires it",
+      "'Alpha' 1.0.0 requires one of 'Beta', 'Gamma', so pin the one you want",
+      "'Telescope' 2.0.0 requires one of 'LensA', 'LensB', and no listed mod meets this, so no pack can pin this release",
+    ],
+  });
+  assert.deepEqual(missingDependencies({ ...document, type: "mod" }, needing), { pins: [], notes: [] });
+  assert.deepEqual(missingDependencies(document, null), { pins: [], notes: [] });
+});
+
+const release = (version, dependencies = []) => ({ version, release_status: "stable", dependencies });
+const moving = indexFacts({
+  listings: [
+    { id: "Core", authored: { type: "mod" }, releases: [release("3.0.0"), release("2.0.0"), release("1.0.0")] },
+    { id: "Addon", authored: { type: "mod" }, releases: [release("1.0.0", [{ id: "Core", kind: "required", min: "1.0.0", max: "2.0.0" }])] },
+    { id: "Rival", authored: { type: "mod" }, releases: [release("1.0.0", [{ id: "Core", kind: "conflict", min: "3.0.0" }])] },
+    { id: "Helper", authored: { type: "mod" }, releases: [release("1.0.0")] },
+    { id: "Gauge", authored: { type: "mod" }, releases: [release("1.1.0", [{ id: "Helper", kind: "required" }]), release("1.0.0")] },
+    { id: "Meter", authored: { type: "mod" }, releases: [release("1.1.0", [{ id: "Core", kind: "conflict" }]), release("1.0.0")] },
+    { id: "Scope", authored: { type: "mod" }, releases: [release("1.1.0", [{ id: "KittenExtensions", kind: "required" }]), release("1.0.0")] },
+    {
+      id: "Lens",
+      authored: { type: "mod" },
+      releases: [release("1.0.0", [
+        { id: "KittenExtensions", kind: "required" },
+        { kind: "required", any_of: [{ id: "ShaderExtensions" }, { id: "KittenExtensionsContinued" }] },
+      ])],
+    },
+  ],
+  packs: [],
+}, checker.threadPattern);
+
+test("the mark names each need once, with quoted ids and one of", () => {
+  assert.deepEqual(versionChoices(moving, "Lens"), [
+    ["1.0.0", "1.0.0 (stable, cannot be pinned, because it needs 'KittenExtensions' and one of 'ShaderExtensions', 'KittenExtensionsContinued')"],
+  ]);
+});
+
+test("Pin <newer> shows only when the other pins accept the newer release, and the note stays", () => {
+  const moves = (...mods) => newerNotes({ type: "modpack", mods: mods.map(([id, version]) => ({ id, version })) }, moving)
+    .map((entry) => [entry.path, entry.newer, entry.fits]);
+  assert.deepEqual(moves(["Core", "1.0.0"]), [["mods[0]", "3.0.0", true]]);
+  assert.deepEqual(moves(["Core", "1.0.0"], ["Core", "2.0.0"]), [["mods[0]", "3.0.0", true], ["mods[1]", "3.0.0", true]]);
+  // Outside the bounds that another pinned release sets.
+  assert.deepEqual(moves(["Core", "1.0.0"], ["Addon", "1.0.0"]), [["mods[0]", "3.0.0", false]]);
+  // Another pinned release conflicts with it.
+  assert.deepEqual(moves(["Core", "1.0.0"], ["Rival", "1.0.0"]), [["mods[0]", "3.0.0", false]]);
+  // The pins do not meet its required dependencies.
+  assert.deepEqual(moves(["Gauge", "1.0.0"]), [["mods[0]", "1.1.0", false]]);
+  assert.deepEqual(moves(["Gauge", "1.0.0"], ["Helper", "1.0.0"]), [["mods[0]", "1.1.0", true]]);
+  // It conflicts with another pin.
+  assert.deepEqual(moves(["Meter", "1.0.0"], ["Core", "3.0.0"]), [["mods[0]", "1.1.0", false]]);
+  assert.deepEqual(moves(["Meter", "1.0.0"]), [["mods[0]", "1.1.0", true]]);
+  // No pack can pin it.
+  assert.deepEqual(moves(["Scope", "1.0.0"]), [["mods[0]", "1.1.0", false]]);
 });
 
 test("a pack loaded into the form and written back is unchanged", () => {
@@ -146,17 +294,30 @@ test("the picker offers listed mods at releases that are not yanked and still do
   assert.equal(defaultVersion(index, "DeltaVMap"), "1.2.7");
 });
 
-test("a loaded pin the snapshot does not list stays in the file and gets a note", () => {
+test("a loaded pin that the checks refuse stays in the file and gets their error", () => {
   const base = documentFromForm(packForm(), null);
-  base.mods = [{ id: "DeltaVMap", version: "1.3.0" }, { id: "NotListed", version: "2.0.0" }, { id: "StarMap", version: "0.4.7" }];
+  base.mods = [
+    { id: "DeltaVMap", version: "1.3.0" },
+    { id: "NotListed", version: "2.0.0" },
+    { id: "StarMap", version: "0.4.7" },
+    { id: "GoneMod", version: "1.0.0" },
+    { id: "HiddenMod", version: "1.0.0" },
+    { id: "Compendium", version: "0.9.12" },
+  ];
   const form = formFromDocument(base);
   const document = documentFromForm(form, null);
   assert.deepEqual(document.mods, base.mods);
-  assert.deepEqual(pinNotes(document, index).map((entry) => [entry.level, entry.path, entry.text]), [
-    [NOTE, "mods[0]", "'DeltaVMap' has no release '1.3.0' in the index snapshot that is not yanked; the pin stays as it is"],
-    [NOTE, "mods[1]", "'NotListed' is not a listed mod in the index snapshot, so the page offers no release of it; the pin stays as it is"],
-    [NOTE, "mods[2]", "'StarMap' is not a listed mod in the index snapshot, so the page offers no release of it; the pin stays as it is"],
+  assert.deepEqual(memberMessages(document, index).map((entry) => [entry.level, entry.path, entry.text]), [
+    [ERROR, "mods[0]", "'DeltaVMap' 1.3.0 is yanked"],
+    [ERROR, "mods[1]", "'NotListed' is not a listed mod, and a pack pins only listed mods"],
+    [ERROR, "mods[2]", "'StarMap' is listed as a mod-loader, and a pack pins only mods"],
+    [ERROR, "mods[3]", "'GoneMod' is delisted, and a pack pins only listed mods"],
+    [ERROR, "mods[4]", "'HiddenMod' is delisted, and a pack pins only listed mods"],
+    [ERROR, "mods[5]", "'Compendium' has no stamped release 0.9.12"],
   ]);
+  assert.deepEqual(pinNotes(document, index), []);
+  assert.deepEqual(memberMessages(document, null), []);
+  assert.deepEqual(memberMessages({ ...document, type: "mod" }, index), []);
   assert.deepEqual(memberChoices(index, "NotListed").at(-1), ["NotListed", "NotListed (not offered by the index)"]);
   assert.deepEqual(versionChoices(index, "NotListed", "2.0.0"), [["2.0.0", "2.0.0 (not offered by the index)"]]);
   assert.deepEqual(versionChoices(index, "DeltaVMap", "1.3.0").at(-1), ["1.3.0", "1.3.0 (not offered by the index)"]);
@@ -169,9 +330,8 @@ test("a release whose download is gone is left out, and a loaded pin of it is ke
     [NOTE, "mods[1]", "'Unscience' 1.66.0 is no longer downloadable since 2026-09-23, so the page does not offer it; the pin stays as it is"],
   ]);
   assert.deepEqual(checker.check(document, { index }).filter((entry) => entry.level === ERROR), []);
-  assert.deepEqual(pinNotes({ type: "modpack", mods: [{ id: "DeltaVMap", version: "1.3.0" }] }, index).map((entry) => entry.text), [
-    "'DeltaVMap' has no release '1.3.0' in the index snapshot that is not yanked; the pin stays as it is",
-  ]);
+  assert.deepEqual(memberMessages(document, index), []);
+  assert.deepEqual(pinNotes({ type: "modpack", mods: [{ id: "DeltaVMap", version: "1.3.0" }] }, index), []);
   assert.deepEqual(versionChoices(index, "DeltaVMap", "1.2.8").at(-1), ["1.2.8", "1.2.8 (no longer downloadable)"]);
   assert.deepEqual(versionChoices(index, "Unscience"), []);
   assert.deepEqual(memberChoices(index, "Unscience").at(-1), ["Unscience", "Unscience (not offered by the index)"]);

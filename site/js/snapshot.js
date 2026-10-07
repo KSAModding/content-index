@@ -46,6 +46,17 @@ export function releaseStatuses(releases) {
     .map((release) => [release.version, typeof release.release_status === "string" ? release.release_status : ""]));
 }
 
+// Every stamped release by its version, yanked ones included, with what the
+// member rules of tools/check_index.py read from its release file.
+function stampedReleases(releases) {
+  return new Map((Array.isArray(releases) ? releases : [])
+    .filter((release) => release && typeof release.version === "string")
+    .map((release) => [release.version, {
+      yanked: release.yanked === true,
+      dependencies: Array.isArray(release.dependencies) ? release.dependencies : [],
+    }]));
+}
+
 // The releases that the picker leaves out only because their download is gone,
 // each with the time it went away. A yanked release is not in this map, because
 // its pin gets the yank note. The mark does not change what a release needs, so
@@ -94,6 +105,7 @@ export function indexFacts(snapshot, threadPattern) {
   const members = [];
   const forum = new Map();
   const packs = new Map();
+  const listed = new Map();
   for (const listing of Array.isArray(snapshot.listings) ? snapshot.listings : []) {
     if (!listing || typeof listing.id !== "string") continue;
     const folded = listing.id.toLowerCase();
@@ -105,7 +117,9 @@ export function indexFacts(snapshot, threadPattern) {
     if (thread !== null) threads.push({ holder: folded, where, thread });
     if (type === "mod-loader") loaders.push({ id: listing.id, newest: newestStable(listing.releases) });
     if (type === "mod") mods.push(listing.id);
-    const delisted = listing.index_status && listing.index_status.state === "delisted";
+    const state = listing.index_status && typeof listing.index_status.state === "string" ? listing.index_status.state : null;
+    const delisted = state === "delisted";
+    if (!listed.has(folded)) listed.set(folded, { id: listing.id, type, state, stamped: stampedReleases(listing.releases) });
     if (type === "mod" && !delisted) {
       const name = typeof authored.name === "string" ? authored.name : "";
       members.push({ id: listing.id, name, releases: pinnableReleases(listing.releases), statuses: releaseStatuses(listing.releases), gone: goneReleases(listing.releases) });
@@ -135,7 +149,7 @@ export function indexFacts(snapshot, threadPattern) {
   loaders.sort((a, b) => a.id.localeCompare(b.id));
   mods.sort((a, b) => a.localeCompare(b));
   members.sort((a, b) => a.id.localeCompare(b.id));
-  return { holders, threads, threadPattern, loaders, mods, members, forum, packs, gameVersions };
+  return { holders, threads, threadPattern, loaders, mods, members, listed, forum, packs, gameVersions };
 }
 
 export function gameVersionChoices(gameVersions) {
