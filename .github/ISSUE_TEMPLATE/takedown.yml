@@ -15,7 +15,7 @@ body:
     id: listing
     attributes:
       label: Listing id
-      description: The id as it appears under `listings/` or `packs/`. For one pack version, add the version.
+      description: The id as it appears under `listings/` or `packs/`. For one pack version, add the version. To take your mod out of a pack, give the pack id here and your mod's id under What is wrong.
       placeholder: AdvancedFlightComputer
     validations:
       required: true
@@ -29,6 +29,7 @@ body:
         - The release host has already taken the files down
         - The required forums thread is gone, or the author was banned there
         - I am the author and want my own listing removed
+        - I am the author of a mod and want it out of this pack
         - Something else, explained below
     validations:
       required: true

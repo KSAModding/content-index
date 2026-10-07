@@ -169,6 +169,46 @@ class Evaluate(unittest.TestCase):
         self.assertFalse(candidate)
 
 
+class PackClaims(unittest.TestCase):
+    def evaluate(self, *changes):
+        return check_scope.evaluate([check_scope.Change(path, status) for path, status in changes])
+
+    def test_a_first_claim_merges_itself(self):
+        candidate, documents, reason = self.evaluate(
+            ("packs/Pack/1.0.0.toml", "added"), ("packs/Pack/owner.json", "added")
+        )
+        self.assertTrue(candidate)
+        self.assertEqual(documents, ["packs/Pack/1.0.0.toml"])
+        self.assertEqual(reason, "")
+
+    def test_an_owner_record_alone_waits(self):
+        candidate, _, reason = self.evaluate(("packs/Pack/owner.json", "added"))
+        self.assertFalse(candidate)
+        self.assertIn("no listing or pack document", reason)
+
+    def test_an_owner_record_beside_another_pack_waits(self):
+        candidate, _, reason = self.evaluate(
+            ("packs/Other/1.0.0.toml", "added"), ("packs/Pack/owner.json", "added")
+        )
+        self.assertFalse(candidate)
+        self.assertIn("packs/Pack/owner.json", reason)
+
+    def test_an_owner_record_beside_a_listing_waits(self):
+        candidate, _, _ = self.evaluate(
+            ("listings/Pack.toml", "added"), ("packs/Pack/owner.json", "added")
+        )
+        self.assertFalse(candidate)
+
+    def test_a_changed_owner_record_waits_even_with_a_new_version(self):
+        for status in ("modified", "removed", "renamed"):
+            with self.subTest(status=status):
+                candidate, _, reason = self.evaluate(
+                    ("packs/Pack/2.0.0.toml", "added"), ("packs/Pack/owner.json", status)
+                )
+                self.assertFalse(candidate)
+                self.assertIn("packs/Pack/owner.json", reason)
+
+
 class Removals(unittest.TestCase):
 
     def evaluate(self, path, status):

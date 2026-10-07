@@ -101,7 +101,7 @@ class Run(unittest.TestCase):
             patch = mock.patch.object(validate, name, passing(name))
             patch.start()
             self.addCleanup(patch.stop)
-        for name in ("run_index", "run_license", "run_status", "run_images", "run_edits"):
+        for name in ("run_index", "run_members", "run_license", "run_status", "run_images", "run_edits"):
             patch = mock.patch.object(validate, name, passing(name))
             patch.start()
             self.addCleanup(patch.stop)
@@ -162,6 +162,7 @@ class Run(unittest.TestCase):
                 "run_tags",
                 "run_packs",
                 "run_index",
+                "run_members",
                 "run_license",
                 "run_status",
                 "run_images",
@@ -480,6 +481,42 @@ class EditWiring(unittest.TestCase):
         notes.assert_called_once_with([], ["listings/Mod.toml"], "HEAD^1", "releases")
         self.assertEqual(result.outcome, validate.PASS)
         self.assertEqual(result.messages, ["note"])
+
+
+class MemberWiring(unittest.TestCase):
+    PACK = "packs/Pack/1.0.0.toml"
+
+    def test_no_pack_version_means_no_pin_is_checked(self):
+        with mock.patch.object(validate.check_index, "check_members") as never:
+            check = validate.run_members([], ["listings/Mod.toml"])
+        never.assert_not_called()
+        self.assertEqual(check.outcome, validate.PASS)
+
+    def test_a_refused_pin_rejects(self):
+        with mock.patch.object(
+            validate.check_index, "check_members", return_value=["mods[0]: 'X' is not a listed mod"]
+        ), mock.patch.object(validate.check_status, "delisted", return_value=set()):
+            check = validate.run_members([], [self.PACK], "releases-checkout")
+        self.assertEqual(check.outcome, validate.REJECT)
+        self.assertEqual(check.messages, ["mods[0]: 'X' is not a listed mod"])
+
+    def test_the_release_folder_of_the_checkout_is_read(self):
+        with mock.patch.object(validate.check_index, "check_members", return_value=[]) as members:
+            check = validate.run_members([], [self.PACK], "releases-checkout")
+        self.assertEqual(check.outcome, validate.PASS)
+        self.assertEqual(members.call_args.args[3], Path("releases-checkout") / "releases")
+
+    def test_a_missing_checkout_is_a_could_not_evaluate(self):
+        pack = validate.check_index.Entry(None, self.PACK, ("pack", "Pack"), "Pack", {"type": "modpack"})
+        with tempfile.TemporaryDirectory() as folder:
+            check = validate.run_members([pack], [self.PACK], str(Path(folder) / "absent"))
+        self.assertEqual(check.outcome, validate.COULD_NOT_EVALUATE)
+
+    def test_an_index_status_that_does_not_parse_is_a_could_not_evaluate(self):
+        with mock.patch.object(validate.check_status, "delisted", side_effect=ValueError("bad toml")):
+            check = validate.run_members([], [self.PACK])
+        self.assertEqual(check.outcome, validate.COULD_NOT_EVALUATE)
+        self.assertIn("bad toml", check.messages[0])
 
 
 class RealRepository(unittest.TestCase):

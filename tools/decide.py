@@ -26,6 +26,8 @@ import pack_ownership
 GITHUB_API = "https://api.github.com"
 GRAPHQL = "https://api.github.com/graphql"
 USER_AGENT = ownership.USER_AGENT
+# The entry types of the Git trees API, named as the contents API names them.
+TREE_KINDS = {"tree": "dir", "blob": "file", "commit": "submodule"}
 
 # The required check in the branch ruleset. No job may carry this name.
 STATUS_CONTEXT = "validate"
@@ -258,19 +260,23 @@ class Api:
     def folder(self, path, ref):
         """The (name, type) entries of a folder of this repository on `ref`.
 
-        A folder that is not there has none. The contents API lists at most
-        1000 entries, so a longer listing is Unavailable, never cut short.
+        A folder that is not there has none. The entries come from the Git trees
+        API, which lists far more entries than the contents API. A listing that
+        GitHub cuts short is Unavailable, never used. The types are the ones the
+        contents API gives, "dir" and "file".
         """
-        answer = self._other(f"/repos/{self.repository}/contents/{path}", ref=ref)
+        tree = urllib.parse.quote(f"{ref}:{path}", safe="")
+        answer = self._other(f"/repos/{self.repository}/git/trees/{tree}")
         if answer is None:
             return []
-        if not isinstance(answer, list):
+        entries = answer.get("tree") if isinstance(answer, dict) else None
+        if not isinstance(entries, list):
             raise ownership.Unavailable(f"{path} on {ref} is not a folder")
-        if len(answer) >= 1000:
+        if answer.get("truncated"):
             raise ownership.Unavailable(f"{path} on {ref} has too many entries to list")
         return [
-            (entry.get("name") or "", entry.get("type") or "")
-            for entry in answer
+            (entry.get("path") or "", TREE_KINDS.get(entry.get("type"), entry.get("type") or ""))
+            for entry in entries
             if isinstance(entry, dict)
         ]
 

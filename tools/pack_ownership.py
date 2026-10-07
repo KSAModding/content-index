@@ -126,8 +126,10 @@ def owner_record(api, pack_id, ref):
 def verify(api, pull, document_path, head_sha):
     """Verify a pack version against the owner recorded on the base branch.
 
-    A submitted owner record can describe a first claim, but it can never
-    verify that claim. A steward must accept it before it becomes authority.
+    A pack version is a first claim only when no pack or listing on the base
+    branch holds its id in any case. Then the submitted owner record claims the
+    id for the account that opened the pull request, first come, first served.
+    After that, only the record on the base branch counts.
     """
     base_ref = (pull.get("base") or {}).get("ref") or ""
     if not base_ref:
@@ -165,6 +167,22 @@ def verify(api, pull, document_path, head_sha):
             instructions="A steward decides whether the recorded pack owner must change.",
         )
 
+    pack_id = PurePosixPath(document_path).parent.name
+    try:
+        held = held_ids(api, base_ref)
+    except ownership.Unavailable as error:
+        return ownership.Result(
+            ownership.COULD_NOT_EVALUATE,
+            f"whether the pack id is free on {base_ref} could not be read: {error}",
+        )
+    if pack_id.casefold() in held:
+        return ownership.Result(
+            ownership.UNVERIFIED,
+            f"the id '{pack_id}' is already held on {base_ref}, and no owner record "
+            "there names the account that may add a version",
+            instructions="A steward decides who holds the pack id.",
+        )
+
     submitted, problem = _read(api, path, head_sha)
     if problem:
         return ownership.Result(ownership.REJECTED, problem)
@@ -178,8 +196,4 @@ def verify(api, pull, document_path, head_sha):
             ownership.REJECTED,
             f"{path} must name the account that opened the pull request",
         )
-    return ownership.Result(
-        ownership.UNVERIFIED,
-        "this is the first claim for the pack id",
-        instructions="Packs have no release host, so a steward must accept the first claim.",
-    )
+    return ownership.Result(ownership.VERIFIED, "", PROOF)

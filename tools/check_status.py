@@ -9,6 +9,7 @@ nothing, so a delisting with a typo in it never reaches a client.
 import argparse
 import json
 import sys
+import tomllib
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -85,13 +86,7 @@ def check_resolves(path, document, listings, packs, errors, notes):
     if not isinstance(entries, list):
         return
 
-    delisted = {
-        entry["id"].casefold()
-        for entry in entries
-        if isinstance(entry, dict)
-        and isinstance(entry.get("id"), str)
-        and entry.get("state") == DELISTED
-    }
+    delisted = _delisted(entries)
 
     for position, entry in enumerate(entries):
         if not isinstance(entry, dict):
@@ -126,6 +121,25 @@ def check_resolves(path, document, listings, packs, errors, notes):
                 f"{where}: '{identifier}' is delisted, so retracting its version {version} "
                 f"changes nothing"
             )
+
+
+def _delisted(entries):
+    return {
+        entry["id"].casefold()
+        for entry in entries
+        if isinstance(entry, dict)
+        and isinstance(entry.get("id"), str)
+        and entry.get("state") == DELISTED
+    }
+
+
+def delisted(path=STATUS):
+    """The ids the file delists, casefolded. It raises ValueError when the file does not parse."""
+    if not path.is_file():
+        return set()
+    with path.open("rb") as handle:
+        entries = tomllib.load(handle).get("entries")
+    return _delisted(entries if isinstance(entries, list) else [])
 
 
 def check(entries, path=STATUS, checker=None):

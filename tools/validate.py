@@ -80,6 +80,22 @@ def run_index(entries, skipped=(), documents=()):
     return Check("index", REJECT if errors else PASS, messages)
 
 
+def run_members(entries, documents=(), releases=None):
+    if not any(check_scope.kind_of(path) == check_scope.PACK_KIND for path in documents):
+        return Check("pack members", PASS, ["the change touches no pack version, so no pin was checked"])
+
+    try:
+        errors = check_index.check_members(
+            entries,
+            documents,
+            check_status.delisted(),
+            check_release.releases_root(releases) / "releases",
+        )
+    except (OSError, ValueError) as error:
+        return Check("pack members", COULD_NOT_EVALUATE, [f"the pins could not be checked: {error}"])
+    return Check("pack members", REJECT if errors else PASS, errors)
+
+
 def run_license(entries):
     errors = []
     for entry in entries:
@@ -170,6 +186,7 @@ def run_checks(changes, skip_release=False, releases=None, token=None, base=None
     entries, skipped = check_index.load_documents()
     checks = gate + [
         run_index(entries, skipped, documents),
+        run_members(entries, documents, releases),
         run_license(entries),
         run_status(entries, skipped),
         run_images(entries, documents),
