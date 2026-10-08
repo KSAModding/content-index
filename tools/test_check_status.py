@@ -204,6 +204,8 @@ class Delisted(StatusCase):
             block(id="Pack", state="retracted", version="1.0.0"),
         )
         self.assertEqual(check_status.delisted(path), {"gone"})
+        self.assertEqual(check_status.disputed(path), {"argued"})
+        self.assertEqual(check_status.disputed(self.root / "absent.toml"), set())
 
     def test_no_status_file_delists_nothing(self):
         self.assertEqual(check_status.delisted(self.root / "absent.toml"), set())

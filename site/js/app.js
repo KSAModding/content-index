@@ -10,13 +10,14 @@ import {
 } from "./github.js";
 import {
   memberChoices, versionChoices, defaultVersion, pinNotes, gameMinNotes, packOf, ownIds, nextPackForm, freeVersion, newerNotes, nextVersionNotes, forumLines,
+  memberMessages, missingDependencies,
 } from "./pack.js";
 import { isLogin, userApiUrl, ownerRecordText, accountFromAnswer, packIdState, firstClaimText, FREE } from "./owner.js";
 
 const STORAGE_KEY = "ksa-listing-page/v1";
 const TIMEOUT = 20000;
 const SECTION_INPUTS = { links: "link-forums", compatibility: "game-min" };
-const MANUAL = new Set(["msg-load", "msg-prefill", "msg-output", "msg-pr", "msg-forum-list", "msg-owner", "msg-owner-file", "archive-result"]);
+const MANUAL = new Set(["msg-load", "msg-prefill", "msg-output", "msg-pr", "msg-forum-list", "msg-owner", "msg-owner-file", "msg-members-fix", "archive-result"]);
 const ROW_MESSAGES = ["link", "dependency", "member"];
 
 const $ = (id) => document.getElementById(id);
@@ -191,6 +192,7 @@ function bindStatic() {
     refresh();
     $("members").lastElementChild.querySelector("select").focus();
   });
+  $("add-missing").addEventListener("click", addMissing);
   $("released-now").addEventListener("click", () => {
     state.form.releasedAt = releaseTime();
     touched.add($("released-at"));
@@ -484,6 +486,19 @@ function renderMembers() {
     });
     return element("div", { className: "item" }, [element("div", { className: "row" }, [mod, version]), messages]);
   }));
+}
+
+function addMissing() {
+  const { pins } = missingDependencies(current.document, index);
+  state.form.members.push(...pins.map(({ id, version }) => ({ id, version })));
+  renderMembers();
+  refresh();
+}
+
+function renderMemberFix() {
+  const { pins, notes } = missingDependencies(current.document, index);
+  $("add-missing").hidden = !pins.length;
+  $("msg-members-fix").replaceChildren(...notes.map((text) => line(NOTE, text)));
 }
 
 function renderTags() {
@@ -802,7 +817,7 @@ function renderMessages() {
     if (entry.path === "the document" && input && !input.value && !touched.has(input)) continue;
     if (entry.path === "tags" && entry.level === NOTE && !tagsTouched) continue;
     target.append(line(entry.level, REQUIRED.test(entry.text) ? "Required." : entry.text));
-    if (entry.newer) target.append(element("button", { type: "button", text: `Pin ${entry.newer}`, onclick: () => movePin(entry.path, entry.newer) }));
+    if (entry.newer && entry.fits) target.append(element("button", { type: "button", text: `Pin ${entry.newer}`, onclick: () => movePin(entry.path, entry.newer) }));
     if (entry.level === ERROR && input) input.setAttribute("aria-invalid", "true");
   }
 }
@@ -973,6 +988,7 @@ function refresh() {
   current.messages = checker.check(current.document, { index, own, gameVersions: index ? index.gameVersions : null });
   current.messages.push(
     ...extraMessages(),
+    ...memberMessages(current.document, index),
     ...pinNotes(current.document, index),
     ...gameMinNotes(current.document, index),
     ...newerNotes(current.document, index),
@@ -985,6 +1001,7 @@ function refresh() {
   $("authority-field").hidden = !(state.form.github.trim() && state.form.spacedock.trim());
   $("since-field").hidden = !(state.form.github.trim() || state.form.spacedock.trim());
   renderMessages();
+  renderMemberFix();
   renderSummary();
   renderCard();
   renderSections();

@@ -24,6 +24,7 @@ SCHEMA = ROOT / "schemas" / "index-status.schema.json"
 STATUS = ROOT / "index-status.toml"
 
 DELISTED = "delisted"
+DISPUTED = "disputed"
 RETRACTED = "retracted"
 
 PACK_HOLDER = "pack"
@@ -124,22 +125,35 @@ def check_resolves(path, document, listings, packs, errors, notes):
 
 
 def _delisted(entries):
+    return _in_state(entries, DELISTED)
+
+
+def _in_state(entries, state):
     return {
         entry["id"].casefold()
         for entry in entries
         if isinstance(entry, dict)
         and isinstance(entry.get("id"), str)
-        and entry.get("state") == DELISTED
+        and entry.get("state") == state
     }
 
 
-def delisted(path=STATUS):
-    """The ids the file delists, casefolded. It raises ValueError when the file does not parse."""
+def _ids(state, path):
     if not path.is_file():
         return set()
     with path.open("rb") as handle:
         entries = tomllib.load(handle).get("entries")
-    return _delisted(entries if isinstance(entries, list) else [])
+    return _in_state(entries if isinstance(entries, list) else [], state)
+
+
+def delisted(path=STATUS):
+    """The ids the file delists, casefolded. It raises ValueError when the file does not parse."""
+    return _ids(DELISTED, path)
+
+
+def disputed(path=STATUS):
+    """The ids the file marks disputed, casefolded. It raises ValueError when the file does not parse."""
+    return _ids(DISPUTED, path)
 
 
 def check(entries, path=STATUS, checker=None):

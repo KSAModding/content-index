@@ -500,6 +500,16 @@ class MemberWiring(unittest.TestCase):
         self.assertEqual(check.outcome, validate.REJECT)
         self.assertEqual(check.messages, ["mods[0]: 'X' is not a listed mod"])
 
+    def test_a_disputed_member_passes_with_its_note(self):
+        note = "packs/Pack/1.0.0.toml: mods[0]: 'X' is disputed, and a client warns about it"
+        with mock.patch.object(validate.check_index, "check_members", return_value=[]), mock.patch.object(
+            validate.check_index, "member_notes", return_value=[note]
+        ) as notes, mock.patch.object(validate.check_status, "disputed", return_value={"x"}):
+            check = validate.run_members([], [self.PACK], "releases-checkout")
+        self.assertEqual(check.outcome, validate.PASS)
+        self.assertEqual(check.messages, [note])
+        self.assertEqual(notes.call_args.args[2], {"x"})
+
     def test_the_release_folder_of_the_checkout_is_read(self):
         with mock.patch.object(validate.check_index, "check_members", return_value=[]) as members:
             check = validate.run_members([], [self.PACK], "releases-checkout")

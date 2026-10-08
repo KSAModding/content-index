@@ -138,6 +138,11 @@ The checks of a pull request from a new GitHub account can wait until a steward 
 The [listing page](https://ksamodding.github.io/content-index/) writes the first version of a new pack when you set the type to `modpack`.
 You pick each member from the listed mods and their releases that are not yanked and still download, and the page opens GitHub at `packs/<id>/<version>.toml`.
 A release whose download is gone from its host is not offered, and a loaded pin of it stays with a note that names the member, the version and the date.
+The page checks the members as the index does, with the same messages, against the index snapshot.
+The picker marks a release that "cannot be pinned, because it needs" a mod that is not listed.
+"Add the missing dependencies" pins each required dependency that no member pins, at its newest stable release inside the bounds, and when a member needs one of several mods, the choice stays with you.
+A note marks a member with a newer release, and its "Pin" button shows only when the other pins accept that release.
+The snapshot follows the index with a delay, so a release stamped after the last snapshot build shows as not stamped on the page until the next build.
 "Check the id" tells you whether the pack id is free, yours, or held by another account, in which case a steward decides.
 For a free id, it also writes `owner.json` from your GitHub login and numeric account id, to copy or to save.
 [Borea](https://ksamodding.github.io/Borea/) is getting a pack editor that opens the pull request with both files at once ([Borea#566](https://github.com/KSAModding/Borea/issues/566)).
@@ -169,7 +174,7 @@ The checks read the dependencies from the stamped release files, so a dependency
 A mod's loader is not a dependency, and a pack does not pin it.
 The checks refuse every other entry and name it, and they name each missing or conflicting mod together with the pinned release that needs it.
 They also refuse `[[vehicles]]` and `[[saves]]` until those content types exist.
-A pinned mod that is `disputed` passes, and a client warns about it.
+A pinned mod that is `disputed` passes with a warning, and a client warns about it too.
 When a pinned release is yanked or a pinned mod is delisted later, the accepted pack version stays as it is, and a client warns and installs what it can.
 
 When a pinned mod has newer releases, test them and publish a new pack version.

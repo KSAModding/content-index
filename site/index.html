@@ -224,10 +224,16 @@
 
       <section class="card" aria-labelledby="section-members" id="members-section" hidden>
         <h2 id="section-members">Members</h2>
-        <p class="hint">The listed mods in the pack, each at one release. The page offers the mods of the index and their releases that are not yanked and still download, newest first. A note marks a member with a newer release that is at least as stable as its pin. The pin stays until you move it.</p>
+        <p class="hint">The listed mods in the pack, each at one release. The page offers the mods of the index and their releases that are not yanked and still download, newest first. A note marks a member with a newer release that is at least as stable as its pin. The pin stays until you move it, and the page offers to move it only when the other pins accept the newer release.</p>
+        <p class="hint">The pack pins every required dependency of its members inside their bounds, and no member conflicts with another. A release that needs a mod that is not listed is marked, because no pack can pin it.</p>
         <p id="members-state" class="hint" hidden></p>
         <div id="members"></div>
-        <p><button type="button" id="add-member" class="add">Add a member</button></p>
+        <p class="row">
+          <button type="button" id="add-member" class="add">Add a member</button>
+          <button type="button" id="add-missing" class="secondary" aria-describedby="hint-add-missing msg-members-fix" hidden>Add the missing dependencies</button>
+        </p>
+        <p id="hint-add-missing" class="hint">"Add the missing dependencies" pins each required dependency that no member pins, at its newest stable release inside the bounds. When a member needs one of several mods, you choose it.</p>
+        <div id="msg-members-fix" class="messages" aria-live="polite"></div>
         <div id="msg-mods" class="messages" aria-live="polite"></div>
         <p><button type="button" id="copy-forum-list" class="secondary" aria-describedby="hint-forum-list msg-forum-list">Copy the member list for your forum thread</button></p>
         <p id="hint-forum-list" class="hint">The forum rules ask a pack thread to list each mod with its version, authors, license, download and thread. The list has one line per member.</p>
