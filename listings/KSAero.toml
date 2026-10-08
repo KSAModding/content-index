@@ -1,0 +1,43 @@
+spec_version = 1
+id = "KSAero"
+type = "mod"
+name = "KSAero"
+authors = ["cairn5"]
+abstract = "Better Aerodynamics for Kitten Space Agency"
+description = "A deliberately simple aerodynamics mod for Kitten Space Agency, to stand in until the game has real aero. It replaces stock's atmospheric drag with a body-of-revolution model that has angle-of-attack drag, lift with a stall, and a transonic drag rise. Rotational dynamics are left exactly as stock."
+license = "MIT"
+tags = ["gameplay", "aerodynamics"]
+
+[releases]
+github = "cairn5/KSAero"
+spacedock = 4647
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/ksaero.1353/"
+repository = "https://github.com/cairn5/KSAero"
+spacedock = "https://spacedock.info/mod/4647/KSAero"
+bugtracker = "https://github.com/cairn5/KSAero/issues"
+
+[compatibility]
+game_min = "2026.10.7.5541"
+game_max = "2026.10.7.5541"
+
+[loader]
+id = "StarMap"
+min = "0.4.7"
+
+[images.icon]
+url = "https://github.com/cairn5/KSAero/blob/master/images/cylinderflow.png"
+sha256 = "f39739d61ee1a3203d007de070d1e6cb8d833b99f3108caa6d79d8cf24874739"
+width = 360
+height = 314
+size = 181346
+
+[[images.description]]
+id = "aeroflow"
+url = "https://github.com/cairn5/KSAero/blob/master/images/cylinderflow.png"
+sha256 = "f39739d61ee1a3203d007de070d1e6cb8d833b99f3108caa6d79d8cf24874739"
+width = 360
+height = 314
+size = 181346
