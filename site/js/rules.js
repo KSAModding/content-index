@@ -177,21 +177,59 @@ export function schemaMessages(validate, document) {
   return found;
 }
 
+// One or more decimal digits of any script, as str.isdecimal of Python reads them.
+const DECIMAL = /^\p{Nd}+$/u;
+const DIGIT = /^\p{Nd}$/u;
+
+// Unicode gives the decimal digits only in runs of ten from 0 to 9, so the
+// place of a digit in its run is its value.
+function digitValue(character) {
+  let code = character.codePointAt(0);
+  if (code >= 0x30 && code <= 0x39) return code - 0x30;
+  let place = 0;
+  while (DIGIT.test(String.fromCodePoint(code - 1))) {
+    code -= 1;
+    place += 1;
+  }
+  return place % 10;
+}
+
+function decimal(text) {
+  let value = 0n;
+  for (const character of text) value = value * 10n + BigInt(digitValue(character));
+  return value;
+}
+
+function compareCodePoints(left, right) {
+  const a = Array.from(left);
+  const b = Array.from(right);
+  for (let index = 0; index < Math.min(a.length, b.length); index += 1) {
+    const x = a[index].codePointAt(0);
+    const y = b[index].codePointAt(0);
+    if (x !== y) return x < y ? -1 : 1;
+  }
+  return a.length === b.length ? 0 : a.length < b.length ? -1 : 1;
+}
+
+// The sort key that semver_key of check_schema.py gives a version, or null
+// when it does not read the version. The numbers can have any size.
+function semverKey(version) {
+  if (typeof version !== "string") return null;
+  const withoutBuild = version.split("+")[0];
+  const dash = withoutBuild.indexOf("-");
+  const core = dash < 0 ? withoutBuild : withoutBuild.slice(0, dash);
+  const pre = dash < 0 ? "" : withoutBuild.slice(dash + 1);
+  const numbers = core.split(".");
+  if (numbers.length > 3 || !numbers.every((part) => DECIMAL.test(part))) return null;
+  // RFC 0072: a missing number reads as 0, so 0.5 and 0.5.0 are the same version.
+  while (numbers.length < 3) numbers.push("0");
+  const identifiers = pre ? pre.split(".").map((part) => (DECIMAL.test(part) ? { number: decimal(part) } : { text: part })) : null;
+  return { core: numbers.map(decimal), pre: identifiers };
+}
+
 export function semverCompare(left, right) {
-  const key = (version) => {
-    if (typeof version !== "string") return null;
-    const withoutBuild = version.split("+")[0];
-    const dash = withoutBuild.indexOf("-");
-    const core = dash < 0 ? withoutBuild : withoutBuild.slice(0, dash);
-    const pre = dash < 0 ? "" : withoutBuild.slice(dash + 1);
-    const numbers = core.split(".");
-    if (numbers.length > 3 || !numbers.every((part) => /^[0-9]+$/.test(part))) return null;
-    // RFC 0072: a missing number reads as 0, so 0.5 and 0.5.0 are the same version.
-    while (numbers.length < 3) numbers.push("0");
-    return { core: numbers.map(Number), pre: pre ? pre.split(".") : null };
-  };
-  const a = key(left);
-  const b = key(right);
+  const a = semverKey(left);
+  const b = semverKey(right);
   if (a === null || b === null) return null;
   for (let index = 0; index < 3; index += 1) {
     if (a.core[index] !== b.core[index]) return a.core[index] < b.core[index] ? -1 : 1;
@@ -202,14 +240,15 @@ export function semverCompare(left, right) {
   for (let index = 0; index < Math.min(a.pre.length, b.pre.length); index += 1) {
     const x = a.pre[index];
     const y = b.pre[index];
-    const xNumeric = /^[0-9]+$/.test(x);
-    const yNumeric = /^[0-9]+$/.test(y);
+    const xNumeric = x.text === undefined;
+    const yNumeric = y.text === undefined;
     if (xNumeric && yNumeric) {
-      if (Number(x) !== Number(y)) return Number(x) < Number(y) ? -1 : 1;
+      if (x.number !== y.number) return x.number < y.number ? -1 : 1;
     } else if (xNumeric !== yNumeric) {
       return xNumeric ? -1 : 1;
-    } else if (x !== y) {
-      return x < y ? -1 : 1;
+    } else {
+      const order = compareCodePoints(x.text, y.text);
+      if (order) return order;
     }
   }
   return a.pre.length === b.pre.length ? 0 : a.pre.length < b.pre.length ? -1 : 1;
@@ -663,6 +702,7 @@ export function releaseListRules(document, gameVersions, now = new Date()) {
 export function createChecker({ schema, tagsText }) {
   const ajv = new Ajv2020({ allErrors: true, strict: false, verbose: true });
   const validate = ajv.compile(schema);
+  const contentId = ajv.compile(schema.$defs.contentId);
   const vocabulary = curatedTags(tagsText);
   const curated = vocabulary.map((entry) => entry.tag);
   const pattern = threadPattern(schema);
@@ -672,6 +712,7 @@ export function createChecker({ schema, tagsText }) {
     threadPattern: pattern,
     tagPattern: new RegExp(schema.$defs.tag.pattern, "u"),
     maxDescriptionImages: schema.properties.images.properties.description.maxItems,
+    validId: (id) => contentId(id),
     offline(document) {
       return [
         ...schemaMessages(validate, document),
