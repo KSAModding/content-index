@@ -110,7 +110,7 @@
           <label for="archive">Release zip (optional)</label>
           <input id="archive" type="file" accept=".zip,application/zip" aria-describedby="hint-archive archive-result">
           <div class="aside">
-            <p id="hint-archive" class="hint">Select the zip of your latest release. The page reads the file names in it and shows the install root the index derives. It does not download your release, the check on the pull request does that.</p>
+            <p id="hint-archive" class="hint">Select the zip of your latest release. The page reads the file names and the <code>mod.toml</code> in it, and shows the install root and, under Dependencies, the dependencies the index derives. The zip stays on your computer.</p>
             <div id="archive-result" class="messages" aria-live="polite"></div>
           </div>
         </div>
@@ -414,7 +414,20 @@
       <section class="card" aria-labelledby="section-dependencies" id="dependencies-section">
         <h2 id="section-dependencies">Dependencies</h2>
         <p class="hint">Other listed mods yours works with. Code dependencies come from the <code>mod.toml</code> in your release by themselves, so add here only bounds or kinds the release cannot say.</p>
+        <div id="declared" class="declared" hidden>
+          <p id="declared-text" class="hint" hidden></p>
+          <ul id="declared-list" class="declared-list"></ul>
+          <p id="declared-pending" class="hint" hidden>The dependencies of your <code>mod.toml</code> show here once the index stamps your first release. To see them now, select the zip of your release under Releases.</p>
+          <div id="msg-declared" class="messages" aria-live="polite"></div>
+        </div>
         <div id="dependencies"></div>
+        <div class="row search-row">
+          <input id="dependency-search" type="search" placeholder="Search by name, id or author" aria-label="Search the listed mods by name, id or author" autocomplete="off" spellcheck="false">
+          <button type="button" id="add-listed-dependency" class="beside" disabled>Add</button>
+        </div>
+        <div id="dependency-matches" class="matches" role="radiogroup" aria-label="Listed mods that match the search" hidden></div>
+        <p id="dependency-no-match" class="hint" hidden>No listed mod matches.</p>
+        <p id="loader-set" class="hint" aria-live="polite" hidden></p>
         <p><button type="button" id="add-dependency" class="add">Add a dependency</button></p>
         <div id="msg-dependencies" class="messages" aria-live="polite"></div>
       </section>

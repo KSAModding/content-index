@@ -100,3 +100,26 @@ test("the member rules run on every refresh, and the missing dependencies are on
 test("Pin <newer> shows only for a newer release that the other pins accept", () => {
   assert.match(body("function renderMessages()"), /if \(entry\.newer && entry\.fits\) target\.append\(element\("button", \{ type: "button", text: `Pin \$\{entry\.newer\}`/);
 });
+
+test("the dependency help has the order of the Borea card", () => {
+  const section = /<section[^>]*id="dependencies-section"[^>]*>([\s\S]*?)<\/section>/.exec(html)[1];
+  const order = ["declared-text", "declared-list", "declared-pending", "msg-declared", "dependencies", "dependency-search", "add-listed-dependency",
+    "dependency-matches", "dependency-no-match", "loader-set", "add-dependency"];
+  const places = order.map((id) => section.indexOf(`id="${id}"`));
+  assert.ok(places.every((place) => place >= 0), `the section has not all of ${order.join(", ")}`);
+  assert.deepEqual([...places].sort((a, b) => a - b), places);
+  const row = body("function dependencyRow(");
+  assert.match(row, /\[id, kind, min, needsNewest, max\]/);
+  assert.match(row, /versions,\n\s+kindLine,\n\s+messages,/);
+});
+
+test("a new or a loaded form forgets the selected zip and what it declared", () => {
+  for (const start of ['$("reset").addEventListener', "function useBase("]) {
+    assert.match(body(start), /forgetArchive\(\);/, `${start} keeps the archive of the earlier form`);
+  }
+  assert.match(body("function renderDeclared("), /\$\("declared-pending"\)\.hidden = !help\.pending;/);
+  const render = body("function refresh()");
+  assert.match(render, /renderDeclared\(\);/);
+  assert.match(render, /renderDependencyMatches\(\);/);
+  assert.match(render, /dependencyNotes\(current\.document, index, checker\.validId\)/);
+});

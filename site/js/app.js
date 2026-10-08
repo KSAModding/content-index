@@ -1,13 +1,17 @@
 import { createChecker, addTag, ERROR, NOTE, ABSTRACT_LIMIT } from "./rules.js";
 import { parseDocument, writeDocument } from "./toml.js";
 import { indexFacts, gameVersionChoices, SNAPSHOT_URL } from "./snapshot.js";
-import { emptyForm, emptyRecord, formFromDocument, documentFromForm, isFixedLink, sectionsOf, nounOf, releaseTime, KINDS, PLATFORMS } from "./model.js";
+import { emptyForm, emptyRecord, formFromDocument, documentFromForm, isFixedLink, sectionsOf, nounOf, releaseTime, PLATFORMS } from "./model.js";
 import { measure, readCapped, LIMITS, MEASURE_FACTOR, ICON, DESCRIPTION } from "./images.js";
 import { renderPreview } from "./markdown.js";
-import { zipNames, inspectArchive, StampError } from "./archive.js";
+import { inspectArchive, StampError } from "./archive.js";
 import {
   pullRequestLink, copyAndOpen, rawListingUrl, rawPackUrl, rawOwnerUrl, repositoryApiUrl, prefillFromRepository, listingPath, packPath, ownerPath, documentPath,
 } from "./github.js";
+import {
+  TEXTS, kindText, kindChoices, isListedLoader, boundChoices, newestBound, canNeedNewest, canAddBounds, dependencyCandidates,
+  dependencyMatches, addDependency, dependencyNotes, readArchive as readZip, declaredFor,
+} from "./dependencies.js";
 import {
   memberChoices, versionChoices, defaultVersion, pinNotes, gameMinNotes, packOf, ownIds, nextPackForm, freeVersion, newerNotes, nextVersionNotes, forumLines,
   memberMessages, missingDependencies,
@@ -17,7 +21,7 @@ import { isLogin, userApiUrl, ownerRecordText, accountFromAnswer, packIdState, f
 const STORAGE_KEY = "ksa-listing-page/v1";
 const TIMEOUT = 20000;
 const SECTION_INPUTS = { links: "link-forums", compatibility: "game-min" };
-const MANUAL = new Set(["msg-load", "msg-prefill", "msg-output", "msg-pr", "msg-forum-list", "msg-owner", "msg-owner-file", "msg-members-fix", "archive-result"]);
+const MANUAL = new Set(["msg-load", "msg-prefill", "msg-output", "msg-pr", "msg-forum-list", "msg-owner", "msg-owner-file", "msg-members-fix", "archive-result", "msg-declared"]);
 const ROW_MESSAGES = ["link", "dependency", "member"];
 
 const $ = (id) => document.getElementById(id);
@@ -28,8 +32,14 @@ let snapshotState = "loading";
 let state = { mode: "new", baseText: null, base: null, form: emptyForm() };
 const measured = new WeakMap();
 const tickets = new WeakMap();
-let archiveNames = null;
+// The release zip the author selected, which the install root checks and the
+// dependencies read.
+let archiveFile = null;
 let archiveTicket = null;
+// The line of reading the selected zip while it reads or when it fails.
+let zipStatus = null;
+let loaderSetText = null;
+let selectedMatch = null;
 let current = { document: {}, text: "", messages: [] };
 let saveTimer = null;
 const touched = new Set();
@@ -186,6 +196,18 @@ function bindStatic() {
     refresh();
     $("dependencies").lastElementChild.querySelector("input").focus();
   });
+  $("dependency-search").addEventListener("input", renderDependencyMatches);
+  $("dependency-search").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addListedDependency();
+    }
+  });
+  $("dependency-matches").addEventListener("change", (event) => {
+    selectedMatch = event.target.value;
+    $("add-listed-dependency").disabled = !selectedMatch;
+  });
+  $("add-listed-dependency").addEventListener("click", addListedDependency);
   $("add-member").addEventListener("click", () => {
     state.form.members.push({ id: "", version: "" });
     renderMembers();
@@ -259,9 +281,7 @@ function bindStatic() {
       // Nothing to clear when storage is blocked.
     }
     state = { mode: "new", baseText: null, base: null, form: emptyForm() };
-    archiveNames = null;
-    archiveTicket = null;
-    $("archive").value = "";
+    forgetArchive();
     clearTagEntry();
     say("archive-result");
     say("msg-load");
@@ -444,16 +464,128 @@ function renderDependencies() {
         messages,
       ]);
     }
-    return element("div", { className: "item" }, [
-      element("div", { className: "row compact" }, [
-        inputField("Id", entry.id, (value) => { entry.id = value; }, { list: "mod-ids" }),
-        selectField("Kind", entry.kind || "required", KINDS.map((kind) => [kind, kind]), (value) => { entry.kind = value; }),
-        inputField("Oldest version (optional)", entry.min, (value) => { entry.min = value; }),
-        inputField("Newest version (optional)", entry.max, (value) => { entry.max = value; }, {}, remove),
-      ]),
-      messages,
-    ]);
+    return dependencyRow(entry, remove, messages);
   }));
+}
+
+// The versions offer the stamped releases of the named mod and still take any
+// text. A line under the fields says what the kind does.
+function dependencyRow(entry, remove, messages) {
+  const listId = `f${Math.random().toString(36).slice(2)}`;
+  const versions = element("datalist", { id: listId });
+  const kindLine = element("p", { className: "hint" });
+  const min = inputField("Oldest version (optional)", entry.min, (value) => { entry.min = value; });
+  const max = inputField("Newest version (optional)", entry.max, (value) => { entry.max = value; }, {}, remove);
+  const needsNewest = element("button", {
+    type: "button",
+    className: "link",
+    text: TEXTS.needsNewest,
+    title: TEXTS.needsNewestHint,
+    onclick: () => {
+      const newest = newestBound(index, entry.id);
+      if (!newest) return;
+      entry.min = newest;
+      min.querySelector("input").value = newest;
+      refresh();
+    },
+  });
+  const fit = () => {
+    const choices = boundChoices(index, entry.id);
+    versions.replaceChildren(...choices.map((choice) =>
+      element("option", { value: choice.version, label: choice.status ? `${choice.version} (${choice.status})` : undefined })));
+    for (const field of [min, max]) {
+      const input = field.querySelector("input");
+      if (choices.length) input.setAttribute("list", listId);
+      else input.removeAttribute("list");
+    }
+    needsNewest.hidden = !canNeedNewest(index, entry);
+    const text = kindText(entry.kind || "required");
+    kindLine.textContent = text || "";
+    kindLine.hidden = !text;
+  };
+  const id = inputField("Id", entry.id, (value) => {
+    entry.id = value;
+    fit();
+  }, { list: "mod-ids" });
+  const kind = selectField("Kind", entry.kind || "required", kindChoices(entry.kind).map((choice) => [choice, choice]), (value) => {
+    entry.kind = value;
+    fit();
+  });
+  fit();
+  return element("div", { className: "item" }, [
+    element("div", { className: "row compact" }, [id, kind, min, needsNewest, max]),
+    versions,
+    kindLine,
+    messages,
+  ]);
+}
+
+// Adds an entry for the id, or makes a listed loader the loader of the mod.
+function addEntry(id, kind) {
+  const loader = addDependency(state.form, index, id, kind);
+  loaderSetText = loader ? TEXTS.loaderSet(loader) : null;
+  if (loader) {
+    needsLoader = true;
+    renderLoaderOptions();
+    renderFields();
+    renderLoader();
+  } else {
+    renderDependencies();
+  }
+  refresh();
+}
+
+function addListedDependency() {
+  if (!selectedMatch) return;
+  const id = selectedMatch;
+  $("dependency-search").value = "";
+  addEntry(id, "required");
+}
+
+function renderDependencyMatches() {
+  const query = $("dependency-search").value;
+  const matches = dependencyMatches(index, state.form, query);
+  if (!matches.some((listing) => listing.id === selectedMatch)) selectedMatch = matches.length ? matches[0].id : null;
+  $("dependency-matches").replaceChildren(...matches.map((listing) => element("label", { className: "match" }, [
+    element("input", { type: "radio", name: "dependency-match", value: listing.id, checked: listing.id === selectedMatch }),
+    element("span", { className: "match-text" }, [
+      element("span", { className: "match-name" }, [
+        element("strong", { text: listing.name || listing.id }),
+        ...(listing.loader ? [" ", element("span", { className: "tag", text: "Mod loader" })] : []),
+      ]),
+      element("span", { className: "match-id", text: listing.id }),
+    ]),
+    element("span", { className: "hint", text: listing.authors.length ? `by ${listing.authors.join(", ")}` : "" }),
+  ])));
+  $("dependency-matches").hidden = !matches.length;
+  $("dependency-no-match").hidden = !(query.trim() && !matches.length && dependencyCandidates(index, state.form).length);
+  $("add-listed-dependency").disabled = !selectedMatch;
+  $("loader-set").textContent = loaderSetText || "";
+  $("loader-set").hidden = !loaderSetText;
+}
+
+function renderDeclared() {
+  const base = loadedBase();
+  const help = declaredFor({
+    document: current.document,
+    index,
+    base: base && !packBase() ? base : null,
+    archive: archiveFile,
+  });
+  const declared = help.declared;
+  $("declared").hidden = !help.shown;
+  $("declared-text").hidden = !declared;
+  $("declared-text").textContent = !declared ? "" : declared.dependencies.length ? TEXTS.declared(declared.of) : TEXTS.declaredNone(declared.of);
+  $("declared-list").replaceChildren(...(declared ? declared.dependencies : []).map((dependency) => {
+    const parts = [element("span", { text: dependency.kind === "optional" ? TEXTS.optional(dependency.id) : TEXTS.required(dependency.id) })];
+    if (isListedLoader(index, dependency.id)) parts.push(element("span", { className: "tag", text: "Mod loader" }));
+    if (canAddBounds(state.form, dependency.id)) {
+      parts.push(element("button", { type: "button", className: "link", text: "Add bounds", onclick: () => addEntry(dependency.id, dependency.kind) }));
+    }
+    return element("li", {}, parts);
+  }));
+  $("declared-pending").hidden = !help.pending;
+  $("msg-declared").replaceChildren(...(help.read ? [help.read[0] ? line(...help.read) : element("p", { className: "hint", text: help.read[1] })] : []));
 }
 
 function renderMembers() {
@@ -796,8 +928,8 @@ function extraMessages() {
     for (const problem of facts ? facts.problems : []) found.push({ level: ERROR, path: where, text: problem });
   }
   if (tagError) found.push({ level: ERROR, path: "tags", text: tagError });
-  if (archiveNames && current.document.type !== "modpack") {
-    for (const problem of inspectArchive(archiveNames, current.document).problems) {
+  if (archiveFile && current.document.type !== "modpack") {
+    for (const problem of inspectArchive(archiveFile.names, current.document).problems) {
       found.push({ level: ERROR, path: "archive", text: problem });
     }
   }
@@ -942,7 +1074,7 @@ function renderSections() {
     const title = heading.textContent.trim();
     const shown = section.querySelectorAll(".msg.error").length;
     const filled = [...section.querySelectorAll("input, select, textarea")].some((field) =>
-      !field.closest("[hidden]") && (field.type === "checkbox" ? field.checked : field.type !== "file" && field.type !== "radio" && field.value.trim() && field.tagName !== "SELECT"))
+      !field.closest("[hidden]") && (field.type === "checkbox" ? field.checked : field.type !== "file" && field.type !== "radio" && field.type !== "search" && field.value.trim() && field.tagName !== "SELECT"))
       || section.querySelector(".item, [aria-pressed=true]") !== null;
     const count = errors.get(section) || 0;
     const kind = count && shown ? "fix" : count ? "open" : filled ? "done" : "optional";
@@ -993,6 +1125,7 @@ function refresh() {
     ...gameMinNotes(current.document, index),
     ...newerNotes(current.document, index),
     ...nextVersionNotes(current.document, index, pack),
+    ...dependencyNotes(current.document, index, checker.validId),
   );
   const explained = new Set(current.messages.filter((entry) => SPDX_DETAIL.test(entry.text)).map((entry) => entry.path));
   current.messages = current.messages.filter((entry) => !(explained.has(entry.path) && SPDX_SHAPE.test(entry.text)));
@@ -1002,6 +1135,8 @@ function refresh() {
   $("since-field").hidden = !(state.form.github.trim() || state.form.spacedock.trim());
   renderMessages();
   renderMemberFix();
+  renderDeclared();
+  renderDependencyMatches();
   renderSummary();
   renderCard();
   renderSections();
@@ -1102,9 +1237,7 @@ function parseBase(text, kind) {
 
 function useBase(text, base, form, loaded) {
   state = { mode: "edit", baseText: text, base, form };
-  archiveNames = null;
-  archiveTicket = null;
-  $("archive").value = "";
+  forgetArchive();
   clearTagEntry();
   say("msg-load", null, loaded);
   renderAll();
@@ -1193,32 +1326,43 @@ async function readArchive() {
   const file = $("archive").files && $("archive").files[0];
   const ticket = {};
   archiveTicket = ticket;
-  archiveNames = null;
-  if (!file) {
-    say("archive-result");
-    refresh();
-    return;
-  }
-  say("archive-result", null, "Reading the archive.");
+  archiveFile = null;
+  zipStatus = file ? [null, "Reading the archive."] : null;
   refresh();
-  let names;
+  if (!file) return;
+  let archive;
   try {
-    names = await zipNames(file);
+    archive = await readZip(file);
   } catch (error) {
     if (archiveTicket === ticket) {
-      say("archive-result", ERROR, error instanceof StampError ? error.message : `the archive cannot be read, ${error.message}`);
+      zipStatus = [ERROR, error instanceof StampError ? error.message : `the archive cannot be read, ${error.message}`];
+      refresh();
     }
     return;
   }
   if (archiveTicket !== ticket) return;
-  archiveNames = names;
+  archiveFile = { ...archive, fileName: file.name };
+  zipStatus = null;
   refresh();
 }
 
+// Forgets the selected zip and what it declared, for a new or a loaded form.
+function forgetArchive() {
+  archiveFile = null;
+  archiveTicket = null;
+  zipStatus = null;
+  $("archive").value = "";
+  loaderSetText = null;
+  $("dependency-search").value = "";
+}
+
 function renderArchiveResult() {
-  if (!archiveNames) return;
-  const result = inspectArchive(archiveNames, current.document);
-  const lines = [];
+  const lines = zipStatus ? [line(...zipStatus)] : [];
+  if (!archiveFile) {
+    $("archive-result").replaceChildren(...lines);
+    return;
+  }
+  const result = inspectArchive(archiveFile.names, current.document);
   if (result.root !== null) {
     const where = result.root ? `'${result.root}'` : "the archive root";
     const matches = current.document.type === "mod" && result.root === current.document.id;
@@ -1455,6 +1599,7 @@ async function loadSnapshot() {
   if (newest) $("game-min").placeholder = newest;
   $("mod-ids").replaceChildren(...index.mods.map((id) => element("option", { value: id })));
   renderLoaderOptions();
+  renderDependencies();
   renderMembers();
   refresh();
 }

@@ -38,6 +38,7 @@ async function centralDirectory(file) {
     throw new BadZip("zipfiles that span multiple disks are not supported");
   }
   let size = view.getUint32(end + 12, true);
+  let offset = view.getUint32(end + 16, true);
   let record = tailStart + end;
   const locator = record - LOCATOR_SIZE;
   if (locator >= 0) {
@@ -49,18 +50,52 @@ async function centralDirectory(file) {
         throw new BadZip("Corrupt zip64 end of central directory locator");
       }
       size = Number(header.getBigUint64(40, true));
+      offset = Number(header.getBigUint64(48, true));
       record = start;
     }
   }
   if (size > record) throw new BadZip("Bad offset for central directory");
-  return bytesOf(file, record - size, record);
+  // Bytes in front of the first entry move every offset the directory names,
+  // and Python's zipfile adds them to each header offset.
+  return { directory: await bytesOf(file, record - size, record), bias: record - size - offset };
 }
 
-function namesIn(directory) {
+const LOCAL = 0x04034b50;
+const LOCAL_SIZE = 30;
+const ZIP64_EXTRA = 0x0001;
+const FULL32 = 0xffffffff;
+const STORED = 0;
+const DEFLATED = 8;
+const ENCRYPTED = 0x1;
+export const MOD_TOML_LIMIT = 1024 * 1024;
+
+// The sizes and the offset that do not fit in 32 bits are in the zip64 extra
+// field, in this order and only when the 32-bit field is full.
+function zip64Values(directory, start, end, entry) {
+  const view = viewOf(directory);
+  let position = start;
+  while (position + 4 <= end) {
+    const kind = view.getUint16(position, true);
+    const size = view.getUint16(position + 2, true);
+    if (kind === ZIP64_EXTRA) {
+      let field = position + 4;
+      for (const key of ["size", "compressed", "offset"]) {
+        if (entry[key] !== FULL32) continue;
+        if (field + 8 > Math.min(position + 4 + size, end)) throw new BadZip("Corrupt extra field 0001");
+        entry[key] = Number(view.getBigUint64(field, true));
+        field += 8;
+      }
+      return;
+    }
+    position += 4 + size;
+  }
+}
+
+function entriesIn({ directory, bias }) {
   const view = viewOf(directory);
   const utf8 = new TextDecoder("utf-8");
   const latin1 = new TextDecoder("latin1");
-  const names = [];
+  const entries = [];
   let position = 0;
   while (position < directory.length) {
     if (position + ENTRY_SIZE > directory.length) throw new BadZip("Truncated central directory");
@@ -68,21 +103,85 @@ function namesIn(directory) {
     const flags = view.getUint16(position + 8, true);
     const nameEnd = position + ENTRY_SIZE + view.getUint16(position + 28, true);
     if (nameEnd > directory.length) throw new BadZip("Truncated central directory");
+    const extraEnd = nameEnd + view.getUint16(position + 30, true);
     const name = (flags & UTF8_NAME ? utf8 : latin1).decode(directory.subarray(position + ENTRY_SIZE, nameEnd));
     const cut = name.indexOf("\0");
-    names.push(cut < 0 ? name : name.slice(0, cut));
-    position = nameEnd + view.getUint16(position + 30, true) + view.getUint16(position + 32, true);
+    const entry = {
+      name: cut < 0 ? name : name.slice(0, cut),
+      flags,
+      method: view.getUint16(position + 10, true),
+      compressed: view.getUint32(position + 20, true),
+      size: view.getUint32(position + 24, true),
+      offset: view.getUint32(position + 42, true),
+    };
+    zip64Values(directory, nameEnd, Math.min(extraEnd, directory.length), entry);
+    entry.offset += bias;
+    entries.push(entry);
+    position = extraEnd + view.getUint16(position + 32, true);
   }
-  return names;
+  return entries;
 }
 
-export async function zipNames(file) {
+export async function zipEntries(file) {
   try {
-    return namesIn(await centralDirectory(file));
+    return entriesIn(await centralDirectory(file));
   } catch (error) {
     if (error instanceof BadZip) throw new StampError(`the archive is not a readable zip, ${error.message}`);
     throw error;
   }
+}
+
+export async function zipNames(file) {
+  return (await zipEntries(file)).map((entry) => entry.name);
+}
+
+async function inflate(bytes) {
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+// The bytes of one entry. Release zips store or deflate their entries.
+export async function readEntry(file, entry) {
+  const fail = (reason) => new StampError(`the archive's ${entry.name} cannot be read, ${reason}`);
+  if (entry.flags & ENCRYPTED) throw fail("it is encrypted");
+  if (entry.method !== STORED && entry.method !== DEFLATED) throw fail(`its compression method ${entry.method} is not supported`);
+  const header = entry.offset < 0 ? null : viewOf(await bytesOf(file, entry.offset, entry.offset + LOCAL_SIZE));
+  if (!header || header.byteLength < LOCAL_SIZE || header.getUint32(0, true) !== LOCAL) throw fail("its local header is missing");
+  const start = entry.offset + LOCAL_SIZE + header.getUint16(26, true) + header.getUint16(28, true);
+  const stored = await bytesOf(file, start, start + entry.compressed);
+  if (stored.length !== entry.compressed) throw fail("it is cut short");
+  let bytes;
+  try {
+    bytes = entry.method === STORED ? stored : await inflate(stored);
+  } catch (error) {
+    throw fail(error.message);
+  }
+  if (bytes.length !== entry.size) throw fail(`it holds ${bytes.length} bytes, not the ${entry.size} its header names`);
+  return bytes;
+}
+
+// The bytes of every mod.toml in the archive by its name, or why the stamper
+// cannot read it. Of a name that is in the zip twice, the stamper reads the
+// last entry.
+export async function modTomlFiles(file, entries) {
+  const latest = new Map();
+  for (const entry of entries) {
+    if (entry.name === MOD_TOML || entry.name.endsWith(`/${MOD_TOML}`)) latest.set(entry.name, entry);
+  }
+  const files = new Map();
+  for (const [name, entry] of latest) {
+    if (entry.size > MOD_TOML_LIMIT) {
+      files.set(name, { problem: `the archive's ${name} is ${entry.size} bytes, above the ${MOD_TOML_LIMIT} byte limit` });
+      continue;
+    }
+    try {
+      files.set(name, { bytes: await readEntry(file, entry) });
+    } catch (error) {
+      if (!(error instanceof StampError)) throw error;
+      files.set(name, { problem: error.message });
+    }
+  }
+  return files;
 }
 
 export function topLevelDirectories(names) {
@@ -98,7 +197,7 @@ export function topLevelDirectories(names) {
   return seen;
 }
 
-function entriesUnder(names, root) {
+export function entriesUnder(names, root) {
   const prefix = root ? `${root}/` : "";
   return names.filter((name) => !name.endsWith("/") && name.replace(/\\/g, "/").startsWith(prefix));
 }

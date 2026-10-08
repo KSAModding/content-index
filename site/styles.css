@@ -711,6 +711,122 @@ li.note {
   gap: 12px;
 }
 
+/* What the mod.toml declares, read only, in a box of its own above the entries. */
+.declared {
+  margin-bottom: 16px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--window);
+}
+
+.declared > * + * {
+  margin-top: 8px;
+}
+
+.declared-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.declared-list:empty {
+  display: none;
+}
+
+.declared-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-height: 36px;
+  overflow-wrap: anywhere;
+}
+
+/* A text action, such as "Add bounds", as the link buttons of the App. */
+button.link {
+  min-height: 36px;
+  padding: 6px 0;
+  background: none;
+  color: var(--accent);
+}
+
+/* A link in a row of fields takes the height of the fields, so its text lines up with theirs. */
+.row > button.link {
+  flex: none;
+  min-height: 44px;
+}
+
+button.link:hover {
+  background: none;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.search-row {
+  flex-wrap: nowrap;
+  align-items: stretch;
+  margin-top: 4px;
+}
+
+.search-row > input {
+  flex: 1 1 auto;
+}
+
+.search-row > button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.matches {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  margin-top: 8px;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: var(--window);
+}
+
+.match {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.match:has(input:checked) {
+  background: var(--accent-soft);
+}
+
+.match-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.match-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.match-id {
+  color: var(--text-2);
+  font-family: var(--mono);
+  font-size: 0.875rem;
+}
+
+.match > .hint {
+  flex: 0 1 auto;
+  max-width: 40%;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 /* Chips are the mono tags of the App, not pills. */
 .chips {
   display: flex;
