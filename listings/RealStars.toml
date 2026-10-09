@@ -3,7 +3,7 @@ id = "RealStars"
 type = "mod"
 name = "Real Stars"
 authors = ["Brimfyr"]
-abstract = "Draws stars, planets and the Sun with their real brightness, colour and position."
+abstract = "Draws stars, planets and the Sun with their real brightness, colour and position"
 description = '''
 # Real Stars
 
