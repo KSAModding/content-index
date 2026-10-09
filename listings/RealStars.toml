@@ -107,6 +107,8 @@ tags = ["visual"]
 
 [releases]
 github = "Brimfyr/RealStars"
+spacedock = 4608
+authority = "github"
 
 [links]
 forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/real-stars.1285/"
