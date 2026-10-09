@@ -7,76 +7,116 @@ abstract = "Physically derived atmospheres, hazes and cloud layers for Kitten Sp
 description = '''
 # Real Atmospheres
 
-Atmospheres, hazes and clouds for Kitten Space Agency's Solar System, derived from each body's composition and particle optics. A [StarMap](https://github.com/StarMapLoader/StarMap) mod.
+Atmospheres, hazes and clouds for Kitten Space Agency's Solar System, derived from each body's composition and particle optics, with flight atmospheres from measured profiles. A [StarMap](https://github.com/StarMapLoader/StarMap) mod.
 
-No game files are modified. At launch the mod builds patched copies of the game's shaders and system XML and loads those instead. If a game update changes a patched part of the XML, that patch is skipped. A game update that changes the atmosphere shaders can stop them compiling, so use a release built for your KSA version.
+No game files are modified: the mod loads patched copies of the game's shaders and system data at launch. Use the release built for your KSA version.
 
 ## Features
 
+### Clouds
+
+- Volumetric clouds stay in view from much higher up before the 2D layer takes over
+- Extended cloud self-shadowing
+
+### Flight atmospheres
+
+- Drag and engine back-pressure follow measured density and pressure profiles on Earth, Venus, Mars, Titan, Jupiter, Saturn, Uranus, Neptune, Triton and Pluto
+- Each atmosphere ends at its real height
+
+### Earth
+
+- Gas density from the US Standard Atmosphere 1976
+- Ozone layer shaped after the same standard
+
+![Earth's terminator from low orbit](ksa-image:earth-low)
+
 ### Mars
 
-- Rayleigh scattering from a 95% CO₂ atmosphere at 6.1 mbar
-- Dust scattering from Mie theory, with a 9 km scale height
-- Exact Mie phase function for Martian dust, giving the blue sun halo and blue sunsets
-- Double-exponential dust density profile
-- Water-ice cirrus at 22–29 km, in 2D and volumetric
+- CO₂ Rayleigh scattering, with density from Pathfinder and Phoenix
+- Dust scattering from Mie theory, giving the blue sun halo and blue sunsets
+- Dust that thickens into the basins
+- Water-ice cirrus at 22–29 km
 
 ![Mars from orbit](ksa-image:mars-orbit)
-![Mars's north pole](ksa-image:mars-north-pole)
-![Mars's dust scattering](ksa-image:mars-surface-dust)
-![Mars with clouds overhead](ksa-image:mars-clouds)
+![Mars's dusty sky from the surface](ksa-image:mars-surface)
 ![Mars's blue sunset](ksa-image:mars-sunset)
 
 ### Venus
 
-- Dense CO₂ Rayleigh scattering, at 53× Earth's surface density
-- Blue-absorbing haze below the clouds
+- Dense CO₂ atmosphere, with density from the Venus International Reference Atmosphere
+- A single solid cloud deck at 48–72 km, in Venus's measured pale cream
+- Opaque clouds from orbit, with subtle darker markings
+- Clouds that circle the planet in about four days
+- Blue-absorbing haze that thickens toward the cloud base
 
 ![Venus from orbit](ksa-image:venus-orbit)
-![Venus's thick fog](ksa-image:venus-surface)
+![Venus's surface under its haze](ksa-image:venus-surface)
+
+### The giants
+
+- H₂/He Rayleigh scattering at its real strength, from each planet's composition and measured gas density
+- Volumetric cloud decks that keep their brightness from close up to orbit
+- Cloud maps that flow with each planet's winds
 
 ### Jupiter
 
-- H₂/He Rayleigh scattering, with a 25 km scale height
-- Cloud decks at real altitudes: lower deck −1 to 12 km, main deck from 15 km, storms up to 96 km
+- Bright zones high and dark belts low in the volumetric clouds, with deep vortices
+- A thin stratospheric haze
 
 ![Jupiter's clouds](ksa-image:jupiter-low)
 
 ### Saturn
 
-- Rayleigh scattering above a thin haze, with methane colouring and a 52 km scale height
 - Volumetric clouds, with cloud height following the planet's map
-- Colour map at 2048 px per cube face (stock: 1024)
+- A thin stratospheric haze
+- Methane colouring
+- 2048 px colour map
 
-![Saturn's clouds](ksa-image:saturn-low)
+![Saturn's clouds and rings](ksa-image:saturn-low)
 
 ### Uranus and Neptune
 
-- Methane absorption, with a thin Rayleigh limb and haze
-- Volumetric clouds, with cloud height following the planet's map
-- Colour maps at 2048 px per cube face (stock: 512)
+- Volumetric clouds, with cloud height following each planet's map
+- Methane absorption and a thin haze
+- 2048 px colour maps
 
 ![Uranus's clouds](ksa-image:uranus-low)
 ![Neptune's clouds](ksa-image:neptune-low)
 
 ### Titan
 
-- Stratified upper haze, animated with simulation time
-- Detached haze layers at 230 and 290 km
+- Golden haze from Huygens and Cassini measurements
+- Haze-to-gas transition from Titan's measured density curve
+- Disc colour matched to Titan's measured spectrum
+- Stratified upper haze with detached layers, animated with simulation time
+- White methane clouds in two polar caps
 
 ![Titan from orbit](ksa-image:titan-orbit)
 ![Titan's terminator](ksa-image:titan-terminator)
-![Titan's hazes](ksa-image:titan-hazes)
+![Titan's haze layers, with Saturn beyond](ksa-image:titan-hazes)
 
 ### Pluto and Triton
 
-- N₂ Rayleigh scattering from measured surface pressure and temperature
-- Forward-scattering haze, visible as a ring when looking toward the Sun
+- N₂ atmospheres and hazes from New Horizons and Voyager measurements
+- Hazes that show as a bright ring when lit from behind
 - Stratified haze bands, animated with simulation time
-- Nitrogen-ice clouds on Triton at 4–6.5 km
+- Nitrogen-ice clouds on Triton
 
-![Triton from orbit](ksa-image:triton-orbit)
-![Pluto's limb and hazes](ksa-image:pluto-hazes)
+![Triton and Neptune](ksa-image:triton-orbit)
+![Pluto's haze lit from behind](ksa-image:pluto-backlit)
+
+### Terrain and moons
+
+- A softer terminator on rugged ground with little or no air
+- A planet keeps its full detail while a small moon passes the camera
+
+## Settings
+
+With [ModMenu](https://github.com/MrJeranimo/ModMenu) installed, the game's Mods menu has a Real Atmospheres page:
+
+- **Procedural haze bands**: the animated bands in the haze of Pluto, Triton and Titan. Unticked, their haze is smooth.
+
+Settings are saved in `RealAtmospheres\settings.toml` in the game's documents folder.
 
 ## Installation
 
@@ -102,7 +142,8 @@ To uninstall, delete `mods\RealAtmospheres` and `mods\_RealSharedShadow`.
 - Saturn map mixed by JCP-JohnCarlo, from work by HellcatF6F, MrSpace43-Celestia, FarGetaNik and Snowfall-The-Cat.
 - Uranus map by Askaniy, [CC BY-NC-SA 3.0](https://creativecommons.org/licenses/by-nc-sa/3.0/). Our modified Uranus map, cloud mask and flowmap are released under the same licence.
 - Neptune map by Askaniy, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/), modified.
-- Mars cirrus, Titan haze and Triton cloud masks: *Produced in part with SpaceEngine PRO © Cosmographic Software LLC.*
+- Mars cirrus, Titan haze and cloud, and Triton cloud masks: *Produced in part with SpaceEngine PRO © Cosmographic Software LLC.*
+- Mars dust scattering after S. Schneegans, T. Meyran, I. Ginkel, G. Zachmann and A. Gerndt, "Physically Based Real-Time Rendering of Atmospheres using Mie Theory", Computer Graphics Forum 43(2), 2024.
 
 The code is MIT. Because of the Uranus map, the release as a whole is for non-commercial use. [CREDITS.md](https://github.com/Brimfyr/RealAtmospheres/blob/main/CREDITS.md) gives the source and terms of every shipped file.
 '''
@@ -120,143 +161,135 @@ repository = "https://github.com/Brimfyr/RealAtmospheres"
 bugtracker = "https://github.com/Brimfyr/RealAtmospheres/issues"
 
 [compatibility]
-game_min = "2026.9.10.5438"
+game_min = "2026.10.7.5541"
 
 [loader]
 id = "StarMap"
 min = "0.4.7"
 
 [images.icon]
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/66d38e6519987280504d7b023807d00cfe4ded5b/content/icon.png"
-sha256 = "45cb2d520debd6a17f544e2bc8c6d9ecfccbd624b08060da6525dc138bb86fd6"
-width = 1024
-height = 1024
-size = 168571
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/icon.png"
+sha256 = "2132e76c105c9a1ee650c6ae4d9ab5cc646ca7e37ddb157f84db505dd5e4766d"
+width = 512
+height = 512
+size = 87365
+
+[[images.description]]
+id = "earth-low"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/earth-low.jpg"
+sha256 = "f482fc97cf7c3e8d4fed205b66f5a4efcca8d0a8ac9c4413ed95403cae30b6ff"
+width = 1920
+height = 1080
+size = 218719
 
 [[images.description]]
 id = "mars-orbit"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/mars-orbit.jpg"
-sha256 = "959a90bc2da68f4abd0bcfbf10dcf3df0e4a68fff1f8e74faaf0a38a486aebfc"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/mars-orbit.jpg"
+sha256 = "46e08606cd28839b6e737c45f2c2e730b3ac6a6978e89b218b8e0372f943a421"
 width = 1920
 height = 1080
-size = 115748
+size = 102470
 
 [[images.description]]
-id = "mars-north-pole"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/mars-north-pole.jpg"
-sha256 = "c48fcfc65ef192810cf9bfee15c486fe71a9fef9b56eb7d09792e3a9625ef633"
+id = "mars-surface"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/mars-surface.jpg"
+sha256 = "60d938d83a89fc95af087cf3eefb7c884dde68cf75ae71bccf2d99bcd899540c"
 width = 1920
 height = 1080
-size = 178262
-
-[[images.description]]
-id = "mars-surface-dust"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/mars-surface-dust.jpg"
-sha256 = "3315c7b0747b5ee641501257e8201d95a8fecaf24094a0bf6df0dbc5ce012763"
-width = 1920
-height = 1080
-size = 477061
-
-[[images.description]]
-id = "mars-clouds"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/mars-clouds.jpg"
-sha256 = "e62867c58ebc839d03b47cbd4b9b232094e997c777adb48a346fb06a10a951fd"
-width = 1920
-height = 1080
-size = 501057
+size = 415436
 
 [[images.description]]
 id = "mars-sunset"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/mars-sunset.jpg"
-sha256 = "301b2dbdedab774cd03accf16f5b2aa3afaff46ba4bbe6e0667b20b4f1370644"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/mars-sunset.jpg"
+sha256 = "a04bce25e02fa0d9d191d069a608342281a0d9a4b4bf5fb7a7e8e97a53b720a7"
 width = 1920
 height = 1080
-size = 204833
+size = 171300
 
 [[images.description]]
 id = "venus-orbit"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/venus-orbit.jpg"
-sha256 = "5ce4c74fb78d71e167581d86dcf0c13317e5046cf12fe4f7c762215c4590225e"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/venus-orbit.jpg"
+sha256 = "c566ed71a345cd26121b17f804e1b4aabd6521fad19d4f46e0c469861310cfb0"
 width = 1920
 height = 1080
-size = 82008
+size = 68108
 
 [[images.description]]
 id = "venus-surface"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/venus-surface.jpg"
-sha256 = "8819e969f3c3c689b8e327243c4235b68db7699b3f68e177913eab7696f7d224"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/venus-surface.jpg"
+sha256 = "00b5bb6383e817f8bfa1c5ee68605274eac61a4cadf9e20cfcd095071a8aee3e"
 width = 1920
 height = 1080
-size = 318040
+size = 233060
 
 [[images.description]]
 id = "jupiter-low"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/jupiter-low.jpg"
-sha256 = "425b2d3fc8d4508ad5cb8be088c1dcbc6b15035ea5c656f40481565483567d6f"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/jupiter-low.jpg"
+sha256 = "ddd1028c45b3e74a055af130284985f21c0fbd08187d30876a79394d7df3b1cb"
 width = 1920
 height = 1080
-size = 248391
+size = 320715
 
 [[images.description]]
 id = "saturn-low"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/saturn-low.jpg"
-sha256 = "2207c9180b98f2b2ec896a16ad55a6f930ea98d72c3f26dc372bb34babda2102"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/saturn-low.jpg"
+sha256 = "7975072a55653635fbe26b75cdab05417c5e41867ab58719a24977f7f7c463dd"
 width = 1920
 height = 1080
-size = 272233
+size = 396401
 
 [[images.description]]
 id = "uranus-low"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/uranus-low.jpg"
-sha256 = "4a08d9d629d6eb59a8d7eedbc78e354258fd6e7379be69b78b31ba83400c4d59"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/uranus-low.jpg"
+sha256 = "757d15ede3ef732034b2a9f16b7c778cbeae8adc71c02fb674098b09f183005b"
 width = 1920
 height = 1080
-size = 136456
+size = 289018
 
 [[images.description]]
 id = "neptune-low"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/neptune-low.jpg"
-sha256 = "336c41218b790dc9441da4f34bd35c7349cdcd0c966ec3f3cf1286a731b79e9f"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/neptune-low.jpg"
+sha256 = "77532262f61272ad4a393a1c4d1bf9b1392a71e7a7a2f144dcd66439b8f0435f"
 width = 1920
 height = 1080
-size = 357747
+size = 588992
 
 [[images.description]]
 id = "titan-orbit"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/titan-orbit.jpg"
-sha256 = "a4eb9beb8abe757752df1c37fc46bb97c1ddfe3cec6d39d3014de5f289b9c4f0"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/titan-orbit.jpg"
+sha256 = "cb3ce58fdc31608f0978905ec413beca5206a245d1e612a5afdf45b30622647f"
 width = 1920
 height = 1080
-size = 86172
+size = 106818
 
 [[images.description]]
 id = "titan-terminator"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/titan-terminator.jpg"
-sha256 = "891aaaf9b8b06274348ce8cadce1ae5c4e827889f26cc9ad39e32320c9995972"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/titan-terminator.jpg"
+sha256 = "7ad29fee17ba1bb7d187184f0bd7014826fe60c87ea0b75d44a396d79fc654af"
 width = 1920
 height = 1080
-size = 107754
+size = 115456
 
 [[images.description]]
 id = "titan-hazes"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/titan-hazes.jpg"
-sha256 = "73c7ff2779741c41053607f8c2d6dde242778ed9e1109f483a11bcb930629b3e"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/titan-hazes.jpg"
+sha256 = "500bf2b1915e1a6d1db31ea53f64976bf0b705563e77348cf2bdb88157779cdf"
 width = 1920
 height = 1080
-size = 108787
+size = 134788
 
 [[images.description]]
 id = "triton-orbit"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/triton-orbit.jpg"
-sha256 = "f6531b331dfa25bcb1da5360f80d1a718bca4be19fa7ffcb0907d49a95e4f9e2"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/triton-orbit.jpg"
+sha256 = "bc3b27d776957f059014d7a349e225487a9064e67f4b44961c78a292efd0dd44"
 width = 1920
 height = 1080
-size = 61454
+size = 78068
 
 [[images.description]]
-id = "pluto-hazes"
-url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/refs/heads/main/content/pluto-hazes.jpg"
-sha256 = "8de774254ea5293ab9bdf2ee3dc1d64b67ecaf58a288ec7d05536d1218bd9e91"
+id = "pluto-backlit"
+url = "https://raw.githubusercontent.com/Brimfyr/RealAtmospheres/c44ceb7bfa8a340127bdaabf169a0b4e787e59df/content/pluto-backlit.jpg"
+sha256 = "0226b6b7084646d0897684377bdbdbf9c3b7896cb6cef1484ca31f6abd83c7c0"
 width = 1920
 height = 1080
-size = 58229
+size = 74741
