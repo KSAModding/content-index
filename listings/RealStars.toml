@@ -9,47 +9,65 @@ description = '''
 
 Stars, planets and the Sun drawn with their real brightness, colour and position, for Kitten Space Agency. A [StarMap](https://github.com/StarMapLoader/StarMap) mod.
 
-No game files are modified. At launch the mod builds patched copies of the game's star, planet and Sun shaders and loads those instead. If a game update changes one of those shaders, it is left stock until the mod is updated. Works alongside Real Atmospheres.
+No game files are modified: the mod loads patched copies of the game's star, planet and Sun shaders at launch. Use the release built for your KSA version. Works alongside Real Atmospheres.
 
 ## Features
 
 ### Stars
 
-- 123,568 stars from the AT-HYG catalogue, to magnitude 9, coloured from their B−V index
+- 124,585 stars from the AT-HYG catalogue: every star to magnitude 9, and every star within 20 parsecs
+- Colours from real stellar spectra
+- Faint stars fade toward white, as the eye sees them
 - Brightness from magnitude, drawn with a realistic point spread function
 - Parallax: stars sit at their real distances and shift as you travel
-- Proper motion: stars are placed for the game's date and move on as time passes
-- Twinkling through atmospheres, stronger and more colourful toward the horizon, following simulation time
+- Twinkling through atmospheres, following simulation time
 
 ### Planets
 
 - Brightness from albedo, phase and distance, on the same magnitude scale as the stars
-- Saturn's rings add to its brightness
-- Planets and moons dim in their parent's shadow
-- Twinkling reduced by apparent size
+- Measured colours for the Solar System's planets, moons and small bodies
+- Planetshine on vessels at its real strength, from every body
+- Rings add to a planet's brightness, and planets and moons dim in their parent's shadow
 
-### The Sun
+### The Sun and the other stars
 
-- Drawn as a star at every distance, at its real angular size, shrinking into the 3D sphere up close
-- Sphere at its real size and photosphere colour, with limb darkening
-- Dims as it fills more of the screen
+- Drawn as a star at every distance, at its real angular size, blending into the 3D sphere up close
+- Sphere at its real size and colour, with limb darkening
+- Every star in the game's systems is drawn the same way, at its measured brightness: Alpha Centauri, Barnard's Star and Tau Ceti included
 - Replaces the stock sun sprite and lens flare
 
-### Occlusion and starbursts
+### Light and the eye
 
-- Stars, planets and the Sun fade behind planets, atmospheres and vessels, and the Sun's starburst behind clouds
-- Starbursts modelled on a simulation of the human eye: about a thousand fine needles with coloured fringes, on the Sun, the bright planets and the brightest stars
-- A soft glow around bright sources, the eye's veiling glare, gives the Sun a corona
-- The Sun's starburst comes from the part of the Sun still in view, in the colour of the sunlight reaching you
-- Starbursts fade as their source is covered or leaves the screen
-- The Sun's starburst is drawn over everything else
-- Starbursts follow the game's lens flare setting, and the game's bloom settings no longer bury them
+- Every star lights its planets in its real colour
+- The eye adapts to the light in view, as far as human vision does: sunlit scenes look nearly white, a red dwarf's stay warm
+- Adaptation follows the real light level and takes time, at a pace you set
+
+### Starbursts and glare
+
+- Starbursts modelled on the human eye: fine needles with coloured fringes, on the Sun, the bright planets and the brightest stars
+- A soft glow around bright sources, which gives the Sun a corona
+- Glare that burns out to white close to a bright source
+- Stars, planets and the Sun fade behind planets, atmospheres, clouds, rings and vessels
+- A partly covered Sun throws its starburst from the part still in view
+- Follows the game's Lens Flare and Tonemap Exposure settings
 
 ## Screenshots
 
-![Earth and Orion](ksa-image:earth-and-orion)
-![The Sun from the Moon's surface](ksa-image:moon-surface)
-![Sunset from orbit](ksa-image:orbit-sunset)
+![Orion and the Pleiades](ksa-image:orion-and-pleiades)
+![The Sun from the Moon's surface](ksa-image:sun-from-moon-surface)
+![Sunrise from orbit](ksa-image:orbital-sunrise)
+![Barnard's Star partly covered by a planet](ksa-image:barnards-star-partial-occlusion)
+
+## Settings
+
+With [ModMenu](https://github.com/MrJeranimo/ModMenu) installed, the game's Mods menu has a Real Stars page:
+
+- **Colour adaptation**: the eye's adaptation to the colour of the light. Unticked, every light is shown in its raw colour.
+- **Adaptation time**: how long the visible part of the adaptation takes, from 0.02 s to 3 s (1.33 s by default).
+- **Twinkle**: stars and planets twinkling through an atmosphere.
+- **Starburst and glare**: the starbursts and soft glow. They also follow the game's Lens Flare setting.
+
+Settings are saved in `RealStars\settings.toml` in the game's documents folder.
 
 ## Installation
 
@@ -66,14 +84,21 @@ Requires [StarMap](https://github.com/StarMapLoader/StarMap). Each release is na
 
 To uninstall, delete `mods\RealStars`.
 
+## For star system authors
+
+The [README](https://github.com/Brimfyr/RealStars#for-star-system-authors) explains how Real Stars reads a star's light and a body's colour, and lists the raw colour of each kind of star.
+
 ## Building
 
-`deploy.ps1` builds the mod and installs it into your mods folder. `package.ps1 -Version x.y.z -GameBuild vYYYY.M.D.NNNN` builds a release archive in `dist\`. Set `StarMapDir` to your StarMap folder. `make_star_binary.py` rebuilds the star catalogue from AT-HYG v3.2 (`athyg_32_reduced_m10.csv.gz`, in `assets`) and the Hipparcos main catalogue (`hip_main.dat`).
+`deploy.ps1` builds the mod and installs it into your mods folder. `package.ps1 -Version x.y.z -GameBuild vYYYY.M.D.NNNN` builds a release archive in `dist\`. Set `StarMapDir` to your StarMap folder. The `make_*.py` scripts rebuild the star catalogue and the generated data tables from the sources they cite.
 
 ## Credits
 
 - Star catalogue built from [AT-HYG](https://www.astronexus.com/projects/at-hyg) v3.2 by David Nash (CC BY-SA 4.0), with positions from the Hipparcos Catalogue (ESA 1997, ESA SP-1200), retrieved from [VizieR](https://vizier.cds.unistra.fr/) (CDS, Strasbourg), catalogue I/239. Most distances and motions in AT-HYG come from ESA's Gaia DR3.
 - Starbursts after T. Ritschel, M. Ihrke, J. R. Frisvad, J. Coppens, K. Myszkowski and H.-P. Seidel, "Temporal Glare: Real-Time Dynamic Simulation of the Scattering in the Human Eye", Eurographics 2009.
+- What an eye sees of a faint light's colour after the naked-eye star colours of R. Neuhäuser et al., MNRAS 516, 693 (2022), and the small coloured lights of N. E. G. Hill (1947) and J. G. Holmes, Documenta Ophthalmologica 3, 240 (1949).
+- Star colours from the spectral library of A. J. Pickles, "A Stellar Spectral Flux Library: 1150-25000 Å", PASP 110, 863 (1998), and the Sun's from the CALSPEC solar reference spectrum (Bohlin, Dickinson and Calzetti, 2001; Neckel and Labs, 1984, through the visible).
+- Brightness of stars the catalogue lacks from M. J. Pecaut and E. E. Mamajek, "Intrinsic Colors, Temperatures, and Bolometric Corrections of Pre-main-sequence Stars", ApJS 208, 9 (2013), Table 5, as E. Mamajek maintains it.
 
 The code is MIT; the star catalogue is CC BY-SA 4.0. [CREDITS.md](https://github.com/Brimfyr/RealStars/blob/main/CREDITS.md) gives its sources and terms.
 '''
@@ -89,39 +114,47 @@ repository = "https://github.com/Brimfyr/RealStars"
 bugtracker = "https://github.com/Brimfyr/RealStars/issues"
 
 [compatibility]
-game_min = "2026.9.22.5482"
+game_min = "2026.10.7.5541"
 
 [loader]
 id = "StarMap"
 min = "0.4.7"
 
 [images.icon]
-url = "https://raw.githubusercontent.com/Brimfyr/RealStars/3bf2b568fdf521a28a40f574d263d98ed8fb8f7f/content/icon.png"
-sha256 = "f4e928a7c9b9995606fa6ef62ee1026d8de8979d5f5beada30fabbd822290a46"
+url = "https://raw.githubusercontent.com/Brimfyr/RealStars/de1f5f972455dabee7bbcd5492ed526416d50aae/content/icon.png"
+sha256 = "a82611b319dcb2deeb5253c4fe7dbf14ebea62f063ae4bac09d15ace4ae343f8"
 width = 512
 height = 512
-size = 95493
+size = 102912
 
 [[images.description]]
-id = "earth-and-orion"
-url = "https://raw.githubusercontent.com/Brimfyr/RealStars/refs/heads/main/content/earth-and-orion.jpg"
-sha256 = "3a33b59470c6e74ee8a78364fabf6e8c586c06b0a1116c609b601f2bef60203b"
+id = "orion-and-pleiades"
+url = "https://raw.githubusercontent.com/Brimfyr/RealStars/de1f5f972455dabee7bbcd5492ed526416d50aae/content/orion-and-pleiades.jpg"
+sha256 = "7183970eef38df7213ed88e42ceece1f92d5f2fa0db85193aa18d40c92dea995"
 width = 1920
 height = 1080
-size = 472506
+size = 339236
 
 [[images.description]]
-id = "moon-surface"
-url = "https://raw.githubusercontent.com/Brimfyr/RealStars/refs/heads/main/content/moon-surface.jpg"
-sha256 = "3f29ef18e137a793228da847142a15fc27c808877058dd8b45edd58f406ae0bf"
+id = "sun-from-moon-surface"
+url = "https://raw.githubusercontent.com/Brimfyr/RealStars/de1f5f972455dabee7bbcd5492ed526416d50aae/content/sun-from-moon-surface.jpg"
+sha256 = "776225f0fa3f2e537c667d6aa2947ce0b812f722ddea5c0277634415070ca255"
 width = 1920
 height = 1080
-size = 436252
+size = 378866
 
 [[images.description]]
-id = "orbit-sunset"
-url = "https://raw.githubusercontent.com/Brimfyr/RealStars/refs/heads/main/content/orbit-sunset.jpg"
-sha256 = "47d54bd8a94bcc684ca82d6b796da7c3ba2d9b92a9d599d0328a0660705dc123"
+id = "orbital-sunrise"
+url = "https://raw.githubusercontent.com/Brimfyr/RealStars/de1f5f972455dabee7bbcd5492ed526416d50aae/content/orbital-sunrise.jpg"
+sha256 = "26547c073bd31d4c8450dadb02b7630fd4eeaa47de89046fa3c4c841812801d8"
 width = 1920
 height = 1080
-size = 287764
+size = 215053
+
+[[images.description]]
+id = "barnards-star-partial-occlusion"
+url = "https://raw.githubusercontent.com/Brimfyr/RealStars/de1f5f972455dabee7bbcd5492ed526416d50aae/content/barnards-star-partial-occlusion.jpg"
+sha256 = "79df6b1dae630da2eea18ad85a396f5644c57106077fe81a6d7ef7971141ec09"
+width = 1920
+height = 1080
+size = 269235
