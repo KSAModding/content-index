@@ -4,7 +4,11 @@ type = "mod"
 name = "KSAero"
 authors = ["cairn5"]
 abstract = "Better Aerodynamics for Kitten Space Agency"
-description = "A deliberately simple aerodynamics mod for Kitten Space Agency, to stand in until the game has real aero. It replaces stock's atmospheric drag with a body-of-revolution model that has angle-of-attack drag, lift with a stall, and a transonic drag rise. Rotational dynamics are left exactly as stock."
+description = """
+A deliberately simple aerodynamics mod for Kitten Space Agency, to stand in until the game has real aero. It replaces stock's atmospheric drag with a body-of-revolution model that has angle-of-attack drag, lift with a stall, and a transonic drag rise. Rotational dynamics are left exactly as stock.
+
+![Airflow around a cylinder](ksa-image:aeroflow)
+"""
 license = "MIT"
 tags = ["gameplay", "aerodynamics"]
 
