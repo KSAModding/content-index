@@ -22,10 +22,13 @@ tags = ["celestial"]
 
 [releases]
 github = "Jared-Melchers/LonelyPlanets"
+spacedock = 4671
+authority = "github"
 
 [links]
 forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/lonely-planets-1-2-2.483/"
 repository = "https://github.com/Jared-Melchers/LonelyPlanets"
+spacedock = "https://spacedock.info/mod/4671/Lonely%20Planets"
 bugtracker = "https://github.com/Jared-Melchers/LonelyPlanets/issues"
 
 [compatibility]
