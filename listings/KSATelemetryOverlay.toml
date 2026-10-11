@@ -89,7 +89,7 @@ size = 529232
 [[images.description]]
 id = "9e-hero-newnew"
 url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/9e-hero.png"
-sha256 = "2bd433efd3ad9f32e985c8c31187cdca939c009ebec495b3dad494caede6394b"
-width = 1920
-height = 1080
-size = 227934
+sha256 = "f9920a3fce48e3c51aa9d6e3f5453134e1d66879c2481a5b81fb46966a05336e"
+width = 1280
+height = 720
+size = 157601
