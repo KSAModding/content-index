@@ -7,7 +7,7 @@ abstract = "A SpaceX-style launch broadcast telemetry overlay in-game"
 description = """
 A work-in-progress mod for Kitten Space Agency that creates a SpaceX-style launch broadcast telemetry overlay in-game. The overlay is populated with live data from the active vehicle and the mod includes an engine diagram generated automatically using the actual position of the engines on your stage relative to each other.
 
-![Screenshot](ksa-image:9e-hero)
+![Screenshot 1](ksa-image:9e-hero)
 
 ## Features
 
