@@ -7,7 +7,7 @@ abstract = "A SpaceX-style launch broadcast telemetry overlay in-game"
 description = """
 A work-in-progress mod for Kitten Space Agency that creates a SpaceX-style launch broadcast telemetry overlay in-game. The overlay is populated with live data from the active vehicle and the mod includes an engine diagram generated automatically using the actual position of the engines on your stage relative to each other.
 
-![Screenshot 1](ksa-image:9e-hero-new)
+![Screenshot 1](ksa-image:9e-hero-newnew)
 
 ## Features
 
@@ -64,19 +64,11 @@ id = "ModMenu"
 kind = "recommends"
 
 [images.icon]
-url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/9e-hero.png"
+url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/icon.png"
 sha256 = "11894dc1f754700b53b6a77a69b6f8b00681b2d50b41d04dc3a4e59edc60af72"
 width = 512
 height = 512
 size = 33471
-
-[[images.description]]
-id = "9e-hero-new"
-url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/9e-hero.png"
-sha256 = "97695235562b6b3a89134d8004d1b4a7c8bd359ea9c72786a2505b55c73cab8d"
-width = 1796
-height = 984
-size = 351436
 
 [[images.description]]
 id = "funky"
@@ -93,3 +85,11 @@ sha256 = "675121ad337c234c1f34df6e83e3b3c0321262771a799d70b4300493ab0900fd"
 width = 1920
 height = 1080
 size = 529232
+
+[[images.description]]
+id = "9e-hero-newnew"
+url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/9e-hero.png"
+sha256 = "2bd433efd3ad9f32e985c8c31187cdca939c009ebec495b3dad494caede6394b"
+width = 1920
+height = 1080
+size = 227934
