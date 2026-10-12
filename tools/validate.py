@@ -80,10 +80,11 @@ def run_index(entries, skipped=(), documents=()):
     return Check("index", REJECT if errors else PASS, messages)
 
 
-def run_members(entries, documents=(), releases=None):
-    if not any(check_scope.kind_of(path) == check_scope.PACK_KIND for path in documents):
-        return Check("pack members", PASS, ["the change touches no pack version, so no pin was checked"])
+def touches_pack(documents):
+    return any(check_scope.kind_of(path) == check_scope.PACK_KIND for path in documents)
 
+
+def run_members(entries, documents=(), releases=None):
     try:
         errors = check_index.check_members(
             entries,
@@ -185,9 +186,12 @@ def run_checks(changes, skip_release=False, releases=None, token=None, base=None
     packs = run_packs(changes)
     gate = [layout, schema, tags, packs]
     entries, skipped = check_index.load_documents()
-    checks = gate + [
-        run_index(entries, skipped, documents),
-        run_members(entries, documents, releases),
+    checks = gate + [run_index(entries, skipped, documents)]
+    # A change that touches no pack version has no pin to check, so the
+    # verdict carries no pack members line for it.
+    if touches_pack(documents):
+        checks.append(run_members(entries, documents, releases))
+    checks += [
         run_license(entries),
         run_status(entries, skipped),
         run_images(entries, documents),

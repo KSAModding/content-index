@@ -151,8 +151,13 @@ class Run(unittest.TestCase):
         _, verdict = self.run_with(["listings/Mod.toml"])
         self.assertEqual(verdict["schema_version"], validate.VERDICT_SCHEMA_VERSION)
 
-    def test_every_check_appears_in_the_verdict(self):
+    def test_a_listing_change_has_no_pack_members_line(self):
         _, verdict = self.run_with(["listings/Mod.toml"])
+        names = [check["name"] for check in verdict["checks"]]
+        self.assertNotIn("run_members", names)
+
+    def test_every_check_appears_in_the_verdict(self):
+        _, verdict = self.run_with(["packs/Pack/1.0.0.toml"])
         names = [check["name"] for check in verdict["checks"]]
         self.assertEqual(
             names,
@@ -486,11 +491,26 @@ class EditWiring(unittest.TestCase):
 class MemberWiring(unittest.TestCase):
     PACK = "packs/Pack/1.0.0.toml"
 
+    def checks_for(self, changed):
+        with mock.patch.object(validate.check_index, "load_documents", lambda *a, **k: ([], [])):
+            return validate.run_checks(check_scope.changes(changed), skip_release=True)
+
     def test_no_pack_version_means_no_pin_is_checked(self):
         with mock.patch.object(validate.check_index, "check_members") as never:
-            check = validate.run_members([], ["listings/Mod.toml"])
+            checks = self.checks_for(["listings/Mod.toml"])
         never.assert_not_called()
-        self.assertEqual(check.outcome, validate.PASS)
+        self.assertNotIn("pack members", [check.name for check in checks])
+
+    def test_a_pack_version_still_gets_its_check_and_notes(self):
+        note = "packs/Pack/1.0.0.toml: mods[0]: 'X' is disputed, and a client warns about it"
+        with mock.patch.object(validate.check_index, "check_members", return_value=[]) as members, mock.patch.object(
+            validate.check_index, "member_notes", return_value=[note]
+        ):
+            checks = self.checks_for([self.PACK])
+        members.assert_called_once()
+        found = [check for check in checks if check.name == "pack members"]
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0].messages, [note])
 
     def test_a_refused_pin_rejects(self):
         with mock.patch.object(
