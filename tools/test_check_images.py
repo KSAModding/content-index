@@ -142,28 +142,39 @@ class InspectDocument(unittest.TestCase):
         )
 
     def test_matching_images_pass(self):
-        outcome, messages = self.inspect(document(ICON, [shot("a")]))
+        outcome, errors, notes, *_ = self.inspect(document(ICON, [shot("a")]))
         self.assertEqual(outcome, check_images.PASS)
-        self.assertEqual(messages, ["listings/Mod.toml: 2 image(s) match their records"])
+        self.assertEqual(errors, [])
+        self.assertEqual(notes, ["listings/Mod.toml: 2 image(s) match their records"])
 
     def test_a_document_without_images_passes_quietly(self):
-        self.assertEqual(self.inspect({"id": "Mod"}), (check_images.PASS, []))
+        self.assertEqual(self.inspect({"id": "Mod"}), (check_images.PASS, [], [], [], ()))
 
     def test_a_new_record_that_does_not_match_rejects(self):
-        outcome, messages = self.inspect(
+        outcome, errors, notes, *_ = self.inspect(
             document(ICON), failures={ICON["url"]: images.Invalid("sha256 is a and the bytes show b")}
         )
         self.assertEqual(outcome, check_images.REJECT)
-        self.assertIn("images.icon: sha256 is a and the bytes show b", messages[0])
+        self.assertIn("images.icon: sha256 is a and the bytes show b", errors[0])
+        self.assertEqual(notes, [])
+
+    def test_a_failed_record_is_an_error_and_a_match_is_a_note(self):
+        outcome, errors, notes, *_ = self.inspect(
+            document(ICON, [shot("a")]), failures={shot("a")["url"]: images.Invalid("HTTP 404")}
+        )
+        self.assertEqual(outcome, check_images.REJECT)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("HTTP 404", errors[0])
+        self.assertEqual(notes, ["listings/Mod.toml: 1 image(s) match their records"])
 
     def test_a_new_record_whose_host_does_not_answer_is_could_not_evaluate(self):
-        outcome, _ = self.inspect(
+        outcome, *_ = self.inspect(
             document(ICON), failures={ICON["url"]: images.Unavailable("timed out")}
         )
         self.assertEqual(outcome, check_images.COULD_NOT_EVALUATE)
 
     def test_a_rejection_outranks_a_could_not_evaluate(self):
-        outcome, _ = self.inspect(
+        outcome, *_ = self.inspect(
             document(ICON, [shot("a")]),
             failures={
                 ICON["url"]: images.Unavailable("timed out"),
@@ -175,54 +186,70 @@ class InspectDocument(unittest.TestCase):
     def test_an_edit_that_keeps_a_dead_unchanged_image_only_warns(self):
         base = document(ICON, [shot("a")])
         edited = {**base, "abstract": "A corrected abstract."}
-        outcome, messages = self.inspect(
+        outcome, errors, notes, *_ = self.inspect(
             edited, base, failures={shot("a")["url"]: images.Invalid("answered HTTP 404")}
         )
         self.assertEqual(outcome, check_images.PASS)
-        self.assertTrue(any("unchanged from the base branch" in message for message in messages))
+        self.assertEqual(errors, [])
+        self.assertTrue(any("unchanged from the base branch" in message for message in notes))
 
     def test_an_unchanged_record_whose_host_is_down_only_warns(self):
         base = document(ICON)
-        outcome, _ = self.inspect(base, base, failures={ICON["url"]: images.Unavailable("timed out")})
+        outcome, *_ = self.inspect(base, base, failures={ICON["url"]: images.Unavailable("timed out")})
         self.assertEqual(outcome, check_images.PASS)
 
     def test_a_changed_record_that_fails_rejects(self):
         base = document(ICON)
         edited = document({**ICON, "sha256": "c" * 64})
-        outcome, _ = self.inspect(edited, base, failures={ICON["url"]: images.Invalid("sha256 differs")})
+        outcome, *_ = self.inspect(edited, base, failures={ICON["url"]: images.Invalid("sha256 differs")})
         self.assertEqual(outcome, check_images.REJECT)
 
     def test_a_digest_that_only_changes_case_is_unchanged(self):
         base = document(ICON)
         edited = document({**ICON, "sha256": "A" * 64})
-        outcome, _ = self.inspect(edited, base, failures={ICON["url"]: images.Invalid("gone")})
+        outcome, *_ = self.inspect(edited, base, failures={ICON["url"]: images.Invalid("gone")})
         self.assertEqual(outcome, check_images.PASS)
 
     def test_reordered_description_images_are_unchanged(self):
         base = document(shots=[shot("a"), shot("b")])
         edited = document(shots=[shot("b"), shot("a")])
-        outcome, _ = self.inspect(edited, base, failures={shot("a")["url"]: images.Invalid("gone")})
+        outcome, *_ = self.inspect(edited, base, failures={shot("a")["url"]: images.Invalid("gone")})
         self.assertEqual(outcome, check_images.PASS)
 
     def test_a_record_that_took_the_id_of_another_is_new(self):
         base = document(shots=[shot("a")])
         edited = document(shots=[shot("a", url="https://example.invalid/other.png")])
-        outcome, _ = self.inspect(
+        outcome, *_ = self.inspect(
             edited, base, failures={"https://example.invalid/other.png": images.Invalid("gone")}
         )
         self.assertEqual(outcome, check_images.REJECT)
 
     def test_an_unreadable_base_turns_a_rejection_into_could_not_evaluate(self):
-        outcome, messages = self.inspect(
+        found = self.inspect(
             document(ICON), check_images.UNREADABLE, failures={ICON["url"]: images.Invalid("gone")}
         )
-        self.assertEqual(outcome, check_images.COULD_NOT_EVALUATE)
-        self.assertIn("base branch could not be read", messages[0])
+        self.assertEqual(found.outcome, check_images.COULD_NOT_EVALUATE)
+        self.assertEqual(found.errors, [])
+        self.assertIn("base branch could not be read", found.unchecked[0])
 
     def test_a_fetch_that_raises_something_else_is_could_not_evaluate(self):
-        outcome, messages = self.inspect(document(ICON), failures={ICON["url"]: KeyError("url")})
-        self.assertEqual(outcome, check_images.COULD_NOT_EVALUATE)
-        self.assertIn("behaved unexpectedly", messages[0])
+        found = self.inspect(document(ICON), failures={ICON["url"]: KeyError("url")})
+        self.assertEqual(found.outcome, check_images.COULD_NOT_EVALUATE)
+        self.assertIn("behaved unexpectedly", found.unchecked[0])
+
+    def test_an_image_that_could_not_be_read_is_not_an_error(self):
+        found = self.inspect(
+            document(ICON, [shot("a")]),
+            failures={
+                ICON["url"]: images.Unavailable("timed out"),
+                shot("a")["url"]: images.Invalid("HTTP 404"),
+            },
+        )
+        self.assertEqual(found.outcome, check_images.REJECT)
+        self.assertEqual(len(found.errors), 1)
+        self.assertIn("HTTP 404", found.errors[0])
+        self.assertEqual(len(found.unchecked), 1)
+        self.assertIn("timed out", found.unchecked[0])
 
 
 class BaseDocument(unittest.TestCase):
@@ -266,9 +293,10 @@ class BaseDocument(unittest.TestCase):
 
 class InspectPath(unittest.TestCase):
     def test_a_document_that_is_not_there_is_not_fetched(self):
-        outcome, messages = check_images.inspect_path("listings/NotThere.toml")
-        self.assertEqual(outcome, check_images.PASS)
-        self.assertIn("not there", messages[0])
+        found = check_images.inspect_path("listings/NotThere.toml")
+        self.assertEqual(found.outcome, check_images.PASS)
+        self.assertEqual((found.errors, found.notes), ([], []))
+        self.assertIn("not there", found.summary[0])
 
 
 class Main(unittest.TestCase):

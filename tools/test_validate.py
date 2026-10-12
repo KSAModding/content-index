@@ -63,13 +63,23 @@ class Summary(unittest.TestCase):
                 "verdict": "reject",
                 "auto_merge_candidate": False,
                 "scope_reason": "the change also touches tools/x.py",
-                "checks": [{"name": "schema", "outcome": "reject", "messages": ["bad"]}],
+                "checks": [
+                    {
+                        "name": "schema",
+                        "outcome": "reject",
+                        "errors": ["bad"],
+                        "notes": ["worth knowing"],
+                        "summary": ["nothing was fetched"],
+                    }
+                ],
             }
         )
         self.assertIn("reject", text)
         self.assertIn("Auto-merge candidate: no", text)
         self.assertIn("tools/x.py", text)
-        self.assertIn("bad", text)
+        self.assertIn("- error: bad", text)
+        self.assertIn("- worth knowing", text)
+        self.assertIn("- nothing was fetched", text)
 
     def test_a_check_with_nothing_to_say_still_appears(self):
         text = validate.summarise(
@@ -77,11 +87,43 @@ class Summary(unittest.TestCase):
                 "verdict": "pass",
                 "auto_merge_candidate": True,
                 "scope_reason": "",
-                "checks": [{"name": "layout", "outcome": "pass", "messages": []}],
+                "checks": [{"name": "layout", "outcome": "pass", "errors": [], "notes": [], "summary": []}],
             }
         )
         self.assertIn("layout", text)
         self.assertIn("nothing to report", text)
+
+
+class Kinds(unittest.TestCase):
+    def test_a_check_carries_its_errors_and_its_notes_apart(self):
+        check = validate.Check("tags", validate.REJECT, ["bad"], ["a note"], ["quiet"])
+        self.assertEqual(
+            check.as_dict(),
+            {
+                "name": "tags",
+                "outcome": validate.REJECT,
+                "errors": ["bad"],
+                "unchecked": [],
+                "notes": ["a note"],
+                "summary": ["quiet"],
+            },
+        )
+        self.assertEqual(check.messages, ["bad", "a note", "quiet"])
+
+    def test_a_passing_check_has_no_error(self):
+        with self.assertRaises(ValueError):
+            validate.Check("layout", validate.PASS, ["something to change"])
+
+    def test_nothing_to_inspect_goes_into_the_job_summary_only(self):
+        for check in (validate.run_release([]), validate.run_image_fetch([])):
+            with self.subTest(check=check.name):
+                self.assertEqual((check.errors, check.notes), ([], []))
+                self.assertEqual(len(check.summary), 1)
+
+    def test_tag_notes_stay_notes(self):
+        with mock.patch.object(validate.check_tags, "check", return_value=([], ["not curated"])):
+            check = validate.run_tags(["listings/Mod.toml"])
+        self.assertEqual((check.outcome, check.errors, check.notes), (validate.PASS, [], ["not curated"]))
 
 
 def passing(name):
@@ -212,7 +254,7 @@ class NoFourthState(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(verdict["verdict"], validate.COULD_NOT_EVALUATE)
         self.assertFalse(verdict["auto_merge_candidate"])
-        self.assertIn("bad schema", verdict["checks"][0]["messages"][0])
+        self.assertIn("bad schema", verdict["checks"][0]["errors"][0])
 
     def test_a_verdict_is_written_even_then(self):
         with mock.patch.object(validate, "run_layout", side_effect=RuntimeError("boom")):
@@ -385,7 +427,38 @@ class ReleaseWiring(unittest.TestCase):
         with mock.patch.object(validate.check_release, "inspect_paths", return_value=results):
             check = validate.run_release(["listings/A.toml", "listings/B.toml"])
         self.assertEqual(check.outcome, validate.REJECT)
-        self.assertTrue(any("listings/B.toml" in message for message in check.messages))
+        self.assertEqual(check.errors, ["listings/B.toml: broken"])
+        self.assertEqual(check.notes, ["listings/A.toml: fine"])
+
+    def test_a_listing_that_could_not_be_read_is_not_an_error(self):
+        results = {
+            str(validate.ROOT / "listings/A.toml"): validate.check_release.Outcome(
+                validate.COULD_NOT_EVALUATE, ["HTTP 502"]
+            ),
+            str(validate.ROOT / "listings/B.toml"): validate.check_release.Outcome(
+                validate.REJECT, ["broken"]
+            ),
+        }
+        with mock.patch.object(validate.check_release, "inspect_paths", return_value=results):
+            check = validate.run_release(["listings/A.toml", "listings/B.toml"])
+        self.assertEqual(check.outcome, validate.REJECT)
+        self.assertEqual(check.errors, ["listings/B.toml: broken"])
+        self.assertEqual(check.unchecked, ["listings/A.toml: HTTP 502"])
+
+    def test_a_pack_gives_a_summary_line_only(self):
+        pack = "packs/effects-pack/1.0.0.toml"
+        found = validate.check_release.inspect(
+            {"id": "effects-pack", "type": "modpack"}, None, None, [], None
+        )
+        with mock.patch.object(
+            validate.check_release, "inspect_paths", return_value={str(validate.ROOT / pack): found}
+        ):
+            check = validate.run_release([pack])
+        self.assertEqual(check.outcome, validate.PASS)
+        self.assertEqual((check.errors, check.notes), ([], []))
+        self.assertEqual(
+            check.summary, [f"{pack}: type 'modpack' has no release archive, so there is nothing to inspect"]
+        )
 
 
 class ImageWiring(unittest.TestCase):
@@ -420,16 +493,20 @@ class ImageWiring(unittest.TestCase):
         self.assertEqual(check.outcome, validate.PASS)
 
     def test_the_worst_outcome_across_documents_wins(self):
+        inspection = validate.check_images.Inspection
         answers = {
-            "listings/A.toml": (validate.COULD_NOT_EVALUATE, ["slow"]),
-            "listings/B.toml": (validate.PASS, ["fine"]),
+            "listings/A.toml": inspection(validate.COULD_NOT_EVALUATE, [], [], ["slow"]),
+            "listings/B.toml": inspection(validate.PASS, [], ["fine"], summary=["quiet"]),
         }
         with mock.patch.object(
             validate.check_images, "inspect_path", side_effect=lambda path, base: answers[path]
         ) as inspect:
             check = validate.run_image_fetch(["listings/A.toml", "listings/B.toml"], "HEAD^1")
         self.assertEqual(check.outcome, validate.COULD_NOT_EVALUATE)
-        self.assertEqual(check.messages, ["slow", "fine"])
+        self.assertEqual(
+            (check.errors, check.unchecked, check.notes, check.summary),
+            ([], ["slow"], ["fine"], ["quiet"]),
+        )
         inspect.assert_any_call("listings/A.toml", "HEAD^1")
 
     def test_the_base_reaches_the_checks(self):
