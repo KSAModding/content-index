@@ -60,8 +60,16 @@ def load(path, errors):
         with path.open("rb") as handle:
             return normalise(tomllib.load(handle))
     except tomllib.TOMLDecodeError as error:
-        errors.append(f"{path}: not valid TOML, {error}")
+        errors.append(f"{_relative(path)}: not valid TOML, {error}")
         return None
+
+
+def _relative(path):
+    """The path from the repository root, as the other checks name a document."""
+    try:
+        return Path(path).resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
 
 
 def pointer(error):

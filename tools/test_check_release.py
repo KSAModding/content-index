@@ -104,6 +104,9 @@ class Vacuous(unittest.TestCase):
     def test_a_pack_has_no_archive(self):
         outcome = inspect({"id": "Pack", "type": "modpack"})
         self.assertEqual(outcome.outcome, check_release.PASS)
+        # The line tells the author nothing, so it goes into the job summary only.
+        self.assertEqual(outcome.messages, [])
+        self.assertIn("nothing to inspect", outcome.summary[0])
 
     def test_a_listing_with_no_release_host(self):
         outcome = inspect({"id": "Mod", "type": "mod"})

@@ -18,6 +18,7 @@ import check_scope
 import decide
 import ownership
 import pack_ownership
+import validate
 
 WORKFLOWS = Path(__file__).resolve().parent.parent / ".github/workflows"
 
@@ -195,7 +196,7 @@ class Table(unittest.TestCase):
         decision = decide.decide(verdict("could-not-evaluate"), True, VERIFIED)
         self.assertEqual(decision.status, "error")
         self.assertFalse(decision.auto_merge)
-        self.assertIn("Push a fix", decision.comment)
+        self.assertIn(decide.RUN_AGAIN, decision.comment)
 
     def test_the_happy_path_arms_auto_merge_and_says_what_happens_next(self):
         decision = decide.decide(verdict(), True, VERIFIED)
@@ -300,21 +301,205 @@ class Table(unittest.TestCase):
         for document, candidate, result in cases:
             with self.subTest(outcome=document["verdict"], candidate=candidate, owner=result.state):
                 decision = decide.decide(document, candidate, result)
-                self.assertIn("Notes:\n- `schema`: all good", decision.comment)
+                self.assertIn("**For your information**\n- `schema`: all good", decision.comment)
 
     def test_a_run_with_no_messages_has_no_notes_section(self):
         decision = decide.decide(verdict(), True, VERIFIED)
-        self.assertNotIn("Notes:", decision.comment)
+        self.assertNotIn("For your information", decision.comment)
 
-    def test_reject_and_could_not_evaluate_tell_the_author_to_push_a_fix(self):
-        for outcome in ("reject", "could-not-evaluate"):
-            with self.subTest(outcome=outcome):
-                decision = decide.decide(verdict(outcome), True, VERIFIED)
-                self.assertIn("Push a fix and the checks run again.", decision.comment)
+    def test_a_rejection_tells_the_author_to_push_a_fix(self):
+        decision = decide.decide(verdict("reject"), True, VERIFIED)
+        self.assertIn("Push a fix and the checks run again.", decision.comment)
+
+    def test_could_not_evaluate_asks_for_no_fix(self):
+        decision = decide.decide(verdict("could-not-evaluate"), True, VERIFIED)
+        self.assertIn(decide.RUN_AGAIN, decision.comment)
+        self.assertNotIn(decide.PUSH_AGAIN, decision.comment)
+
+    def test_a_pack_ownership_rejection_asks_for_a_push(self):
+        result = ownership.Result(ownership.REJECTED, "a pack version cannot change")
+        decision = decide.decide(verdict(), True, result)
+        self.assertEqual(decision.status, "failure")
+        self.assertIn(decide.PUSH_AGAIN, decision.comment)
 
     def test_the_run_url_is_linked_when_given(self):
         decision = decide.decide(verdict("reject"), True, VERIFIED, run_url="https://x/run/1")
         self.assertIn("https://x/run/1", decision.comment)
+
+
+LONELY = "listings/LonelyPlanets.toml"
+NO_PIN = "the change touches no pack version, so no pin was checked"
+FOLDER = (
+    "the latest release 1.2.2 cannot be stamped: the archive's top-level directory is "
+    "'LonelyPlanets-1.2.2', which does not match the id 'LonelyPlanets'"
+)
+
+
+def release_check(outcome, message, **others):
+    """The release check as validate.py builds it from inspected listings.
+
+    `others` maps a further listing path to its Outcome.
+    """
+    results = {str(validate.ROOT / LONELY): validate.check_release.Outcome(outcome, [message])}
+    results.update({str(validate.ROOT / path): found for path, found in others.items()})
+    with mock.patch.object(validate.check_release, "inspect_paths", return_value=results):
+        return validate.run_release([LONELY, *others])
+
+
+def lonely_planets(outcome, release):
+    """The verdict of #187 or #188 in the format validate.py writes now."""
+    checks = [
+        validate.Check("layout", validate.PASS),
+        validate.Check("schema", validate.PASS),
+        validate.Check("image fetch", validate.PASS),
+        release,
+    ]
+    return verdict(
+        outcome,
+        [check.as_dict() for check in checks],
+        documents=[LONELY],
+        schema_version=validate.VERDICT_SCHEMA_VERSION,
+    )
+
+
+class VerdictComment(unittest.TestCase):
+    def test_187_explains_the_folder_and_points_at_the_release(self):
+        document = lonely_planets("reject", release_check(validate.REJECT, FOLDER))
+        decision = decide.decide(document, True, VERIFIED)
+        self.assertEqual(decision.status, "failure")
+        comment = decision.comment
+        self.assertIn(f"**What has to change**\n- `release`: {LONELY}: {FOLDER}\n  - ", comment)
+        self.assertIn(
+            "When mod.toml is directly in `LonelyPlanets-1.2.2`, renaming that folder to "
+            "`LonelyPlanets` is enough",
+            comment,
+        )
+        self.assertNotIn("pack members", comment)
+        self.assertNotIn(NO_PIN, comment)
+        self.assertNotIn("For your information", comment)
+        self.assertIn(decide.RELEASE_AGAIN, comment)
+        self.assertNotIn(decide.PUSH_AGAIN, comment)
+
+    def test_188_passes_with_its_note_and_no_pack_members_line(self):
+        stamped = f"{LONELY}: the latest release 1.2.2 stamps cleanly"
+        document = lonely_planets(
+            "pass", release_check(validate.PASS, "the latest release 1.2.2 stamps cleanly")
+        )
+        decision = decide.decide(document, True, VERIFIED)
+        self.assertTrue(decision.auto_merge)
+        self.assertIn(f"**For your information**\n- `release`: {stamped}", decision.comment)
+        self.assertNotIn("What has to change", decision.comment)
+        self.assertNotIn(NO_PIN, decision.comment)
+
+    def test_a_verdict_with_only_notes_passes_and_shows_them(self):
+        note = "listings/Mod.toml: tags: 'shiny' is not a curated tag, so no client shows it"
+        checks = [{"name": "tags", "outcome": "pass", "errors": [], "notes": [note], "summary": []}]
+        decision = decide.decide(verdict(checks=checks), True, VERIFIED)
+        self.assertEqual(decision.status, "success")
+        self.assertTrue(decision.auto_merge)
+        self.assertIn(f"**For your information**\n- `tags`: {note}\n  - The tag `shiny`", decision.comment)
+        self.assertNotIn("What has to change", decision.comment)
+
+    def test_the_old_format_still_gives_a_comment(self):
+        # What validate.py wrote before the split, as on #187.
+        checks = [
+            {"name": "pack members", "outcome": "pass", "messages": [NO_PIN]},
+            {"name": "release", "outcome": "reject", "messages": [f"{LONELY}: {FOLDER}"]},
+        ]
+        decision = decide.decide(verdict("reject", checks, schema_version=1), True, VERIFIED)
+        self.assertEqual(decision.status, "failure")
+        self.assertIn(f"**What has to change**\n- `release`: {LONELY}: {FOLDER}", decision.comment)
+        self.assertIn("renaming that folder to `LonelyPlanets` is enough", decision.comment)
+        self.assertIn(f"**For your information**\n- `pack members`: {NO_PIN}", decision.comment)
+        self.assertIn(decide.RELEASE_AGAIN, decision.comment)
+
+    def test_summary_lines_never_reach_the_comment(self):
+        checks = [{"name": "release", "outcome": "pass", "errors": [], "notes": [], "summary": ["quiet"]}]
+        decision = decide.decide(verdict(checks=checks), True, VERIFIED)
+        self.assertNotIn("quiet", decision.comment)
+        self.assertNotIn("For your information", decision.comment)
+
+    def test_an_error_in_the_pull_request_asks_for_a_push(self):
+        checks = [
+            {"name": "release", "outcome": "reject", "errors": [f"{LONELY}: {FOLDER}"]},
+            {"name": "schema", "outcome": "reject", "errors": ["id is not valid"]},
+        ]
+        decision = decide.decide(verdict("reject", checks), True, VERIFIED)
+        self.assertIn(decide.PUSH_AGAIN, decision.comment)
+        self.assertNotIn(decide.RELEASE_AGAIN, decision.comment)
+
+    def test_what_could_not_be_checked_has_its_own_section(self):
+        checks = [
+            {"name": "release", "outcome": "reject", "errors": [f"{LONELY}: {FOLDER}"]},
+            {"name": "image fetch", "outcome": "could-not-evaluate", "errors": ["timed out"]},
+        ]
+        decision = decide.decide(verdict("reject", checks), True, VERIFIED)
+        self.assertIn("**What could not be checked**\n- `image fetch`: timed out", decision.comment)
+        self.assertNotIn("`image fetch`: timed out", decision.comment.split("What could not")[0])
+        # A new run checks the images again, so the fix in the release is all it takes.
+        self.assertIn(decide.RELEASE_AGAIN, decision.comment)
+
+    def test_one_check_can_reject_one_listing_and_not_read_another(self):
+        other = "listings/Other.toml"
+        unreachable = "github:a/b could not be read: HTTP 502"
+        release = release_check(
+            validate.REJECT,
+            FOLDER,
+            **{other: validate.check_release.Outcome(validate.COULD_NOT_EVALUATE, [unreachable])},
+        )
+        self.assertEqual(release.outcome, validate.REJECT)
+        decision = decide.decide(lonely_planets("reject", release), True, VERIFIED)
+        changed, unchecked = decision.comment.split("**What could not be checked**")
+        self.assertIn(FOLDER, changed)
+        self.assertNotIn(unreachable, changed)
+        self.assertIn(f"- `release`: {other}: {unreachable}", unchecked)
+        self.assertIn(decide.RELEASE_AGAIN, decision.comment)
+
+    def test_only_what_could_not_be_checked_asks_for_no_fix(self):
+        checks = [
+            {"name": "release", "outcome": "could-not-evaluate", "errors": [], "unchecked": ["HTTP 502"]},
+        ]
+        decision = decide.decide(verdict("could-not-evaluate", checks), True, VERIFIED)
+        self.assertIn("**What could not be checked**\n- `release`: HTTP 502", decision.comment)
+        self.assertNotIn("What has to change", decision.comment)
+        self.assertIn(decide.RUN_AGAIN, decision.comment)
+        self.assertNotIn(decide.PUSH_AGAIN, decision.comment)
+
+    def test_a_pack_has_no_release_line_in_the_comment(self):
+        pack = "packs/effects-pack/1.0.0.toml"
+        found = validate.check_release.Outcome(
+            validate.PASS,
+            summary=["type 'modpack' has no release archive, so there is nothing to inspect"],
+        )
+        with mock.patch.object(
+            validate.check_release, "inspect_paths", return_value={str(validate.ROOT / pack): found}
+        ):
+            release = validate.run_release([pack])
+        document = verdict(checks=[release.as_dict()])
+        decision = decide.decide(document, True, VERIFIED)
+        self.assertNotIn("nothing to inspect", decision.comment)
+        self.assertNotIn("For your information", decision.comment)
+
+    def test_ownership_without_proof_names_the_topic_and_the_repository(self):
+        result = ownership.Result(
+            ownership.UNVERIFIED,
+            "Jared-Melchers did not prove control of Jared/KSA-LonelyPlanets: no matching owner, "
+            f"no ksa-index-jared-melchers topic, and no {ownership.MARKER_PATH}",
+        )
+        comment = decide.decide(verdict(), True, result).comment
+        self.assertIn(ownership.ADVICE, comment)
+        self.assertIn("Add the topic `ksa-index-jared-melchers` to Jared/KSA-LonelyPlanets.", comment)
+        self.assertIn("(https://github.com/Jared/KSA-LonelyPlanets)", comment)
+        self.assertLess(comment.index(ownership.ADVICE), comment.index("ksa-index-jared-melchers`"))
+        self.assertIn(decide.PROOF_AGAIN, comment)
+
+    def test_a_pack_reason_gets_no_proof_explanation(self):
+        result = ownership.Result(
+            ownership.UNVERIFIED,
+            "Somebody is not the recorded owner of this pack",
+            instructions="A steward decides whether the recorded pack owner must change.",
+        )
+        self.assertNotIn(decide.PROOF_AGAIN, decide.decide(verdict(), True, result).comment)
 
 
 class OwnerAdvice(unittest.TestCase):

@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from typing import NamedTuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -32,6 +33,20 @@ REJECT = "reject"
 COULD_NOT_EVALUATE = "could-not-evaluate"
 
 UNREADABLE = object()
+
+
+class Inspection(NamedTuple):
+    """What fetching the images of one document came to.
+
+    The errors have to change, the unchecked lines could not be checked this
+    run, and the summary lines tell the author nothing.
+    """
+
+    outcome: str
+    errors: list
+    notes: list
+    unchecked: tuple = ()
+    summary: tuple = ()
 
 
 def check_document(where, document, errors, notes):
@@ -104,13 +119,15 @@ def base_document(ref, path, git=_git):
 
 
 def inspect_document(where, document, base, verify=images.verify):
-    """Fetch every image of one document. Returns (outcome, messages)."""
+    """Fetch every image of one document. Returns an Inspection."""
     kept = {}
     if isinstance(base, dict):
         kept = {_key(role, record): _comparable(record) for _, role, record in images.records(base)}
 
     outcomes = []
-    messages = []
+    errors = []
+    notes = []
+    unchecked = []
     verified = 0
     for place, role, record in images.records(document):
         label = f"{where}: {place}"
@@ -127,26 +144,26 @@ def inspect_document(where, document, base, verify=images.verify):
             continue
 
         if kept.get(_key(role, record)) == _comparable(record):
-            messages.append(
+            notes.append(
                 f"{label}: {reason}. The record is unchanged from the base branch, "
                 "so this does not block the change"
             )
         elif base is UNREADABLE and failure == REJECT:
             outcomes.append(COULD_NOT_EVALUATE)
-            messages.append(
+            unchecked.append(
                 f"{label}: {reason}. The base branch could not be read, so whether the record "
                 "is new is not known"
             )
         else:
             outcomes.append(failure)
-            messages.append(f"{label}: {reason}")
+            (errors if failure == REJECT else unchecked).append(f"{label}: {reason}")
 
     if verified:
-        messages.append(f"{where}: {verified} image(s) match their records")
+        notes.append(f"{where}: {verified} image(s) match their records")
     for outcome in (REJECT, COULD_NOT_EVALUATE):
         if outcome in outcomes:
-            return outcome, messages
-    return PASS, messages
+            return Inspection(outcome, errors, notes, unchecked)
+    return Inspection(PASS, errors, notes, unchecked)
 
 
 def inspect_path(path, base_ref=None, verify=images.verify):
@@ -155,9 +172,11 @@ def inspect_path(path, base_ref=None, verify=images.verify):
         with (ROOT / path).open("rb") as handle:
             document = tomllib.load(handle)
     except FileNotFoundError:
-        return PASS, [f"{path}: not fetched, the document is not there"]
+        return Inspection(PASS, [], [], summary=[f"{path}: not fetched, the document is not there"])
     except (tomllib.TOMLDecodeError, OSError) as error:
-        return PASS, [f"{path}: not fetched, the document does not parse: {error}"]
+        return Inspection(
+            PASS, [], [], summary=[f"{path}: not fetched, the document does not parse: {error}"]
+        )
     return inspect_document(path, document, base_document(base_ref, path), verify)
 
 
@@ -187,10 +206,10 @@ def main(argv=None):
             parser.error(f"{document} is not in this repository")
 
     for path in paths:
-        outcome, messages = inspect_path(path, arguments.base)
-        for message in messages:
-            print(f"{outcome}: {message}")
-        rejected = rejected or outcome == REJECT
+        found = inspect_path(path, arguments.base)
+        for message in [*found.errors, *found.unchecked, *found.notes, *found.summary]:
+            print(f"{found.outcome}: {message}")
+        rejected = rejected or found.outcome == REJECT
 
     if errors:
         print("\n".join(errors))

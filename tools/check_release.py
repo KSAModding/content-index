@@ -32,11 +32,15 @@ class Unavailable(Exception):
 
 
 class Outcome:
-    """What the inspection of one listing came to."""
+    """What the inspection of one listing came to.
 
-    def __init__(self, outcome, messages=()):
+    The summary lines tell the author nothing, so only the job summary shows them.
+    """
+
+    def __init__(self, outcome, messages=(), summary=()):
         self.outcome = outcome
         self.messages = list(messages)
+        self.summary = list(summary)
 
     @property
     def rejected(self):
@@ -96,7 +100,8 @@ def inspect(document, stamp_release, hosts, game_versions, http):
     content_type = document.get("type")
     if content_type not in WATCHED_TYPES:
         return Outcome(
-            PASS, [f"type '{content_type}' has no release archive, so there is nothing to inspect"]
+            PASS,
+            summary=[f"type '{content_type}' has no release archive, so there is nothing to inspect"],
         )
     if not document.get("releases"):
         return Outcome(PASS, ["the listing names no release host, so releases enter by pull request"])
@@ -153,10 +158,13 @@ def inspect_paths(paths, releases=None, token=None):
             with Path(path).open("rb") as handle:
                 document = tomllib.load(handle)
         except FileNotFoundError:
-            results[str(path)] = Outcome(PASS, ["not inspected, the document is not there"])
+            results[str(path)] = Outcome(PASS, summary=["not inspected, the document is not there"])
             continue
         except (tomllib.TOMLDecodeError, OSError) as error:
-            results[str(path)] = Outcome(PASS, [f"not inspected, the document does not parse: {error}"])
+            # The schema check reports a document that does not parse.
+            results[str(path)] = Outcome(
+                PASS, summary=[f"not inspected, the document does not parse: {error}"]
+            )
             continue
 
         try:
@@ -182,7 +190,7 @@ def main(argv=None):
 
     rejected = 0
     for path, outcome in sorted(results.items()):
-        for message in outcome.messages:
+        for message in outcome.messages + outcome.summary:
             print(f"{path}: {outcome.outcome}: {message}")
         rejected += outcome.rejected
 
