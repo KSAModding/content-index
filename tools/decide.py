@@ -73,13 +73,17 @@ PUSH_AGAIN = "Push a fix and the checks run again."
 # A pull_request run starts on a reopen too, so the author needs nobody to run
 # the checks again.
 RELEASE_AGAIN = (
-    "Nothing in this pull request has to change. Replace or add the zip in the release, then "
-    "close and reopen this pull request, and the checks run again. You can also comment here, "
-    "and a steward runs them."
+    "Nothing in this pull request has to change. Fix the release on GitHub or SpaceDock as the "
+    "text above says, then close and reopen this pull request, and the checks run again. You "
+    "can also comment here, and a steward runs them."
 )
 RUN_AGAIN = (
     "Nothing in this pull request has to change for this. Close and reopen this pull request, "
     "or push a commit, and the checks run again."
+)
+FIX_OR_RUN_AGAIN = (
+    "If the text above names a fix, push it. If not, close and reopen this pull request. Either "
+    "way, the checks run again."
 )
 PROOF_AGAIN = "When the proof is in place, comment here, so a steward runs the checks again."
 
@@ -109,11 +113,18 @@ def _findings(verdict):
 
 
 def _section(title, found):
+    """The lines of one section, with each explanation once.
+
+    Several checks can report one cause, such as a license or a TOML error, so
+    a later message with the same explanation gets no second copy of it.
+    """
     lines = [f"**{title}**"]
+    shown = set()
     for name, message in found:
         lines.append(f"- `{name}`: {message}")
         explanation = explain.explain(message)
-        if explanation:
+        if explanation and explanation.text not in shown:
+            shown.add(explanation.text)
             lines.append(f"  - {explanation.text}")
     return "\n".join(lines)
 
@@ -148,6 +159,11 @@ def _rerun(rejected, unchecked, outcome):
         outside = all(found and found.outside_pull_request for found in explained)
         return RELEASE_AGAIN if outside else PUSH_AGAIN
     if unchecked or outcome not in (PASS, REJECT):
+        # Some of these lines, such as a host name that is not found, can be a
+        # typo in the pull request.
+        explained = [explain.explain(message) for _, message in unchecked]
+        if any(found and not found.outside_pull_request for found in explained):
+            return FIX_OR_RUN_AGAIN
         return RUN_AGAIN
     return PUSH_AGAIN
 
