@@ -26,7 +26,10 @@ class Explanation(NamedTuple):
 
 
 # The prefix check_release puts in front of a message about the latest release.
-RELEASE = r"^listings/(?P<id>[^/]+)\.toml: the latest release (?P<tag>.+?) cannot be stamped: "
+RELEASE = (
+    r"^listings/(?P<id>[^/]+)\.toml: the latest release (?P<tag>.+?)"
+    r"(?: \(tag_prefix `(?P<prefix>[^`]*)`\))? cannot be stamped: "
+)
 
 REPLACE = "Then upload the zip to release {tag} in place of the old one."
 
@@ -167,6 +170,18 @@ RULES = [
     # The release on GitHub or SpaceDock.
     (
         re.compile(
+            r"^\S+: github:[^\s#]+#(?P<prefix>\S+) offers \d+ release\(s\) and none of them "
+            r"carries a version the index can read"
+        ),
+        "The index reads the version from the part of the tag after {prefix}, and no release "
+        "whose tag starts with {prefix} has a version there. Check that `tag_prefix` under "
+        "`[releases]` ends where the version starts, such as `mymod-` for the tag "
+        "`mymod-v1.2.3`. Otherwise publish a release whose tag is {prefix} followed by the "
+        "version.",
+        False,
+    ),
+    (
+        re.compile(
             r"^\S+: (?:github|spacedock):\S+ offers \d+ release\(s\) and none of them carries a "
             r"version the index can read"
         ),
@@ -238,6 +253,17 @@ RULES = [
         "The listing can still merge. Players can install the mod only after it has a "
         "published release with the mod as a zip, and a tag alone or a draft release does not "
         "count. The index finds that release on its own.",
+        False,
+    ),
+    (
+        re.compile(
+            r"^\S+: github:\S+ has \d+ release\(s\) and the tag of none of them starts with the "
+            r"tag_prefix `(?P<prefix>[^`]*)`"
+        ),
+        "`tag_prefix` under `[releases]` selects the releases whose tag starts with it, and no "
+        "release of the repository has such a tag. Compare {prefix} with the tags of the "
+        "releases on GitHub, letter by letter and with upper and lower case as written. Remove "
+        "`tag_prefix` when every release of the repository is a release of the mod.",
         False,
     ),
     (
@@ -522,6 +548,13 @@ RULES = [
         False,
     ),
     (
+        re.compile(r"^\S+: releases: 'github' is a dependency of 'tag_prefix'"),
+        "`tag_prefix` selects the releases of a GitHub repository by their tags, so it needs "
+        "`github = \"owner/repository\"` next to it. SpaceDock has no tags, so remove "
+        "`tag_prefix` when the mod has no GitHub repository.",
+        False,
+    ),
+    (
         re.compile(r"^\S+: dependencies\[\d+\]: 'kind' is a required property"),
         "Each `[[dependencies]]` entry needs a kind: `required`, `optional`, `recommends`, "
         "`suggests` or `conflict`. For a mod that must be there, write `kind = \"required\"`.",
@@ -646,8 +679,11 @@ def _values(match):
     values = {key: _code(value) for key, value in match.groupdict().items() if value is not None}
     found = match.groupdict()
     if found.get("id") is not None and found.get("tag") is not None:
-        # The names the release host looks for, with the tag without a leading v.
-        identifier, version = found["id"], found["tag"].lstrip("vV")
+        # The names the release host looks for, with the tag without its tag_prefix and a leading v.
+        tag, prefix = found["tag"], found.get("prefix") or ""
+        if prefix and tag.startswith(prefix):
+            tag = tag[len(prefix):]
+        identifier, version = found["id"], tag.lstrip("vV")
         values["assets"] = (
             f"{_code(identifier + '.zip')}, {_code(f'{identifier}-{version}.zip')} "
             f"or {_code(f'{identifier}_{version}.zip')}"

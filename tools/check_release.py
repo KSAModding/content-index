@@ -5,7 +5,8 @@
 The stamper's own error split gives the outcomes: StampError is the release
 being wrong, so reject; HostError is the host being unreachable this run, so
 could-not-evaluate. A pack, a listing with no release host, and a host with no
-release yet all pass.
+release yet all pass. A `tag_prefix` that no release of the repository starts
+with is rejected, because the watcher would never stamp a release.
 """
 
 import argparse
@@ -107,7 +108,7 @@ def inspect(document, stamp_release, hosts, game_versions, http):
         return Outcome(PASS, ["the listing names no release host, so releases enter by pull request"])
 
     try:
-        authority, _ = hosts.build(document.get("releases"), http, document.get("id"))
+        authority, mirrors = hosts.build(document.get("releases"), http, document.get("id"))
     except stamp_release.StampError as error:
         return Outcome(REJECT, [str(error)])
     if authority is None:
@@ -120,7 +121,20 @@ def inspect(document, stamp_release, hosts, game_versions, http):
     except (hosts.HostError, urllib.error.HTTPError, OSError) as error:
         return Outcome(COULD_NOT_EVALUATE, [f"{authority.key} could not be read: {error}"])
 
+    # The tag_prefix also applies to a GitHub mirror, so its releases are read only for that.
+    for mirror in mirrors or ():
+        if not getattr(mirror, "tag_prefix", ""):
+            continue
+        try:
+            listed, _ = mirror.releases()
+        except (stamp_release.StampError, hosts.HostError, urllib.error.HTTPError, OSError) as error:
+            return Outcome(COULD_NOT_EVALUATE, [f"{mirror.key} could not be read: {error}"])
+        if not listed and getattr(mirror, "skipped", 0):
+            return Outcome(REJECT, [unmatched(mirror)])
+
     if not offered:
+        if getattr(authority, "skipped", 0):
+            return Outcome(REJECT, [unmatched(authority)])
         return Outcome(PASS, [f"{authority.key} has no release yet"])
 
     release = latest(offered)
@@ -133,17 +147,28 @@ def inspect(document, stamp_release, hosts, game_versions, http):
             ],
         )
 
+    # The explanation reads the asset names from the tag without its prefix.
+    prefix = getattr(release, "tag_prefix", "")
+    named = f"{release.tag} (tag_prefix `{prefix}`)" if prefix else release.tag
     try:
         archive, content = authority.download(release)
         facts = release.facts()
         facts["content_type"] = content
         stamp_release.stamp(document, facts, archive, game_versions)
     except stamp_release.StampError as error:
-        return Outcome(REJECT, [f"the latest release {release.tag} cannot be stamped: {error}"])
+        return Outcome(REJECT, [f"the latest release {named} cannot be stamped: {error}"])
     except (hosts.HostError, urllib.error.HTTPError, OSError) as error:
-        return Outcome(COULD_NOT_EVALUATE, [f"the latest release {release.tag} could not be read: {error}"])
+        return Outcome(COULD_NOT_EVALUATE, [f"the latest release {named} could not be read: {error}"])
 
     return Outcome(PASS, [f"the latest release {release.version} stamps cleanly"])
+
+
+def unmatched(host):
+    """The rejection of a GitHub host whose tag_prefix starts the tag of none of its releases."""
+    return (
+        f"{host.key} has {host.skipped} release(s) and the tag of none of them starts "
+        f"with the tag_prefix `{host.tag_prefix}`, so nothing can ever be stamped"
+    )
 
 
 def inspect_paths(paths, releases=None, token=None):

@@ -167,6 +167,12 @@ class Authority(unittest.TestCase):
         document = {"releases": {"github": "a/b", "spacedock": 42, "authority": "spacedock", "since": "1.2"}}
         self.assertEqual(ownership.authority(document), ("spacedock", "42", ""))
 
+    def test_tag_prefix_is_not_a_host(self):
+        document = {"releases": {"github": "a/b", "tag_prefix": "gatos-v"}}
+        self.assertEqual(ownership.authority(document), ("github", "a/b", ""))
+        both = {"releases": {"github": "a/b", "spacedock": 42, "authority": "spacedock", "tag_prefix": "x-"}}
+        self.assertEqual(ownership.authority(both), ("spacedock", "42", ""))
+
     def test_since_alone_names_no_host(self):
         kind, _, reason = ownership.authority({"releases": {"since": "1.2"}})
         self.assertIsNone(kind)
@@ -653,6 +659,10 @@ class SameAuthority(unittest.TestCase):
 
     def test_setting_since_is_not_a_move(self):
         opted = {"id": "AutoStage", "releases": {"github": "Maxi/Mod", "since": "0.5"}}
+        self.assertTrue(ownership.same_authority(hosted_at("Maxi/Mod"), opted))
+
+    def test_setting_tag_prefix_is_not_a_move(self):
+        opted = {"id": "gatOS", "releases": {"github": "Maxi/Mod", "tag_prefix": "gatos-v"}}
         self.assertTrue(ownership.same_authority(hosted_at("Maxi/Mod"), opted))
 
     def test_two_documents_binding_to_nothing_are_the_same(self):

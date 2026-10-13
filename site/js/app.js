@@ -115,6 +115,7 @@ const FIELDS = {
   github: ["github"],
   spacedock: ["spacedock"],
   authority: ["authority"],
+  "tag-prefix": ["tagPrefix"],
   since: ["since"],
   name: ["name"],
   authors: ["authors"],
@@ -1132,6 +1133,7 @@ function refresh() {
   const count = Array.from(state.form.abstract.trim()).length;
   $("abstract-count").textContent = `${count} of ${ABSTRACT_LIMIT}.`;
   $("authority-field").hidden = !(state.form.github.trim() && state.form.spacedock.trim());
+  $("tag-prefix-field").hidden = !state.form.github.trim();
   $("since-field").hidden = !(state.form.github.trim() || state.form.spacedock.trim());
   renderMessages();
   renderMemberFix();

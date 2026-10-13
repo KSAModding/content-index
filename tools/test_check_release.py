@@ -3,6 +3,7 @@
 """Tests for the archive inspection.
 """
 
+import json
 import os
 import sys
 import tempfile
@@ -75,14 +76,15 @@ class FakeHosts:
 
     HostError = HostError
 
-    def __init__(self, authority=None, build_error=None):
+    def __init__(self, authority=None, build_error=None, mirrors=()):
         self.authority = authority
         self.build_error = build_error
+        self.mirrors = list(mirrors)
 
     def build(self, section, http, listing_id=None):
         if self.build_error:
             raise self.build_error
-        return self.authority, []
+        return self.authority, self.mirrors
 
 
 MOD = {
@@ -184,6 +186,149 @@ class Rejecting(unittest.TestCase):
         outcome = inspect(MOD, host=host)
         self.assertEqual(outcome.outcome, check_release.REJECT)
         self.assertIn("nothing can ever be stamped", outcome.messages[0])
+
+
+class TagPrefix(unittest.TestCase):
+    """A tag_prefix takes the other releases of the repository out of the list (RFC 0096)."""
+
+    @staticmethod
+    def host(releases, skipped, prefix="gatos-v"):
+        host = FakeHost(releases)
+        host.key = f"github:o/gatos#{prefix}"
+        host.tag_prefix = prefix
+        host.skipped = skipped
+        return host
+
+    def test_a_prefix_that_matches_no_release_is_rejected(self):
+        outcome = inspect(MOD, host=self.host([], skipped=3, prefix="mod-v"))
+        self.assertEqual(outcome.outcome, check_release.REJECT)
+        self.assertEqual(
+            outcome.messages,
+            [
+                "github:o/gatos#mod-v has 3 release(s) and the tag of none of them starts with "
+                "the tag_prefix `mod-v`, so nothing can ever be stamped"
+            ],
+        )
+
+    def test_a_repository_without_releases_still_passes(self):
+        outcome = inspect(MOD, host=self.host([], skipped=0))
+        self.assertEqual(outcome.outcome, check_release.PASS)
+        self.assertIn("no release yet", outcome.messages[0])
+
+    def test_a_prefix_that_matches_a_release_inspects_it(self):
+        release = FakeRelease("gatos-v1.2.0", "1.2.0", "2026-09-01T00:00:00Z")
+        host = self.host([release], skipped=2)
+        outcome = inspect(MOD, host=host)
+        self.assertEqual(outcome.outcome, check_release.PASS)
+        self.assertEqual(host.downloaded, [release])
+
+    def test_a_release_message_names_the_prefix(self):
+        release = FakeRelease("gatos-v1.2.0", "1.2.0", "2026-09-01T00:00:00Z")
+        release.tag_prefix = "gatos-v"
+        stamper = FakeStamper(error=StampError("the release carries no archive to download"))
+        outcome = inspect(MOD, host=self.host([release], skipped=0), stamper=stamper)
+        self.assertEqual(
+            outcome.messages,
+            [
+                "the latest release gatos-v1.2.0 (tag_prefix `gatos-v`) cannot be stamped: "
+                "the release carries no archive to download"
+            ],
+        )
+
+    def test_a_prefix_on_a_mirror_that_matches_no_release_is_rejected(self):
+        authority = FakeHost([])
+        authority.key = "spacedock:1"
+        mirror = self.host([], skipped=2, prefix="typo-v")
+        outcome = inspect(MOD, hosts=FakeHosts(authority, mirrors=[mirror]))
+        self.assertEqual(outcome.outcome, check_release.REJECT)
+        self.assertEqual(
+            outcome.messages,
+            [
+                "github:o/gatos#typo-v has 2 release(s) and the tag of none of them starts with "
+                "the tag_prefix `typo-v`, so nothing can ever be stamped"
+            ],
+        )
+
+    def test_a_mirror_whose_prefix_matches_still_inspects_the_authority(self):
+        release = FakeRelease("1.2.0", "1.2.0", "2026-09-01T00:00:00Z")
+        authority = FakeHost([release])
+        mirror = self.host([FakeRelease("gatos-v1.2.0", "1.2.0", None)], skipped=1)
+        outcome = inspect(MOD, hosts=FakeHosts(authority, mirrors=[mirror]))
+        self.assertEqual(outcome.outcome, check_release.PASS)
+        self.assertEqual(authority.downloaded, [release])
+
+    def test_a_mirror_that_cannot_be_read_is_not_a_verdict(self):
+        mirror = self.host([], skipped=0)
+        mirror._releases_error = HostError("HTTP 503")
+        outcome = inspect(MOD, hosts=FakeHosts(FakeHost([]), mirrors=[mirror]))
+        self.assertEqual(outcome.outcome, check_release.COULD_NOT_EVALUATE)
+        self.assertEqual(outcome.messages, ["github:o/gatos#gatos-v could not be read: HTTP 503"])
+
+    def test_a_mirror_without_a_prefix_is_not_read(self):
+        mirror = FakeHost(releases_error=HostError("HTTP 503"))
+        outcome = inspect(MOD, hosts=FakeHosts(FakeHost([]), mirrors=[mirror]))
+        self.assertEqual(outcome.outcome, check_release.PASS)
+
+
+class TagPrefixWithTheRealHosts(unittest.TestCase):
+    """The hosts of content-index-releases, where the checkout has RFC 0096."""
+
+    @classmethod
+    def setUpClass(cls):
+        root = Path(os.environ.get("CONTENT_INDEX_RELEASES") or check_release.DEFAULT_RELEASES)
+        if not (root / "tools" / "stamp_release.py").is_file():
+            raise unittest.SkipTest("content-index-releases is not checked out next to this repository")
+        cls.stamp_release, cls.hosts = check_release.load_stamper(root)
+        if not hasattr(cls.hosts, "tag_prefix"):
+            raise unittest.SkipTest("the checkout of content-index-releases has no tag_prefix yet")
+
+    def inspect(self, section, tags):
+        body = json.dumps([
+            {"tag_name": tag, "published_at": "2026-10-01T00:00:00Z", "assets": []} for tag in tags
+        ]).encode()
+
+        class Http:
+            def get(self, url, **_):
+                if "spacedock" in url:
+                    return self.hosts.Response(200, {}, b'{"versions": []}')
+                return self.answer
+
+            def log(self, message):
+                pass
+
+        http = Http()
+        http.hosts = self.hosts
+        http.answer = self.hosts.Response(200, {}, body)
+        document = {"id": "gatOS", "type": "mod", "releases": section}
+        return check_release.inspect(document, self.stamp_release, self.hosts, [], http)
+
+    def test_a_prefix_that_matches_no_tag_is_rejected(self):
+        # The match is case-sensitive, as GitHub compares tags.
+        for prefix in ("mod-v", "GATOS-"):
+            outcome = self.inspect({"github": "o/gatos", "tag_prefix": prefix}, ["gatos-v1.0.0", "vm-images-1"])
+            self.assertEqual(outcome.outcome, check_release.REJECT, prefix)
+            self.assertIn(f"none of them starts with the tag_prefix `{prefix}`", outcome.messages[0])
+
+    def test_a_prefix_on_a_mirror_that_matches_no_tag_is_rejected(self):
+        section = {"github": "o/gatos", "spacedock": 1, "authority": "spacedock", "tag_prefix": "typo-v"}
+        outcome = self.inspect(section, ["gatos-v1.0.0", "vm-images-1"])
+        self.assertEqual(outcome.outcome, check_release.REJECT)
+        self.assertEqual(
+            outcome.messages,
+            [
+                "github:o/gatos#typo-v has 2 release(s) and the tag of none of them starts with "
+                "the tag_prefix `typo-v`, so nothing can ever be stamped"
+            ],
+        )
+
+    def test_the_messages_of_the_watcher_reject_an_invalid_prefix(self):
+        for section, words in (
+            ({"github": "o/gatos", "tag_prefix": "gatos v"}, "is not a non-empty ASCII string"),
+            ({"spacedock": 1, "tag_prefix": "gatos-v"}, "it needs a github key next to it"),
+        ):
+            outcome = self.inspect(section, [])
+            self.assertEqual(outcome.outcome, check_release.REJECT, section)
+            self.assertIn(words, outcome.messages[0])
 
 
 class CouldNotEvaluate(unittest.TestCase):

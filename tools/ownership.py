@@ -45,9 +45,9 @@ CURRENT_HOST = "the authority the listing already names"
 NEW_HOST = "the authority this change moves to"
 RENAMED_HOST = "the repository the listing's host was renamed into"
 
-# The keys of [releases] that name no host. `since` only says which releases the
-# watcher stamps (RFC 0079), so it never counts as a host.
-NOT_HOSTS = ("authority", "since")
+# The keys of [releases] that name no host. `since` (RFC 0079) and `tag_prefix`
+# (RFC 0096) only say which releases the watcher stamps, so they never count as a host.
+NOT_HOSTS = ("authority", "since", "tag_prefix")
 
 
 class Unavailable(Exception):
