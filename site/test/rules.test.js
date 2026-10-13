@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { createChecker, addTag, licenseErrors, semverCompare, releaseListRules, ERROR, NOTE } from "../js/rules.js";
+import { createChecker, addTag, licenseErrors, semverCompare, releaseListRules, gameMaxNotes, ERROR, NOTE } from "../js/rules.js";
 import { indexFacts, newestStable, gameVersionChoices } from "../js/snapshot.js";
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
@@ -132,6 +132,22 @@ test("a month with no build in the game release list is rejected like the stampe
     releaseListRules(mod({ compatibility: { game_min: "2026.7" } }), versions, now).map((entry) => entry.text),
     ["game_min '2026.7' names a month with no build in the game release list"],
   );
+});
+
+test("a game_max at the newest build of the game release list is noted and never rejected", () => {
+  const bounded = (game_max) => mod({ compatibility: { game_min: "2026.8.3.5117", game_max } });
+  const found = checker.check(bounded("2026.9.10.5438"), { index, gameVersions: index.gameVersions });
+  assert.deepEqual(texts(found, ERROR), []);
+  assert.deepEqual(texts(found, NOTE), [
+    "compatibility.game_max: '2026.9.10.5438' is the newest game build the index knows, and clients block the content on every build above game_max, so a game_max that only says which build the content was tested with blocks it on the next game update",
+  ]);
+  assert.equal(gameMaxNotes(bounded("2026.9.10.5438"), [...index.gameVersions].reverse()).length, 1);
+  assert.equal(gameMaxNotes(bounded("2026.9.9.5438"), index.gameVersions).length, 1, "only the revision compares");
+  assert.deepEqual(gameMaxNotes(bounded("2026.9.7.5402"), index.gameVersions), []);
+  assert.deepEqual(gameMaxNotes(bounded("2026.9"), index.gameVersions), []);
+  assert.deepEqual(gameMaxNotes(bounded("2026.9.10.5438"), []), []);
+  assert.deepEqual(gameMaxNotes(bounded("2026.9.10.5438"), null), []);
+  assert.deepEqual(texts(checker.check(bounded("2026.9.10.5438")), NOTE), [], "no snapshot, no note");
 });
 
 test("SemVer precedence follows SemVer 2.0.0", () => {

@@ -756,6 +756,29 @@ export function releaseListRules(document, gameVersions, now = new Date()) {
   return found;
 }
 
+export function gameMaxText(bound) {
+  return `'${bound}' is the newest game build the index knows, and clients block the content on `
+    + "every build above game_max, so a game_max that only says which build the content was "
+    + "tested with blocks it on the next game update";
+}
+
+// The same note as tools/check_index.py: a game_max at the newest build usually means
+// "tested with", and RFC 0091 makes a client block the content above it.
+export function gameMaxNotes(document, gameVersions) {
+  const compatibility = isObject(document.compatibility) ? document.compatibility : {};
+  const bound = compatibility.game_max;
+  const match = typeof bound === "string" ? REVISION_BOUND.exec(bound) : null;
+  if (!match || !Array.isArray(gameVersions)) return [];
+  const revisions = gameVersions
+    .map((version) => (typeof version === "string" ? REVISION_BOUND.exec(version) : null))
+    .filter(Boolean)
+    .map((found) => BigInt(found[1]));
+  if (!revisions.length) return [];
+  const newest = revisions.reduce((high, revision) => (revision > high ? revision : high));
+  if (BigInt(match[1]) !== newest) return [];
+  return [message(NOTE, "compatibility.game_max", gameMaxText(bound))];
+}
+
 export function createChecker({ schema, tagsText }) {
   const ajv = new Ajv2020({ allErrors: true, strict: false, verbose: true });
   const validate = ajv.compile(schema);
@@ -785,6 +808,7 @@ export function createChecker({ schema, tagsText }) {
         ...this.offline(document),
         ...indexRules(document, index, own),
         ...releaseListRules(document, gameVersions),
+        ...gameMaxNotes(document, gameVersions),
       ];
     },
   };

@@ -54,6 +54,12 @@ test("a text that a pack shows names what is listed through the word the type se
   assert.match(render, /querySelectorAll\("\.not-pack"\)\) part\.hidden = shown\.pack/);
 });
 
+test("the game_max hint says that clients block above it", () => {
+  const hint = /<p id="hint-game-max"[^>]*>([\s\S]*?)<\/p>/.exec(html)[1];
+  assert.match(hint, /Above this version, clients block the <span class="noun">mod<\/span>/);
+  assert.doesNotMatch(hint, /warning/);
+});
+
 function body(start) {
   const from = app.indexOf(start);
   assert.ok(from >= 0, `js/app.js has no ${start}`);
