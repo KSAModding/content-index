@@ -102,6 +102,22 @@ An older release is stamped with the listing facts that stand when it is stamped
 The owner corrects the facts of an old release with an amendment in content-index-releases, which may make the release stricter or wider.
 A lower `since` stamps more releases, and a higher one removes none.
 
+## Releases that are not mod releases
+
+`[releases]` can carry `tag_prefix`, per [RFC 0096](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0096-tag-prefix.md):
+
+```toml
+[releases]
+github = "owner/repository"
+tag_prefix = "mymod-"
+```
+
+The watcher then takes only the GitHub releases whose tag starts with `tag_prefix`, compared case-sensitively, and reads the version from the rest of the tag, so one leading `v` is allowed there.
+It filters `github` as the authority and as a mirror, and SpaceDock ignores it.
+The schema takes a non-empty ASCII string without whitespace and requires `github` next to it.
+`tag_prefix` names no host, so `tools/ownership.py` reads the authority without it, and a change of `tag_prefix` alone is not a change of release host.
+The release check of a listing refuses a `tag_prefix` that no release of a repository with releases starts with.
+
 ## What the schema does not cover
 
 Some rules cannot be expressed in JSON Schema at all. `check_schema.py` applies these after the schema passes:

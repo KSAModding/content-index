@@ -150,6 +150,44 @@
       "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\nspacedock = 4000\nauthority = \"spacedock\"\nsince = \"0.5.0-rc.1\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n"
     },
     {
+      "name": "tag_prefix selects the mod releases of a GitHub repository",
+      "rule": "schema",
+      "accepted": true,
+      "noted": false,
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\ntag_prefix = \"examplemod-v\"\nsince = \"1.2\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n"
+    },
+    {
+      "name": "tag_prefix next to a GitHub mirror",
+      "rule": "schema",
+      "accepted": true,
+      "noted": false,
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\nspacedock = 4000\nauthority = \"spacedock\"\ntag_prefix = \"examplemod-\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n"
+    },
+    {
+      "name": "tag_prefix has no whitespace",
+      "rule": "schema",
+      "accepted": false,
+      "noted": false,
+      "says": "'examplemod v' is not a non-empty ASCII string without whitespace",
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\ntag_prefix = \"examplemod v\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n"
+    },
+    {
+      "name": "tag_prefix does not end in a newline",
+      "rule": "schema",
+      "accepted": false,
+      "noted": false,
+      "says": "is not a non-empty ASCII string without whitespace",
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\ntag_prefix = \"examplemod-\\n\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n"
+    },
+    {
+      "name": "tag_prefix needs a GitHub repository",
+      "rule": "schema",
+      "accepted": false,
+      "noted": false,
+      "says": "releases: 'github' is a dependency of 'tag_prefix'",
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT\"\ntags = [\"gameplay\"]\n\n[releases]\nspacedock = 4000\ntag_prefix = \"examplemod-v\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\n"
+    },
+    {
       "name": "a GitHub repository is owner/repository",
       "rule": "schema",
       "accepted": false,
