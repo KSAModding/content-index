@@ -661,6 +661,60 @@ class Abstracts(IndexCase):
         self.assertEqual(self.notes(), [])
 
 
+class GameMax(IndexCase):
+    VERSIONS = ["2026.10.7.5541", "2026.10.10.5554", "2026.10.13.5602"]
+
+    def bounded(self, bound, *documents, kind="listing"):
+        line = f'game_min = "2026.8.3.5117"\ngame_max = "{bound}"'
+        if kind == "listing":
+            path = self.listing("Mod")
+        else:
+            path = self.pack("Pack")
+        path.write_text(
+            path.read_text(encoding="utf-8").replace('game_min = "2026.8.3.5117"', line),
+            encoding="utf-8",
+        )
+        entries, _ = self.load()
+        return check_index.bounded(entries, documents)
+
+    def test_a_game_max_at_the_newest_build_is_noted(self):
+        bounds = self.bounded("2026.10.13.5602", "listings/Mod.toml")
+        self.assertEqual(
+            check_index.game_max_notes(bounds, self.VERSIONS),
+            [
+                "listings/Mod.toml: compatibility.game_max: '2026.10.13.5602' is the newest game "
+                "build the index knows, and clients block the content on every build above "
+                "game_max, so a game_max that only says which build the content was tested with "
+                "blocks it on the next game update"
+            ],
+        )
+        self.assertEqual(self.errors(), [])
+
+    def test_a_pack_is_noted_too(self):
+        bounds = self.bounded("2026.10.13.5602", "packs/Pack/1.0.0.toml", kind="pack")
+        notes = check_index.game_max_notes(bounds, self.VERSIONS)
+        self.assertEqual(len(notes), 1)
+        self.assertTrue(notes[0].startswith("packs/Pack/1.0.0.toml: compatibility.game_max: "))
+
+    def test_revisions_compare_and_the_newest_is_the_highest(self):
+        bounds = self.bounded("2026.10.12.5602", "listings/Mod.toml")
+        self.assertEqual(len(check_index.game_max_notes(bounds, list(reversed(self.VERSIONS)))), 1)
+
+    def test_an_older_build_is_fine(self):
+        bounds = self.bounded("2026.10.10.5554", "listings/Mod.toml")
+        self.assertEqual(check_index.game_max_notes(bounds, self.VERSIONS), [])
+
+    def test_a_month_is_not_compared(self):
+        self.assertEqual(self.bounded("2026.10", "listings/Mod.toml"), [])
+
+    def test_an_unchanged_document_is_not_noted(self):
+        self.assertEqual(self.bounded("2026.10.13.5602"), [])
+
+    def test_an_empty_release_list_gives_no_note(self):
+        bounds = self.bounded("2026.10.13.5602", "listings/Mod.toml")
+        self.assertEqual(check_index.game_max_notes(bounds, []), [])
+
+
 class Loading(IndexCase):
     def test_a_document_that_does_not_parse_is_skipped_and_named(self):
         (self.listings / "Broken.toml").write_text("id = ", encoding="utf-8")

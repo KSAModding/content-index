@@ -555,6 +555,48 @@ class IndexWiring(unittest.TestCase):
         self.assertEqual(result.outcome, validate.PASS)
         self.assertEqual(result.messages, ["note"])
 
+    def test_a_game_max_at_the_newest_build_passes_with_its_note(self):
+        bound = "2026.10.13.5602"
+        document = {"id": "Mod", "type": "mod", "compatibility": {"game_min": "2026.10", "game_max": bound}}
+        entry = validate.check_index.Entry(
+            Path("listings/Mod.toml"), "listings/Mod.toml", ("listing", "Mod"), "Mod", document
+        )
+        with mock.patch.object(validate.check_index, "check", return_value=[]), mock.patch.object(
+            validate.check_index, "notes", return_value=[]
+        ), mock.patch.object(
+            validate.check_release, "load_game_versions", return_value=["2026.10.10.5554", bound]
+        ) as versions:
+            result = validate.run_index([entry], documents=["listings/Mod.toml"], releases="releases")
+        versions.assert_called_once_with("releases")
+        self.assertEqual(result.outcome, validate.PASS)
+        self.assertEqual(
+            result.notes,
+            [f"listings/Mod.toml: compatibility.game_max: {validate.check_index.game_max_text(bound)}"],
+        )
+
+    def test_an_unreadable_release_list_only_reaches_the_summary(self):
+        document = {
+            "id": "Mod", "type": "mod", "compatibility": {"game_min": "2026.10", "game_max": "2026.10.13.5602"}
+        }
+        entry = validate.check_index.Entry(
+            Path("listings/Mod.toml"), "listings/Mod.toml", ("listing", "Mod"), "Mod", document
+        )
+        with mock.patch.object(validate.check_index, "check", return_value=[]), mock.patch.object(
+            validate.check_index, "notes", return_value=[]
+        ), mock.patch.object(
+            validate.check_release, "load_game_versions",
+            side_effect=validate.check_release.Unavailable("no list"),
+        ):
+            result = validate.run_index([entry], documents=["listings/Mod.toml"])
+        self.assertEqual(result.outcome, validate.PASS)
+        self.assertEqual(result.notes, [])
+        self.assertEqual(result.summary, ["game_max was not compared with the newest game build: no list"])
+
+    def test_no_game_max_reads_no_release_list(self):
+        with mock.patch.object(validate.check_release, "load_game_versions") as never:
+            validate.run_index([], documents=["listings/Mod.toml"])
+        never.assert_not_called()
+
 
 class EditWiring(unittest.TestCase):
     def test_the_note_on_a_listing_edit_never_rejects(self):

@@ -605,6 +605,13 @@ RULES = [
         False,
     ),
     (
+        re.compile(r"^\S+: compatibility\.game_max: '[^']*' is the newest game build the index knows"),
+        "Nothing has to change for the merge. A client blocks the content on every game build "
+        "above game_max, so remove game_max when the content works on newer builds too. Keep it "
+        "only when the content is known to break on the next build.",
+        False,
+    ),
+    (
         re.compile(
             r"^\S+: the change to .+? reaches `(?P<version>[^`]+)`, the newest release, with the "
             r"next watcher tick after the merge"
