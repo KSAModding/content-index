@@ -162,7 +162,19 @@ test("license texts match the Python check", () => {
     "'MIT AND Foo AND Bar' names Bar, Foo, which is not on the SPDX license list; the identifiers are at https://spdx.org/licenses/",
   ]);
   assert.deepEqual(licenseErrors("MIT+"), [
-    "'MIT+' names MIT+, which is not on the SPDX license list; the identifiers are at https://spdx.org/licenses/",
+    "'MIT+' names MIT+, which is not on the SPDX license list; ids close to MIT+ are MIT, MIT-0, MIT-Wu, MIT-CMU, MIT-feh and MIT-enna; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("GPL"), [
+    "'GPL' names GPL, which is not on the SPDX license list; ids close to GPL are GPL-1.0-only, GPL-2.0-only, GPL-3.0-only, GPL-1.0-or-later, GPL-2.0-or-later and GPL-3.0-or-later; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("BSD-2"), [
+    "'BSD-2' names BSD-2, which is not on the SPDX license list; ids close to BSD-2 are BSD-2-Clause, BSD-2-Clause-Views, BSD-2-Clause-Darwin, BSD-2-Clause-Patent, BSD-2-Clause-first-lines and BSD-2-Clause-pkgconf-disclaimer; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("CC BY-SA 4.0"), [
+    "'CC BY-SA 4.0' names CC BY-SA 4.0, which is not on the SPDX license list; the id close to CC BY-SA 4.0 is CC-BY-SA-4.0; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("Apache2"), [
+    "'Apache2' names Apache2, which is not on the SPDX license list; ids close to Apache2 are Apache-1.0, Apache-1.1 and Apache-2.0; the identifiers are at https://spdx.org/licenses/",
   ]);
   assert.deepEqual(licenseErrors("MIT Apache-2.0"), [
     "'MIT Apache-2.0' has two license identifiers with no operator between them; join several licenses with AND or OR, such as GPL-2.0-only AND CC-BY-SA-4.0",
@@ -178,6 +190,28 @@ test("license texts match the Python check", () => {
   ]);
   assert.deepEqual(licenseErrors("MIT WITH MIT"), [
     "'MIT WITH MIT' names MIT, which is not on the SPDX license list; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("Verbatim-man-pages"), [
+    "'Verbatim-man-pages' names Verbatim-man-pages, which is not on the SPDX license list; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("GPL-2.0-only WITH Assembly-exception"), [
+    "'GPL-2.0-only WITH Assembly-exception' names Assembly-exception, which is not on the SPDX license list; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("GPL-2.0-only WITH Nokia-Qt-exception-1.1"), []);
+});
+
+test("a close id fits the place of the name", () => {
+  assert.deepEqual(licenseErrors("LLVM"), [
+    "'LLVM' names LLVM, which is not on the SPDX license list; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("Classpath"), [
+    "'Classpath' names Classpath, which is not on the SPDX license list; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("GPL-2.0-only WITH Classpath"), [
+    "'GPL-2.0-only WITH Classpath' names Classpath, which is not on the SPDX license list; the id close to Classpath is Classpath-exception-2.0; the identifiers are at https://spdx.org/licenses/",
+  ]);
+  assert.deepEqual(licenseErrors("GPL-2.0-only with LLVM"), [
+    "'GPL-2.0-only with LLVM' names LLVM, which is not on the SPDX license list; the id close to LLVM is LLVM-exception; the identifiers are at https://spdx.org/licenses/",
   ]);
 });
 

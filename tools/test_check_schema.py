@@ -127,7 +127,7 @@ REJECTED = [
     ("empty abstract", mod(replace=('abstract = "A mod that exists only in this test file."', 'abstract = ""')), "abstract: '' should be non-empty"),
     ("no authors", mod(replace=('authors = ["Nobody"]', "authors = []")), "authors: [] should be non-empty"),
     ("unknown status", mod(keys='status = "abandoned"\n'), "status: 'abandoned' is not one of"),
-    ("uppercase tag", mod(keys='tags = ["Parts"]\n'), "tags[0]: 'Parts' does not match"),
+    ("uppercase tag", mod(keys='tags = ["Parts"]\n'), "tags[0]: 'Parts' is not lowercase letters and digits, with single - between words, such as parts or life-support"),
     ("successor without a deprecation", mod(keys='superseded_by = "TestModNG"\n'), "the document: 'status' is a required property"),
     (
         "a listing superseding itself",
@@ -143,10 +143,10 @@ REJECTED = [
     ("reserved id NUL", mod(replace=('id = "TestMod"', 'id = "NUL"')), "id: 'NUL' is a reserved name"),
     ("reserved id LPT9", mod(replace=('id = "TestMod"', 'id = "lpt9"')), "id: 'lpt9' is a reserved name"),
     ("reserved id with an extension", mod(replace=('id = "TestMod"', 'id = "com1.tools"')), "id: 'com1.tools' is a reserved name"),
-    ("id with a trailing dot", mod(replace=('id = "TestMod"', 'id = "TestMod."')), "id: 'TestMod.' does not match"),
-    ("id with a leading dot", mod(replace=('id = "TestMod"', 'id = ".TestMod"')), "id: '.TestMod' does not match"),
-    ("id with a space", mod(replace=('id = "TestMod"', 'id = "Test Mod"')), "id: 'Test Mod' does not match"),
-    ("id with a trailing newline", mod(replace=('id = "TestMod"', 'id = "TestMod\\n"')), "id: 'TestMod\\n' does not match"),
+    ("id with a trailing dot", mod(replace=('id = "TestMod"', 'id = "TestMod."')), "id: 'TestMod.' is not 1 to 64 ASCII letters, digits, '.', '_' or '-', starting and ending with a letter or digit"),
+    ("id with a leading dot", mod(replace=('id = "TestMod"', 'id = ".TestMod"')), "id: '.TestMod' is not 1 to 64 ASCII letters, digits, '.', '_' or '-', starting and ending with a letter or digit"),
+    ("id with a space", mod(replace=('id = "TestMod"', 'id = "Test Mod"')), "id: 'Test Mod' is not 1 to 64 ASCII letters, digits, '.', '_' or '-', starting and ending with a letter or digit"),
+    ("id with a trailing newline", mod(replace=('id = "TestMod"', 'id = "TestMod\\n"')), "id: 'TestMod\\n' is not 1 to 64 ASCII letters, digits, '.', '_' or '-', starting and ending with a letter or digit"),
     ("id longer than the path budget", mod(replace=('id = "TestMod"', f'id = "{"M" * 65}"')), "id: 'MMM"),
 
     # Links
@@ -157,7 +157,7 @@ REJECTED = [
     ("forums link to a category", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/"')), "links.forums: 'https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/' is not an https link to a thread on forums.ahwoo.com"),
     ("forums link to a member profile", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/members/nobody.42/"')), "links.forums: 'https://forums.ahwoo.com/members/nobody.42/' is not an https link to a thread on forums.ahwoo.com"),
     ("forums link with a control character in it", mod(replace=(FORUMS, 'forums = "https://forums.ahwoo.com/threads/my\\u001bmod.783/"')), "links.forums: 'https://forums.ahwoo.com/threads/my\\x1bmod.783/' is not an https link to a thread on forums.ahwoo.com"),
-    ("a link that is not a URL", mod(replace=(FORUMS, FORUMS + '\nrepository = "github.com/a/b"')), "links.repository: 'github.com/a/b' does not match"),
+    ("a link that is not a URL", mod(replace=(FORUMS, FORUMS + '\nrepository = "github.com/a/b"')), "links.repository: 'github.com/a/b' is not an http or https URL, such as https://github.com/me/MyMod"),
     (
         "link key differing only in case",
         mod(replace=(FORUMS, FORUMS + '\nForums = "https://forums.ahwoo.com/threads/test-mod.2/"')),
@@ -167,9 +167,9 @@ REJECTED = [
     # Compatibility
     ("missing game_min", mod(replace=(GAME_MIN, 'game_max = "2026.8.5.5168"')), "compatibility: 'game_min' is a required property"),
     ("unknown compatibility key", mod(replace=(GAME_MIN, GAME_MIN + '\ngame_exact = "2026.8.3.5117"')), "compatibility: Additional properties are not allowed ('game_exact'"),
-    ("game bound with a build suffix", mod(replace=("5117", "5117-LOCAL")), "compatibility.game_min: '2026.8.3.5117-LOCAL' does not match"),
-    ("game bound as a year.month.build prefix", mod(replace=("2026.8.3.5117", "2026.8.3")), "compatibility.game_min: '2026.8.3' does not match"),
-    ("game bound with a month above twelve", mod(replace=("2026.8.3.5117", "2026.13")), "compatibility.game_min: '2026.13' does not match"),
+    ("game bound with a build suffix", mod(replace=("5117", "5117-LOCAL")), "compatibility.game_min: '2026.8.3.5117-LOCAL' is not a game version as the game shows it, such as 2026.10.10.5554, or a month such as 2026.10"),
+    ("game bound as a year.month.build prefix", mod(replace=("2026.8.3.5117", "2026.8.3")), "compatibility.game_min: '2026.8.3' is not a game version as the game shows it, such as 2026.10.10.5554, or a month such as 2026.10"),
+    ("game bound with a month above twelve", mod(replace=("2026.8.3.5117", "2026.13")), "compatibility.game_min: '2026.13' is not a game version as the game shows it, such as 2026.10.10.5554, or a month such as 2026.10"),
     ("game_max older than game_min", mod(replace=(GAME_MIN, GAME_MIN + '\ngame_max = "2026.7.5.4892"')), "is older than game_min"),
     ("game_max in a month before game_min", mod(replace=(GAME_MIN, 'game_min = "2026.9"\ngame_max = "2026.7"')), "is older than game_min"),
     ("unknown platform", mod(replace=(GAME_MIN, GAME_MIN + '\nos = ["haiku"]')), "compatibility.os[0]: 'haiku' is not one of"),
@@ -238,8 +238,9 @@ REJECTED = [
     ("install root through a device name", mod(append='\n[install]\nroot = "build/NUL/x"\n'), "install.root: 'build/NUL/x' is a path through a reserved Windows device name"),
     ("a step that is not prose", mod(append="\n[install]\nsteps = [3]\n"), "install.steps[0]: 3 is not of type 'string'"),
     ("an install section that is not a table", mod(keys='install = "later"\n'), "install: 'later' is not of type 'object'"),
-    ("a mod choosing where it installs", mod(append='\n[install]\ntarget = "game-root"\n'), "install.target: 'mods' was expected"),
-    ("a mod nesting itself below the anchor", mod(append='\n[install]\ntarget = "mods"\npath = "extras"\n'), "install.path: this key is not allowed here"),
+    ("a mod choosing where it installs", mod(append='\n[install]\ntarget = "game-root"\n'), "install.target: this key is not allowed here"),
+    ("a mod naming the mods folder as its target", mod(append='\n[install]\ntarget = "mods"\n'), "install.target: this key is not allowed here"),
+    ("a mod nesting itself below the anchor", mod(append='\n[install]\npath = "extras"\n'), "install.path: this key is not allowed here"),
     ("unknown anchor", loader(append='\n[install]\ntarget = "somewhere"\n'), "install.target: 'somewhere' is not one of"),
     ("a loader install without a target", loader(append='\n[install]\nroot = "StarMap"\n'), "install: 'target' is a required property"),
     ("standalone without a launch target", loader(append='\n[install]\ntarget = "standalone"\n'), "the document: 'provides' is a required property"),
@@ -257,7 +258,7 @@ REJECTED = [
     ("configure without a format", loader(append=STANDALONE + '\n[provides.configure]\nfile = "c.json"\n'), "provides.configure: 'format' is a required property"),
     ("configure without a file", loader(append=STANDALONE + '\n[provides.configure]\nformat = "json"\n'), "provides.configure: 'file' is a required property"),
     ("an unwritable configure format", loader(append=STANDALONE + '\n[provides.configure]\nfile = "c.ini"\nformat = "ini"\n'), "provides.configure.format: 'ini' is not one of"),
-    ("a configure key that cannot be addressed", loader(append=STANDALONE + '\n[provides.configure]\nfile = "c.json"\nformat = "json"\ngame-path = ""\n'), "provides.configure.game-path: '' does not match"),
+    ("a configure key that cannot be addressed", loader(append=STANDALONE + '\n[provides.configure]\nfile = "c.json"\nformat = "json"\ngame-path = ""\n'), "provides.configure.game-path: '' is not key names joined by single dots, such as paths.game"),
     ("an instance table naming neither key", loader(append=INSTANCE), "provides.instance: {} should be non-empty"),
     ("an instance flag with whitespace", loader(append=INSTANCE + 'flag = "-Instance Path"\n'), "provides.instance.flag: '-Instance Path' is not a single token without whitespace or control characters"),
     ("an instance flag with a control character", loader(append=INSTANCE + 'flag = "-Instance\\u0001Path"\n'), "provides.instance.flag: '-Instance\\x01Path' is not a single token without whitespace or control characters"),
@@ -330,14 +331,14 @@ REJECTED = [
     ("a pack with no members", pack(replace=(PACK_MEMBER, "")), "'mods' is a required property"),
     ("a pack with an empty member list", pack(replace=(PACK_MEMBER, ""), keys="mods = []\n"), "mods: [] should be non-empty"),
     ("a pack member without a pinned version", pack(replace=('version = "0.7.0"', 'min = "0.7.0"')), "mods[0]: Additional properties are not allowed ('min'"),
-    ("a pack member pinned to a range", pack(replace=('version = "0.7.0"', 'version = "0.7"')), "mods[0].version: '0.7' does not match"),
-    ("a pack version with two numbers", pack(replace=('version = "1.0.0"', 'version = "1.0"')), "version: '1.0' does not match"),
+    ("a pack member pinned to a range", pack(replace=('version = "0.7.0"', 'version = "0.7"')), "mods[0].version: '0.7' is not a version with all three numbers, such as 1.2.0 or 2.0.0-rc.1, and no leading v"),
+    ("a pack version with two numbers", pack(replace=('version = "1.0.0"', 'version = "1.0"')), "version: '1.0' is not a version with all three numbers, such as 1.2.0 or 2.0.0-rc.1, and no leading v"),
     ("an unknown key on a pack member", pack(replace=('version = "0.7.0"', 'version = "0.7.0"\nkind = "required"')), "mods[0]: Additional properties are not allowed ('kind'"),
     ("a pack pinning the same mod twice", pack(append='\n[[mods]]\nid = "advancedflightcomputer"\nversion = "0.8.0"\n'), "mods[1]: 'advancedflightcomputer' is pinned by mods[0]"),
     ("a pack pinning one id in two sections", pack(append='\n[[vehicles]]\nid = "AdvancedFlightComputer"\nversion = "0.8.0"\n'), "vehicles[0]: 'AdvancedFlightComputer' is pinned by mods[0]"),
     ("a pack pinning itself", pack(append='\n[[mods]]\nid = "TestPack"\nversion = "1.0.0"\n'), "mods[1]: a pack cannot pin itself"),
     ("a pack without a released_at", pack(replace=('released_at = "2026-08-05T12:00:00Z"\n', "")), "'released_at' is a required property"),
-    ("a pack timestamp without a zone", pack(replace=("T12:00:00Z", "T12:00:00")), "released_at: '2026-08-05T12:00:00' does not match"),
+    ("a pack timestamp without a zone", pack(replace=("T12:00:00Z", "T12:00:00")), "released_at: '2026-08-05T12:00:00' is not a UTC date and time such as 2026-08-05T12:00:00Z"),
     ("a pack timestamp on no calendar", pack(replace=("2026-08-05T12:00:00Z", "2026-13-45T12:00:00Z")), "released_at: '2026-13-45T12:00:00Z' is not a real date"),
 ]
 
@@ -403,10 +404,32 @@ def failures_for(text, checker):
     return errors
 
 
+def untitled_patterns(node, where="#"):
+    """The places of every pattern that says its rule neither in a title nor by an example.
+
+    The report shows the title of a refused pattern, or its first example, so a
+    pattern with neither would put the bare regex in front of the author.
+    """
+    found = []
+    if isinstance(node, dict):
+        if "pattern" in node and "title" not in node and "examples" not in node:
+            found.append(where)
+        for key, value in node.items():
+            found.extend(untitled_patterns(value, f"{where}/{key}"))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            found.extend(untitled_patterns(value, f"{where}/{index}"))
+    return found
+
+
 def main():
     checker = check_schema.validator()
     failures = []
     checked = 0
+
+    checked += 1
+    for where in untitled_patterns(checker.schema):
+        failures.append(f"the pattern at {where} has no title and no example")
 
     for path in sorted(VALID.glob("*.toml")):
         checked += 1

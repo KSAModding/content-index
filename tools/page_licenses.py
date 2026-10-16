@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 """Write site/js/licenses.js, the license and exception identifiers the listing
-page accepts, from the same license-expression list that check_license.py uses.
+page accepts and the ids it names as close ones, from the same license-expression
+list that check_license.py uses.
 
 Run it after a change to the license-expression pin in requirements.txt.
 test_vectors.py fails while the file is out of date.
@@ -42,6 +43,10 @@ def render():
         f"{version('license-expression')}. Do not edit.\n"
         f"export const LICENSES = [\n{listed(licenses)}];\n"
         f"export const EXCEPTIONS = [\n{listed(exceptions)}];\n"
+        "// The ids a message names as close to an id that is not on the list, the\n"
+        "// licenses for a license place and the exceptions for the place after WITH.\n"
+        f"export const CURRENT_LICENSES = [\n{listed(check_license.current_ids())}];\n"
+        f"export const CURRENT_EXCEPTIONS = [\n{listed(check_license.current_ids(exceptions=True))}];\n"
     )
 
 

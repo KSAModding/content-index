@@ -94,5 +94,43 @@ class Placement(LayoutCase):
         self.assertTrue(any("packs/<id>/<version>.toml" in error for error in self.errors()))
 
 
+class MissingKeys(LayoutCase):
+    """A key that is not there is named as missing, with the line to write."""
+
+    def test_a_listing_without_type_and_id(self):
+        (self.listings / "MyMod.toml").write_text('name = "My Mod"\n', encoding="utf-8")
+        self.assertEqual(
+            self.errors(),
+            [
+                'listings/MyMod.toml: type is missing; write type = "mod" or type = "mod-loader"',
+                'listings/MyMod.toml: id is missing; write id = "MyMod", the same as the file name',
+            ],
+        )
+
+    def test_a_pack_without_type_id_and_version(self):
+        (self.packs / "my-pack").mkdir()
+        (self.packs / "my-pack" / "1.0.0.toml").write_text('name = "My Pack"\n', encoding="utf-8")
+        self.assertEqual(
+            self.errors(),
+            [
+                'packs/my-pack/1.0.0.toml: type is missing; write type = "modpack"',
+                'packs/my-pack/1.0.0.toml: id is missing; write id = "my-pack", the same as the folder name',
+                'packs/my-pack/1.0.0.toml: version is missing; write version = "1.0.0", the same as the file name',
+            ],
+        )
+
+    def test_no_message_names_none(self):
+        (self.listings / "MyMod.toml").write_text("", encoding="utf-8")
+        (self.packs / "my-pack").mkdir()
+        (self.packs / "my-pack" / "1.0.0.toml").write_text("", encoding="utf-8")
+        for error in self.errors():
+            with self.subTest(error=error):
+                self.assertNotIn("None", error)
+
+    def test_a_wrong_type_still_names_the_value(self):
+        (self.listings / "MyMod.toml").write_text('id = "MyMod"\ntype = "vehicle"\n', encoding="utf-8")
+        self.assertEqual(self.errors(), ["listings/MyMod.toml: type 'vehicle' is not one of mod, mod-loader"])
+
+
 if __name__ == "__main__":
     unittest.main()

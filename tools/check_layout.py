@@ -54,19 +54,28 @@ def check_suffix(path, where, errors):
         errors.append(f"{where}: the file name has to end in '.toml', in lowercase")
 
 
+def missing(where, key, wanted):
+    """The message for a key the document does not have, with the line to write."""
+    return f"{where}: {key} is missing; write {wanted}"
+
+
 def check_listing(path, where, errors):
     document = load(path, where, errors)
     if document is None:
         return
 
     declared = document.get("type")
-    if declared == PACK_TYPE:
+    if declared is None:
+        errors.append(missing(where, "type", ' or '.join(f'type = "{kind}"' for kind in LISTING_TYPES)))
+    elif declared == PACK_TYPE:
         errors.append(f"{where}: type '{PACK_TYPE}' belongs under packs/<id>/<version>.toml")
     elif declared not in LISTING_TYPES:
         errors.append(f"{where}: type '{declared}' is not one of {', '.join(LISTING_TYPES)}")
 
     identifier = document.get("id")
-    if identifier != path.stem:
+    if identifier is None:
+        errors.append(missing(where, "id", f'id = "{path.stem}", the same as the file name'))
+    elif identifier != path.stem:
         if isinstance(identifier, str):
             errors.append(f"{where}: declares id '{identifier}', so the file name must be '{identifier}.toml'")
         else:
@@ -79,17 +88,24 @@ def check_pack(path, where, errors):
         return
 
     declared = document.get("type")
-    if declared in LISTING_TYPES:
+    if declared is None:
+        errors.append(missing(where, "type", f'type = "{PACK_TYPE}"'))
+    elif declared in LISTING_TYPES:
         errors.append(f"{where}: type '{declared}' belongs under listings/<id>.toml")
     elif declared != PACK_TYPE:
         errors.append(f"{where}: type '{declared}' is not '{PACK_TYPE}'")
 
+    folder = path.parent.name
     identifier = document.get("id")
-    if identifier != path.parent.name:
-        errors.append(f"{where}: declares id '{identifier}', the folder says '{path.parent.name}'")
+    if identifier is None:
+        errors.append(missing(where, "id", f'id = "{folder}", the same as the folder name'))
+    elif identifier != folder:
+        errors.append(f"{where}: declares id '{identifier}', the folder says '{folder}'")
 
     version = document.get("version")
-    if version != path.stem:
+    if version is None:
+        errors.append(missing(where, "version", f'version = "{path.stem}", the same as the file name'))
+    elif version != path.stem:
         errors.append(f"{where}: declares version '{version}', the file name says '{path.stem}'")
 
 

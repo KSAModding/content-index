@@ -49,6 +49,8 @@ A code mod that reads the profile by that hardcoded path then finds an empty or 
 `license` is an SPDX license expression.
 For one license, write its identifier from the [SPDX license list](https://spdx.org/licenses/), such as `MIT` or `CC-BY-SA-4.0`.
 The identifier is the short form with hyphens, so `CC BY-SA 4.0` is not valid.
+The identifier names a version where the license has one, so `GPL` alone is not valid, and you write `GPL-3.0-only` or `GPL-3.0-or-later` instead.
+When an identifier is not on the list, the check names the identifiers that are close to it.
 
 When parts of your content have different licenses, join them with `AND`.
 For example, code under GPL-2.0 and data files under CC BY-SA 4.0:

@@ -192,9 +192,8 @@ RULES = [
     ),
     (
         re.compile(
-            r"^\S+: (?:install\.target: 'mods' was expected|install\.path: this key is not allowed "
-            r"here|the latest release .+? cannot be stamped: a mod cannot author an install target "
-            r"or path)"
+            r"^\S+: (?:install\.(?:target|path): this key is not allowed here|the latest release "
+            r".+? cannot be stamped: a mod cannot author an install target or path)"
         ),
         "A mod always goes into the mods folder of the game, in a folder named after its id, "
         "so its listing cannot choose where it goes. Remove target and path from `[install]`, "
@@ -431,9 +430,8 @@ RULES = [
             r"^\S+: compatibility\.(?P<which>game_min|game_max): '(?P<value>[^']*)' (?:does not "
             r"match|is not )"
         ),
-        "{which} is a game version, written as the game shows it, such as `2026.10.10.5554`, "
-        "or a month, such as `2026.10`. A leading v, a version with three numbers, or the "
-        "version of the mod does not work here.",
+        "A leading v, a version with three numbers, or the version of the mod does not work in "
+        "{which}.",
         False,
     ),
     (
@@ -465,17 +463,10 @@ RULES = [
     (
         re.compile(
             r"^\S+: (?:id|superseded_by|loader\.id|dependencies\[\d+\](?:\.any_of\[\d+\])?\.id|"
-            r"mods\[\d+\]\.id): '[^']*' does not match"
+            r"mods\[\d+\]\.id): '[^']*' (?:does not match|is not )"
         ),
-        "An id has 1 to 64 letters, digits, dots, _ or -, with no spaces, and starts and ends "
-        "with a letter or a digit. The id of a mod is the name of its folder in the zip, letter "
-        "for letter, such as `MyMod`.",
-        False,
-    ),
-    (
-        re.compile(r"^\S+: tags\[\d+\]: '(?P<value>[^']*)' does not match"),
-        "A tag is lowercase letters and digits, with - between words and no spaces, such as "
-        "`parts` or `life-support`. Write {value} that way.",
+        "The id of a mod is also the name of its folder in the zip, letter for letter, so it "
+        "has no spaces, such as `MyMod` or `My.Mod`.",
         False,
     ),
     (

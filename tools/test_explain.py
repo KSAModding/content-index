@@ -573,6 +573,7 @@ CASES = [
     ("Pack the mod folder as a zip again", True, lambda: one(stamped(data=b"Rar!\x1a\x07\x00"))),
     ("Remove target and path from `[install]`", False, lambda: one(
         schema("install", {"target": "game-root"}))),
+    ("Remove target and path from `[install]`", False, lambda: one(schema("install", {"target": "mods"}))),
     ("Remove target and path from `[install]`", False, lambda: one(schema("install", {"path": "x"}))),
     ("Remove target and path from `[install]`", False, lambda: one(
         stamped(document=changed(MOD, "install", {"target": "mods"})))),
@@ -649,10 +650,9 @@ CASES = [
     ("is a full web address", False, lambda: one(schema("links.abstract", "It's a mod."))),
     ("is a full web address", False, lambda: one(schema("links.authors", ["Me"]))),
     ("is a full web address", False, lambda: one(schema("links.forums", 783))),
-    ("An id has 1 to 64 letters", False, lambda: one(schema("id", "My Mod"))),
-    ("An id has 1 to 64 letters", False, lambda: one(
+    ("is also the name of its folder in the zip", False, lambda: one(schema("id", "My Mod"))),
+    ("is also the name of its folder in the zip", False, lambda: one(
         schema("dependencies", [{"id": "My Dep", "kind": "required"}]))),
-    ("Write `Parts` that way", False, lambda: one(schema("tags", ["Parts"]))),
     ("`authors` is a list in square brackets", False, lambda: one(schema("authors", "Me"))),
     ("`dependencies` is a list of entries", False, lambda: one(
         schema("dependencies", {"id": "Lib", "kind": "required"}))),
@@ -677,6 +677,7 @@ CASES = [
     ("never with a comma", False, lambda: one(license_errors("CC-BY-SA"))),
     ("never with a comma", False, lambda: one(license_errors("All rights reserved"))),
     ("never with a comma", False, lambda: one(license_errors("MIT Apache-2.0"))),
+    ("never with a comma", False, lambda: one(license_errors("GPL"))),
     # The listing against the rest of the index.
     ("This file and `listings/MyMod.toml` have the same id", False, lambda: one(check_index.check(
         [entry(WHERE, MOD), entry("listings/mymod.toml", dict(MOD, id="mymod"))]), "already held")),
@@ -739,6 +740,11 @@ class EveryRule(unittest.TestCase):
             f"{WHERE}: the latest release 1.2.0 stamps cleanly",
             f"{WHERE}: 3 image(s) match their records",
             one(stamped()),
+            # The schema says the rule of a tag in words, which is all the author needs.
+            one(schema("tags", ["Parts"])),
+            # A missing key names the line to write.
+            one(layout({WHERE: 'name = "My Mod"\n'}), "type is missing"),
+            one(layout({WHERE: 'name = "My Mod"\n'}), "id is missing"),
         ):
             with self.subTest(message=message):
                 self.assertIsNone(explain.explain(message))
@@ -871,6 +877,30 @@ class InTheComment(unittest.TestCase):
         self.assertTrue(schema_errors[0].startswith("listings/Bad.toml: not valid TOML, "))
         text = comment([rejected("layout", layout_errors), rejected("schema", schema_errors)])
         self.assertEqual(text.count("text needs straight double quotes"), 1)
+        # The two checks report the same line, so the comment shows it once and names both.
+        self.assertEqual(text.count(schema_errors[0]), 1)
+        self.assertIn(f"- `layout`, `schema`: {schema_errors[0]}", text)
+        self.assertNotIn(root.as_posix(), text)
+        self.assertNotIn(str(root), text)
+
+    def test_a_toml_error_comes_once_with_the_index_check_too(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder).resolve()
+            (root / "listings").mkdir()
+            (root / "packs").mkdir()
+            (root / "listings" / "Bad.toml").write_text('id = "Bad"\nname = My Mod\n', encoding="utf-8")
+            schema_errors = []
+            with mock.patch.object(check_schema, "ROOT", root):
+                check_schema.load(root / "listings" / "Bad.toml", schema_errors)
+            layout_errors = check_layout.check(root / "listings", root / "packs")
+            entries, skipped = check_index.load_documents(root / "listings", root / "packs")
+        self.assertEqual(skipped, ["listings/Bad.toml"])
+        index = validate.run_index(entries, skipped).as_dict()
+        # The skipped line stays in the job summary, and the comment leaves it out.
+        self.assertEqual(index["summary"], ["not read, they do not parse: listings/Bad.toml"])
+        text = comment([rejected("layout", layout_errors), rejected("schema", schema_errors), index])
+        self.assertEqual(text.count("listings/Bad.toml"), 1)
+        self.assertNotIn("do not parse", text)
 
     def test_a_toml_error_outside_the_repository_keeps_its_path(self):
         with tempfile.TemporaryDirectory() as folder:
