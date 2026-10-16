@@ -111,7 +111,7 @@
           "$ref": "#/$defs/gameVersionBound"
         },
         "game_max": {
-          "description": "Newest tested game version. Absent means no known upper limit, which is the recommended default.",
+          "description": "Newest game version the content works with. Above it, clients block the content. Absent means no known upper limit, which is the recommended default.",
           "$ref": "#/$defs/gameVersionBound"
         },
         "os": {

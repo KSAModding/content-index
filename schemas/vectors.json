@@ -1095,6 +1095,43 @@
       "accepted": true,
       "noted": false,
       "toml": "spec_version = 1\nid = \"ExamplePack\"\ntype = \"modpack\"\nname = \"Example Pack\"\nauthors = [\"Example Author\"]\nabstract = \"Two mods for mission planning.\"\nlicense = \"MIT\"\ntags = [\"user-interface\"]\nversion = \"1.0.0\"\nreleased_at = \"2028-02-29T23:59:59.5Z\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-pack.1/\"\n\n[compatibility]\ngame_min = \"2026.9.22.5482\"\n\n[[mods]]\nid = \"DeltaVMap\"\nversion = \"1.0.0\"\n"
+    },
+    {
+      "name": "a game_max at the newest build of the game release list",
+      "rule": "game_max",
+      "accepted": true,
+      "noted": true,
+      "says": "compatibility.game_max: '2026.10.13.5602' is the newest game build the index knows, and clients block the content on every build above game_max, so a game_max that only says which build the content was tested with blocks it on the next game update",
+      "game_versions": [
+        "2026.10.7.5541",
+        "2026.10.10.5554",
+        "2026.10.13.5602"
+      ],
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\ngame_max = \"2026.10.13.5602\"\n"
+    },
+    {
+      "name": "a game_max below the newest build",
+      "rule": "game_max",
+      "accepted": true,
+      "noted": false,
+      "game_versions": [
+        "2026.10.7.5541",
+        "2026.10.10.5554",
+        "2026.10.13.5602"
+      ],
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\ngame_max = \"2026.10.10.5554\"\n"
+    },
+    {
+      "name": "a game_max month is not compared with the newest build",
+      "rule": "game_max",
+      "accepted": true,
+      "noted": false,
+      "game_versions": [
+        "2026.10.7.5541",
+        "2026.10.10.5554",
+        "2026.10.13.5602"
+      ],
+      "toml": "spec_version = 1\nid = \"ExampleMod\"\ntype = \"mod\"\nname = \"Example Mod\"\nauthors = [\"Example Author\"]\nabstract = \"Adds an example to Kitten Space Agency.\"\nlicense = \"MIT\"\ntags = [\"gameplay\"]\n\n[releases]\ngithub = \"example/ExampleMod\"\n\n[links]\nforums = \"https://forums.ahwoo.com/threads/example-mod.123/\"\n\n[compatibility]\ngame_min = \"2026.9.10.5438\"\ngame_max = \"2026.10\"\n"
     }
   ]
 }

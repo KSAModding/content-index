@@ -348,6 +348,12 @@ def index_notes():
     return check_index.notes(entries, ["listings/Lib.toml"])
 
 
+def game_max_notes():
+    document = changed(MOD, "compatibility.game_max", "2026.10.13.5602")
+    bounds = check_index.bounded([entry(WHERE, document)], [WHERE])
+    return check_index.game_max_notes(bounds, ["2026.10.10.5554", "2026.10.13.5602"])
+
+
 def image_checks(document):
     errors, notes = [], []
     check_images.check_document(WHERE, document, errors, notes)
@@ -700,6 +706,7 @@ CASES = [
     ("The index has no release `9.9.9` of `Lib`", False, lambda: one(pack_members(("Lib", "9.9.9")), "9.9.9")),
     ("Mods of one family can share a forum thread", False, lambda: one(index_notes(), "forums")),
     ("of at most 280 characters", False, lambda: one(index_notes(), "abstract")),
+    ("Keep it only when the content is known to break", False, lambda: one(game_max_notes())),
     ("copies this change into release `1.1.0`", False, lambda: one(edit_note())),
     # The lines of the reason why ownership is not verified.
     ("Edit SpaceDock mod `4256` and set its source code link", True, lambda: spacedock_reason(KSA_MOD)),

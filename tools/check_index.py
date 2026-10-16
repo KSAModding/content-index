@@ -446,8 +446,44 @@ def check_abstracts(entries, documents):
     return notes
 
 
+def bounded(entries, documents):
+    """The changed documents whose game_max names one revision, as (where, bound) pairs."""
+    found = []
+    for entry in entries:
+        compatibility = entry.document.get("compatibility")
+        bound = compatibility.get("game_max") if isinstance(compatibility, dict) else None
+        key = check_schema.game_bound_key(bound)
+        if entry.where in documents and key and key[0] == "revision":
+            found.append((entry.where, bound))
+    return found
+
+
+def game_max_text(bound):
+    """The note on a game_max that is the newest build. The listing page gives the same text."""
+    return (
+        f"'{bound}' is the newest game build the index knows, and clients block the content on "
+        "every build above game_max, so a game_max that only says which build the content was "
+        "tested with blocks it on the next game update"
+    )
+
+
+def game_max_notes(bounds, versions):
+    """A note for each bound that is the newest revision of the game release list.
+
+    RFC 0091 makes a client block the content above game_max, and a game_max at
+    the newest build usually means "tested with", not "breaks above".
+    """
+    keys = (check_schema.game_bound_key(version) for version in versions)
+    newest = max((key[1] for key in keys if key and key[0] == "revision"), default=None)
+    return [
+        f"{where}: compatibility.game_max: {game_max_text(bound)}"
+        for where, bound in bounds
+        if newest is not None and check_schema.game_bound_key(bound)[1] == newest
+    ]
+
+
 def notes(entries, documents):
-    """Every note on the changed documents."""
+    """Every note on the changed documents that needs nothing outside this repository."""
     return check_forums(entries, documents) + check_abstracts(entries, documents)
 
 

@@ -101,12 +101,19 @@ def run_schema():
     return Check("schema", REJECT if errors else PASS, errors)
 
 
-def run_index(entries, skipped=(), documents=()):
+def run_index(entries, skipped=(), documents=(), releases=None):
     errors = check_index.check(entries)
     notes = check_index.notes(entries, documents)
     # The layout check reads every file that this check skips and already names
     # each one as an error, so the skipped line goes to the job summary only.
     summary = [f"not read, they do not parse: {', '.join(skipped)}"] if skipped else []
+    bounds = check_index.bounded(entries, documents)
+    if bounds:
+        try:
+            versions = check_release.load_game_versions(releases)
+            notes += check_index.game_max_notes(bounds, versions)
+        except check_release.Unavailable as error:
+            summary.append(f"game_max was not compared with the newest game build: {error}")
     return Check("index", REJECT if errors else PASS, errors, notes, summary)
 
 
@@ -233,7 +240,7 @@ def run_checks(changes, skip_release=False, releases=None, token=None, base=None
     packs = run_packs(changes)
     gate = [layout, schema, tags, packs]
     entries, skipped = check_index.load_documents()
-    checks = gate + [run_index(entries, skipped, documents)]
+    checks = gate + [run_index(entries, skipped, documents, releases)]
     # A change that touches no pack version has no pin to check, so the
     # verdict carries no pack members line for it.
     if touches_pack(documents):

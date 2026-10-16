@@ -21,12 +21,14 @@ import page_licenses
 
 VECTORS = Path(__file__).resolve().parent.parent / "schemas" / "vectors.json"
 SITE_FIXTURES = Path(__file__).resolve().parent.parent / "site" / "test" / "fixtures"
-RULES = {"schema", "id", "bounds", "license", "tags", "images", "abstract"}
+RULES = {"schema", "id", "bounds", "license", "tags", "images", "abstract", "game_max"}
+# The rules that only give notes, so no vector of them is rejected.
+NOTE_RULES = {"abstract", "game_max"}
 WHERE = "vector"
 
 
-def run(text, validator, vocabulary):
-    """The errors and notes of the checks that need nothing but the document."""
+def run(text, validator, vocabulary, game_versions=None):
+    """The errors and notes of the checks that need the document and at most the game release list."""
     document = check_schema.normalise(tomllib.loads(text))
     errors = []
     notes = []
@@ -36,6 +38,8 @@ def run(text, validator, vocabulary):
     notes.extend(check_tags.check_document(Path(WHERE), document, vocabulary))
     entry = check_index.Entry(Path(WHERE), WHERE, ("listing", WHERE), str(document.get("id")), document)
     notes.extend(check_index.check_abstracts([entry], {WHERE}))
+    if game_versions is not None:
+        notes.extend(check_index.game_max_notes(check_index.bounded([entry], {WHERE}), game_versions))
     return errors, notes
 
 
@@ -56,16 +60,19 @@ class Vectors(unittest.TestCase):
                 self.assertIn(vector["rule"], RULES)
                 self.assertIsInstance(vector["accepted"], bool)
                 self.assertIsInstance(vector["noted"], bool)
+                self.assertIsInstance(vector.get("game_versions", []), list)
 
     def test_every_rule_has_an_accepted_and_a_rejected_vector(self):
-        for rule in RULES - {"abstract"}:
+        for rule in RULES - NOTE_RULES:
             outcomes = {vector["accepted"] for vector in self.vectors if vector["rule"] == rule}
             self.assertEqual(outcomes, {True, False}, rule)
 
     def test_the_checks_agree_with_each_vector(self):
         for vector in self.vectors:
             with self.subTest(vector["name"]):
-                errors, notes = run(vector["toml"], self.validator, self.vocabulary)
+                errors, notes = run(
+                    vector["toml"], self.validator, self.vocabulary, vector.get("game_versions")
+                )
                 self.assertEqual(not errors, vector["accepted"], errors)
                 self.assertEqual(bool(notes), vector["noted"], notes)
                 if "says" in vector:
