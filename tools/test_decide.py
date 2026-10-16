@@ -413,6 +413,18 @@ class VerdictComment(unittest.TestCase):
         self.assertIn(f"**For your information**\n- `pack members`: {NO_PIN}", decision.comment)
         self.assertIn(decide.RELEASE_AGAIN, decision.comment)
 
+    def test_one_message_from_two_checks_is_one_line(self):
+        toml = "listings/Bad.toml: not valid TOML, Invalid value (at line 2, column 8)"
+        other = "listings/Bad.toml: the file name has to end in '.toml', in lowercase"
+        checks = [
+            {"name": "layout", "outcome": "reject", "errors": [toml, other], "notes": [], "summary": []},
+            {"name": "schema", "outcome": "reject", "errors": [toml], "notes": [], "summary": []},
+        ]
+        comment = decide.decide(verdict("reject", checks), True, VERIFIED).comment
+        self.assertEqual(comment.count(toml), 1)
+        self.assertIn(f"- `layout`, `schema`: {toml}\n", comment)
+        self.assertIn(f"- `layout`: {other}", comment)
+
     def test_summary_lines_never_reach_the_comment(self):
         checks = [{"name": "release", "outcome": "pass", "errors": [], "notes": [], "summary": ["quiet"]}]
         decision = decide.decide(verdict(checks=checks), True, VERIFIED)

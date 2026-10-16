@@ -113,15 +113,21 @@ def _findings(verdict):
 
 
 def _section(title, found):
-    """The lines of one section, with each explanation once.
+    """The lines of one section, with each message and each explanation once.
 
-    Several checks can report one cause, such as a license or a TOML error, so
-    a later message with the same explanation gets no second copy of it.
+    Several checks can report one cause, such as a license or a TOML error. The
+    same message from several checks is one line that names all of them, and a
+    later message with the same explanation gets no second copy of it.
     """
     lines = [f"**{title}**"]
     shown = set()
+    names = {}
     for name, message in found:
-        lines.append(f"- `{name}`: {message}")
+        reporters = names.setdefault(message, [])
+        if name not in reporters:
+            reporters.append(name)
+    for message, reporters in names.items():
+        lines.append(f"- {', '.join(f'`{name}`' for name in reporters)}: {message}")
         explanation = explain.explain(message)
         if explanation and explanation.text not in shown:
             shown.add(explanation.text)

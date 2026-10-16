@@ -104,9 +104,10 @@ def run_schema():
 def run_index(entries, skipped=(), documents=()):
     errors = check_index.check(entries)
     notes = check_index.notes(entries, documents)
-    if skipped:
-        notes.append(f"not read, they do not parse: {', '.join(skipped)}")
-    return Check("index", REJECT if errors else PASS, errors, notes)
+    # The layout check reads every file that this check skips and already names
+    # each one as an error, so the skipped line goes to the job summary only.
+    summary = [f"not read, they do not parse: {', '.join(skipped)}"] if skipped else []
+    return Check("index", REJECT if errors else PASS, errors, notes, summary)
 
 
 def touches_pack(documents):
