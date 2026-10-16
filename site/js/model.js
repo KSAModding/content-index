@@ -35,6 +35,7 @@ export function emptyForm() {
     github: "",
     spacedock: "",
     authority: "",
+    tagPrefix: "",
     since: "",
     name: "",
     authors: "",
@@ -102,6 +103,7 @@ export function formFromDocument(document) {
   form.github = text(releases.github);
   form.spacedock = text(releases.spacedock);
   form.authority = text(releases.authority);
+  form.tagPrefix = text(releases.tag_prefix);
   form.since = text(releases.since);
   form.name = text(document.name);
   form.authors = Array.isArray(document.authors) ? document.authors.map(text).join(", ") : "";
@@ -192,6 +194,8 @@ export function documentFromForm(form, base) {
   set(releases, "github", trimmed(form.github));
   set(releases, "spacedock", integerOr(form.spacedock));
   set(releases, "authority", releases.github !== undefined && releases.spacedock !== undefined ? trimmed(form.authority) : "");
+  // tag_prefix picks releases by their GitHub tag, so it is written only next to github.
+  set(releases, "tag_prefix", releases.github !== undefined ? trimmed(form.tagPrefix) : "");
   // since picks releases of a host, so it is written only next to one.
   set(releases, "since", releases.github !== undefined || releases.spacedock !== undefined ? trimmed(form.since) : "");
   set(document, "releases", releases);

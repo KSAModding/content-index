@@ -76,6 +76,17 @@ test("the since field shows next to a release host and tells what the watcher st
   assert.match(hint, /amendment/);
 });
 
+test("the tag_prefix field shows next to a GitHub repository and tells what it selects", () => {
+  const input = html.match(/<input id="tag-prefix"[^>]*>/);
+  assert.ok(input && /aria-describedby="[^"]*\bmsg-releases\.tag_prefix\b/.test(input[0]), "the tag-prefix input does not name msg-releases.tag_prefix");
+  assert.match(app, /\n  "tag-prefix": \["tagPrefix"\],\n/, "the tag-prefix input is not bound to state.form.tagPrefix");
+  assert.match(body("function refresh()"), /\$\("tag-prefix-field"\)\.hidden = !state\.form\.github\.trim\(\);/);
+  assert.ok(html.indexOf('id="tag-prefix-field"') < html.indexOf('id="since-field"'), "the tag_prefix field is not next to since");
+  const hint = /<p id="hint-tag-prefix"[^>]*>([\s\S]*?)<\/p>/.exec(html)[1];
+  assert.match(hint, /takes only the releases whose tag starts with it/);
+  assert.match(hint, /reads the version from the rest of the tag/);
+});
+
 test("a hidden field does not mark its section as done", () => {
   assert.match(body("function renderSections()"), /const filled = \[\.\.\.section\.querySelectorAll\("input, select, textarea"\)\]\.some\(\(field\) =>\s+!field\.closest\("\[hidden\]"\) && /);
 });

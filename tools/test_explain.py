@@ -114,6 +114,14 @@ class Release(unittest.TestCase):
             found.text,
         )
 
+    def test_no_archive_names_the_assets_without_the_tag_prefix(self):
+        found = explain.explain(
+            "listings/gatOS.toml: the latest release gatos-v1.0.0 (tag_prefix `gatos-`) cannot be "
+            "stamped: the release carries no archive to download"
+        )
+        self.assertIn("Release `gatos-v1.0.0` has no zip", found.text)
+        self.assertIn("`gatOS.zip`, `gatOS-1.0.0.zip` or `gatOS_1.0.0.zip`", found.text)
+
     def test_several_archives_none_named_after_the_listing(self):
         found = explain.explain(
             PREFIX + "the release carries 2 archives and none of them is named after the "
@@ -396,6 +404,13 @@ class Authority:
         return self._download(release)
 
 
+def prefixed(prefix, skipped=2, offered=()):
+    """A GitHub host with a tag_prefix, which leaves out `skipped` releases."""
+    authority = Authority(offered)
+    authority.key, authority.tag_prefix, authority.skipped = f"github:me/mymod#{prefix}", prefix, skipped
+    return authority
+
+
 class HostError(Exception):
     pass
 
@@ -418,11 +433,11 @@ def zipped(files):
     return data.getvalue()
 
 
-def stamped(files=GOOD, document=MOD, data=None, download=None):
+def stamped(files=GOOD, document=MOD, data=None, download=None, release=None):
     """The release lines when the latest release holds `files`, through the real stamper."""
     stamp_release, hosts = stamper()
     game_versions = check_release.load_game_versions(releases_root())
-    release = SimpleNamespace(
+    release = release or SimpleNamespace(
         version="1.2.0", tag="v1.2.0", release_date=FACTS["release_date"], facts=lambda: dict(FACTS)
     )
     archive = zipped(files) if data is None else data
@@ -591,6 +606,15 @@ CASES = [
     ("releases.spacedock is the number", False, lambda: one(hosted({"spacedock": 1234}))),
     ("releases.spacedock is the number", False, lambda: spacedock_reason(None)),
     ("a tag alone or a draft release does not count", False, lambda: one(inspected(MOD, Authority()))),
+    ("Compare `mymod-v` with the tags of the releases on GitHub", False, lambda: one(
+        inspected(MOD, prefixed("mymod-v")))),
+    ("Check that `tag_prefix` under `[releases]` ends where the version starts", False, lambda: one(
+        inspected(MOD, prefixed("mymod", skipped=0, offered=[
+            SimpleNamespace(version=None, release_date="2026-10-01", tag="mymod-v1.2.3")])))),
+    ("`MyMod-1.2.0.zip`", True, lambda: one(stamped(
+        download=offering(), release=SimpleNamespace(
+            version="1.2.0", tag="mymod-v1.2.0", tag_prefix="mymod-", release_date=FACTS["release_date"],
+            facts=lambda: dict(FACTS))))),
     ("each release needs its own pull request", False, lambda: one(
         inspected(changed(MOD, "releases", DELETE), Authority()))),
     # The images of a listing.
@@ -675,6 +699,8 @@ CASES = [
         schema("releases", {"github": "me/MyMod", "spacedock": 1}))),
     ("names where the releases of the mod are", False, lambda: one(
         schema("releases", {"github": "me/MyMod", "authority": "spacedock"}))),
+    ("so it needs `github = \"owner/repository\"` next to it", False, lambda: one(
+        schema("releases", {"spacedock": 1, "tag_prefix": "mymod-"}))),
     ("entry needs a kind", False, lambda: one(schema("dependencies", [{"id": "a"}]))),
     ("An image record needs url, sha256", False, lambda: one(
         schema("images", {"icon": {"url": IMAGE["url"]}}))),

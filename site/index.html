@@ -98,6 +98,14 @@
             <div id="msg-releases.authority" class="messages" aria-live="polite"></div>
           </div>
         </div>
+        <div class="field" id="tag-prefix-field" hidden>
+          <label for="tag-prefix">Start of the tags of mod releases (optional)</label>
+          <input id="tag-prefix" name="tag-prefix" placeholder="mymod-v" autocomplete="off" spellcheck="false" aria-describedby="hint-tag-prefix msg-releases.tag_prefix">
+          <div class="aside">
+            <p id="hint-tag-prefix" class="hint">Leave it empty when every release of the repository is a release of this mod. When the repository also publishes other releases, such as tools or images, write the text that every tag of a mod release starts with, such as mymod- for the tag mymod-v1.2.0. The index then takes only the releases whose tag starts with it, with upper and lower case as written, and reads the version from the rest of the tag. A release whose tag does not start with it is not a release of this mod, so change it too when you change the form of your tags.</p>
+            <div id="msg-releases.tag_prefix" class="messages" aria-live="polite"></div>
+          </div>
+        </div>
         <div class="field" id="since-field" hidden>
           <label for="since">Oldest release to list (optional)</label>
           <input id="since" name="since" placeholder="1.2" autocomplete="off" spellcheck="false" aria-describedby="hint-since msg-releases.since">

@@ -115,6 +115,24 @@ test("since comes back from a loaded listing and is written after the hosts", ()
   assert.match(written, /\[releases\]\ngithub = "a\/b"\nspacedock = 12\nauthority = "github"\nsince = "0\.5"\n/);
 });
 
+test("tag_prefix is written next to github and dropped without it", () => {
+  const form = emptyForm();
+  Object.assign(form, { github: "a/b", tagPrefix: " gatos- " });
+  assert.deepEqual(documentFromForm(form, null).releases, { github: "a/b", tag_prefix: "gatos-" });
+  Object.assign(form, { github: "", spacedock: "12" });
+  assert.deepEqual(documentFromForm(form, null).releases, { spacedock: 12 });
+});
+
+test("tag_prefix comes back from a loaded listing and is kept on an edit", () => {
+  const text = "[releases]\ngithub = \"a/b\"\nspacedock = 12\nauthority = \"github\"\ntag_prefix = \"gatos-v\"\nsince = \"0.5\"\n";
+  const base = parseDocument(text);
+  const form = formFromDocument(base);
+  assert.equal(form.tagPrefix, "gatos-v");
+  form.since = "0.4";
+  const written = writeDocument(documentFromForm(form, base));
+  assert.match(written, /\[releases\]\ngithub = "a\/b"\nspacedock = 12\nauthority = "github"\ntag_prefix = "gatos-v"\nsince = "0\.4"\n/);
+});
+
 test("the new-file address carries the file until it gets too long", () => {
   const short = newFileUrl(listingPath("MyMod"), "id = \"MyMod\"\n");
   assert.equal(short.filled, true);
