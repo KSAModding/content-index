@@ -26,9 +26,15 @@ export async function readTypeFile(response, key) {
   return document && Array.isArray(document[key]) ? document[key] : [];
 }
 
-// The main document with the arrays of the type files, in the shape indexFacts reads.
+// The main document with the arrays of the type files added after its own, in
+// the shape indexFacts reads. The page then reads both a main document that
+// carries the arrays and one that does not.
 export function withTypeFiles(snapshot, parts) {
-  return { ...snapshot, ...parts };
+  const merged = { ...snapshot };
+  for (const [key, entries] of Object.entries(parts)) {
+    merged[key] = [...(Array.isArray(snapshot[key]) ? snapshot[key] : []), ...entries];
+  }
+  return merged;
 }
 
 function forumsOf(authored) {

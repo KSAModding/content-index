@@ -235,6 +235,12 @@ test("a snapshot without vehicles and saves gives the same facts as before", () 
   assert.deepEqual(indexFacts({ ...main, vehicles: "x", saves: null }, checker.threadPattern), plain);
 });
 
+test("a vehicle in the main document stays a holder when its type file is not there", () => {
+  const facts = indexFacts(withTypeFiles({ ...main, vehicles: vehicleFile.vehicles }, { vehicles: [], saves: [] }), checker.threadPattern);
+  assert.equal(facts.holders.get("examplerover").where, "vehicles/ExampleRover.toml");
+  assert.equal(facts.listed.get("examplerover").type, "vehicle");
+});
+
 test("a type file that is not there is empty, and any other failure is no answer", async () => {
   assert.deepEqual(await readTypeFile(new Response("", { status: 404 }), "vehicles"), []);
   assert.deepEqual(await readTypeFile(new Response(JSON.stringify({ snapshot_version: 1 })), "vehicles"), []);
