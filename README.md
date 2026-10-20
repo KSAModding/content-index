@@ -22,6 +22,8 @@ https://ksamodding.github.io/content-index-releases/v1/index.json
 | Path | Contents |
 |---|---|
 | `listings/<id>.toml` | One authored document per mod or mod loader. |
+| `vehicles/<id>.toml` | One authored document per vehicle, per [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md). The schema refuses it until [#210](https://github.com/KSAModding/content-index/issues/210) lifts the rollout gate. |
+| `saves/<id>.toml` | One authored document per save, per RFC 0085. The schema refuses it until [#210](https://github.com/KSAModding/content-index/issues/210) lifts the rollout gate. |
 | `packs/<id>/<version>.toml` | One authored document per mod pack version. |
 | `packs/<id>/owner.json` | The GitHub account that owns a pack id, recorded by its first claim. |
 | `index-status.toml` | The index's own voice about a listing. Stewards only. |

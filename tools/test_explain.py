@@ -659,6 +659,10 @@ CASES = [
     ("The file has no `abstract`", False, lambda: one(schema("abstract", DELETE))),
     ("rename the file to `Other.toml`, or change id to `MyMod`", False, lambda: one(
         layout({WHERE: 'id = "Other"\ntype = "mod"\n'}))),
+    ("named after `name` in its meta.toml, not after the id", False, lambda: one(
+        layout({"vehicles/Rover.toml": 'id = "ExampleRover"\ntype = "vehicle"\n'}))),
+    ("rename the file to `Base.toml`, or change id to `OldBase`", False, lambda: one(
+        layout({"saves/OldBase.toml": 'id = "Base"\ntype = "save"\n'}))),
     ("next to it, with that version inside", False, lambda: one(
         layout({"packs/p/1.0.0.toml": 'id = "p"\ntype = "modpack"\nversion = "1.0.1"\n'}), "version")),
     ("you do not need a new one", False, lambda: one(edited_pack(), "immutable")),

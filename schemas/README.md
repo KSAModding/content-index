@@ -20,7 +20,7 @@ python3 tools/test_check_schema.py
 
 Every script resolves its paths from its own location, so the working directory does not matter.
 
-`check_schema.py` validates every document under `listings/` and `packs/`, at the depth the layout puts them at.
+`check_schema.py` validates every document under `listings/`, `vehicles/`, `saves/` and `packs/`, at the depth the layout puts them at.
 `test_check_schema.py` validates the schema itself, from both sides: real listings have to pass, and every rule has a case that has to fail for the stated reason.
 
 The other checks around it have their own tests, run together:

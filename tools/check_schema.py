@@ -26,6 +26,8 @@ from jsonschema.exceptions import best_match
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA = ROOT / "schemas" / "authored.schema.json"
 LISTINGS = ROOT / "listings"
+VEHICLES = ROOT / "vehicles"
+SAVES = ROOT / "saves"
 PACKS = ROOT / "packs"
 
 REVISION_BOUND = re.compile(r"^[0-9]{4}\.[0-9]+\.[0-9]+\.([0-9]+)(?![\s\S])")
@@ -352,7 +354,7 @@ def documents():
             and len(path.relative_to(folder).parts) == depth
         )
 
-    return toml_files(LISTINGS, 1) + toml_files(PACKS, 2)
+    return toml_files(LISTINGS, 1) + toml_files(VEHICLES, 1) + toml_files(SAVES, 1) + toml_files(PACKS, 2)
 
 
 def validator():

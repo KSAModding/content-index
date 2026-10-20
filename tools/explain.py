@@ -437,6 +437,16 @@ RULES = [
         False,
     ),
     (
+        re.compile(
+            r"^(?:vehicles|saves)/(?P<stem>[^/]+)\.toml: declares id '(?P<id>[^']*)', so the file "
+            r"name must be '(?P<expected>[^']*)'"
+        ),
+        "The id and the file name must be the same, letter for letter. The folder in the zip "
+        "is named after `name` in its meta.toml, not after the id. Check which one is right, "
+        "then rename the file to {expected}, or change id to {stem}.",
+        False,
+    ),
+    (
         re.compile(r"^packs/[^/]+/[^/]+\.toml: declares version '[^']*', the file name says"),
         "The file name and the version inside must be the same. To publish a new version of a "
         "pack, do not change the old file: add a new file `packs/<id>/<new version>.toml` next "
