@@ -12,7 +12,7 @@ Its Dependencies section shows what the `mod.toml` of your newest stamped releas
 1. Write your authored document following [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md).
    The worked examples in [`examples/`](https://github.com/KSAModding/content-manager-design/tree/main/examples) are real listings you can copy from.
 2. Put it at `listings/<id>.toml`, where `<id>` is the folder name your content installs as.
-   A mod pack goes to `packs/<id>/<version>.toml`.
+   A mod pack goes to `packs/<id>/<version>.toml`, and a vehicle to `vehicles/<id>.toml`, see [Listing a vehicle](#listing-a-vehicle).
 3. Check it before you open anything, which saves you a round trip through CI:
 
    ```sh
@@ -124,6 +124,59 @@ The platform names are `windows`, `linux` and `macos`.
 Leave out `runtime` when your loader has its own executable on that platform.
 Every `launch` must be in your release archive, or the release is rejected.
 
+## Listing a vehicle
+
+A vehicle is a folder the game wrote, shared with the mods it needs, per [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md).
+Its document goes to `vehicles/<id>.toml`.
+The id follows the same rules as every id and is in the same namespace, and it is never compared with `name` in the `meta.toml` of the folder, because a real name has spaces.
+
+The document is a mod listing without `[loader]`:
+
+```toml
+spec_version = 1
+id = "ExampleRover"
+type = "vehicle"
+name = "Example Rover"
+authors = ["Maxi"]
+abstract = "A six-wheel rover for the Moon."
+license = "CC-BY-4.0"
+
+[releases]
+github = "Maxi/KSA-Rovers"
+tag_prefix = "ExampleRover-"
+
+[[dependencies]]
+id = "ExamplePartsMod"
+kind = "required"
+min = "1.4.0"
+```
+
+- `links.forums` is optional, because the forum may have no place for vehicles. Without it, the account on the release host ties the listing to you, see [POLICY.md](POLICY.md#the-forums-link).
+- `[compatibility]` is optional. Without `game_min`, the watcher takes it from `version` in the `meta.toml` in your zip, which is the game build that wrote the folder. A new game build often breaks older vehicle files, so lower `game_min` only when you know that an older build loads the file.
+- `[[dependencies]]` names the mods the vehicle needs, and only mods. A client that shares a vehicle fills this list from the mods of its instance, with `min` at the version it installed and no `max`. Check the list, because the index cannot read it out of the file, and add a mod that only changes how parts behave as `recommends`.
+- `[install]` takes only `root`, `steps` and `uninstall`. The game decides where the folder goes, and `name` in its `meta.toml` decides the name of the folder.
+
+When a game build or an update of a mod breaks a released vehicle, set `game_max` or a dependency `max` on that release with an [amendment](https://github.com/KSAModding/content-index-releases/blob/main/CONTRIBUTING.md#an-amendment) in content-index-releases.
+
+The zip holds the folder as the game wrote it: one top-level directory named after `name` in its `meta.toml`, with `meta.toml` and `vehicle.xml` in it.
+The checks and the watcher refuse a release when:
+
+- `meta.toml` does not parse as TOML, because the game then does not start.
+- `name` breaks the [name rule](schemas/README.md#save-and-vehicle-names) of the game.
+- The top-level directory has another name than `name`, also in another case.
+- `vehicle.xml` is missing, has another case, or is not well-formed XML.
+- The listing has no `game_min`, and `version` in `meta.toml` is not a game build.
+- Another vehicle listing already installs a folder with the same name, compared without case, because a player could not have both.
+
+Other files in the folder get a note, because the game drops them when it saves the vehicle again.
+The [listing page](https://ksamodding.github.io/content-index/) checks a zip you select with the same rules, except the folder of another listing, which only the checks and the watcher compare.
+
+A vehicle needs a release host that proves who shares it, and you have these paths:
+
+- A GitHub repository of your own under `[releases] github`. One repository can hold many vehicles, each with a `tag_prefix` of its own, see [A repository with other releases](#a-repository-with-other-releases). The proof is the same as for any repository, and a marker file that names only your username covers every vehicle in it.
+- A share host, once the index registers one.
+- No `[releases]` at all. Each release then enters by a [release pull request](https://github.com/KSAModding/content-index-releases/blob/main/CONTRIBUTING.md#a-release) in content-index-releases.
+
 ## Claiming and updating a pack
 
 A pack id is first come, first served, as a listing id is, per [RFC 0080](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0080-pack-claims-and-members.md).
@@ -184,7 +237,7 @@ When a pinned mod has newer releases, test them and publish a new pack version.
 When a mod author asks to leave your pack, publish a version without that mod, see [POLICY.md](POLICY.md#leaving-a-pack).
 
 Checks then validate the document, inspect your latest release archive, and verify that you control the release host the listing points at.
-The pull request is then labelled `listing` or `pack`, which says which kind of document it changes, and one that changes both carries both labels.
+The pull request is then labelled `listing`, `vehicle` or `pack`, which says which kind of document it changes, and one that changes several kinds carries each of their labels.
 
 When everything is green and ownership verified, the pull request merges itself.
 When ownership cannot be verified automatically, a steward looks instead.
@@ -200,6 +253,7 @@ Any one of the three is enough, and the first that applies is used:
    So `Maximilian-Nesslauer` sets `ksa-index-maximilian-nesslauer`.
    One topic covers every listing that points at that repository, and it is the easy path for an organization-owned repository.
 3. The repository contains `.github/ksa-content-index.toml` naming the listing id and your username.
+   A file that names only your username covers every listing that points at that repository, such as several vehicles with a `tag_prefix` each.
 
 A fork proves control through the first two proofs only, per [RFC 0079](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0079-author-freedom.md).
 The owner of a fork is the account that forked it, and GitHub copies no topic to a fork.
@@ -313,7 +367,7 @@ Do not ask for a delisting instead. That leaves a tombstone carrying the id and 
 ## Takedowns and disputes
 
 Use the issue forms, and read [POLICY.md](POLICY.md) for what a steward does with them.
-A steward decides, and the required forums link is the tiebreaker for who claimed an id first.
+A steward decides, and the forums link is the tiebreaker for who claimed an id first, or for a vehicle without one, the account on its release host.
 
 ## Licensing your contribution
 
