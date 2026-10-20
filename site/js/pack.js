@@ -8,6 +8,8 @@ const SEMVER = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[^+]+)?(\+.*
 const STABILITY = ["stable", "testing", "dev"];
 const PINNED_SECTIONS = ["mods", "vehicles", "saves"];
 const MEMBER_SECTION = "mods";
+// The type each section pins, as SECTION_TYPES in tools/check_index.py.
+const SECTION_TYPES = { mods: "mod", vehicles: "vehicle", saves: "save" };
 
 // The semver pattern of the schema, which tools/check_index.py uses to decide
 // that a pin names a release file at all.
@@ -27,10 +29,11 @@ function memberOf(index, id) {
   return index.members.find((member) => member.id.toLowerCase() === folded) || null;
 }
 
-// The stamped release a pin names, when it is a listed mod that is not delisted.
-function stampedOf(index, id, version) {
+// The stamped release a pin names, when it is a listed mod, or a listing of the
+// type of the pin's section, that is not delisted.
+function stampedOf(index, id, version, type = "mod") {
   const listing = index.listed.get(fold(id));
-  if (!listing || listing.type !== "mod" || listing.state === "delisted") return undefined;
+  if (!listing || listing.type !== type || listing.state === "delisted") return undefined;
   return listing.stamped.get(version);
 }
 
@@ -144,13 +147,14 @@ function pinnedInstead(options, pinned) {
 function pinProblem(section, pin, index) {
   const { id, version } = pin;
   if (typeof id !== "string" || typeof version !== "string") return [null, null];
-  if (section !== MEMBER_SECTION) return [`'${id}' cannot be pinned, because no content type for ${section} is defined yet`, null];
+  const wanted = SECTION_TYPES[section];
+  const pinner = section === MEMBER_SECTION ? "a pack" : `[[${section}]]`;
   const target = index.holders.get(id.toLowerCase());
-  if (!target) return [`'${id}' is not a listed mod, and a pack pins only listed mods`, null];
+  if (!target) return [`'${id}' is not a listed ${wanted}, and ${pinner} pins only listed ${wanted}s`, null];
   if (target.type === "modpack") return [null, null];
   const listing = index.listed.get(id.toLowerCase());
-  if (listing.state === "delisted") return [`'${id}' is delisted, and a pack pins only listed mods`, null];
-  if (target.type !== "mod") return [`'${id}' is listed as a ${target.type}, and a pack pins only mods`, null];
+  if (listing.state === "delisted") return [`'${id}' is delisted, and ${pinner} pins only listed ${wanted}s`, null];
+  if (target.type !== wanted) return [`'${id}' is listed as a ${target.type}, and ${pinner} pins only ${wanted}s`, null];
   if (!PIN_VERSION.test(version)) return [null, null];
   const release = listing.stamped.get(version);
   if (!release) return [`'${id}' has no stamped release ${version}`, null];
@@ -234,8 +238,8 @@ export function memberMessages(document, index) {
     for (const text of incomplete(pin, release, pinned)) found.push({ level: ERROR, path: where, text });
   }
   for (const { section, pin, where } of pins) {
-    const listing = section === MEMBER_SECTION ? index.listed.get(fold(pin.id)) : null;
-    if (listing && listing.type === "mod" && listing.state === "disputed") {
+    const listing = index.listed.get(fold(pin.id));
+    if (listing && listing.type === SECTION_TYPES[section] && listing.state === "disputed") {
       found.push({ level: NOTE, path: where, text: `'${pin.id}' is disputed, and a client warns about it` });
     }
   }
@@ -245,18 +249,21 @@ export function memberMessages(document, index) {
 // The pins "Add the missing dependencies" adds: each required dependency that
 // no member pins, at the newest stable release inside the bounds of every pinned
 // release that requires it. Each added release can require more. What it cannot
-// add, such as an any_of, stays a note for the author.
+// add, such as an any_of, stays a note for the author. A pinned vehicle or save
+// needs mods too, and those go into [[mods]] as well.
 export function missingDependencies(document, index) {
   if (!index || document.type !== "modpack") return { pins: [], notes: [] };
   const authored = (Array.isArray(document.mods) ? document.mods : []).filter(isObject);
+  const shared = pinsOf(document).filter(({ section }) => section !== MEMBER_SECTION)
+    .map(({ section, pin }) => ({ pin, type: SECTION_TYPES[section] }));
   // A pin whose release is not chosen yet still names its mod, so nothing adds a second pin of it.
   const written = new Set(authored.map((pin) => fold(pin.id)));
   let added = [];
   const requirements = () => {
     const found = [];
-    for (const pin of [...authored, ...added]) {
+    for (const { pin, type } of [...authored, ...added].map((pin) => ({ pin, type: "mod" })).concat(shared)) {
       if (typeof pin.id !== "string" || typeof pin.version !== "string") continue;
-      for (const dependency of requiredOf(stampedOf(index, pin.id, pin.version))) {
+      for (const dependency of requiredOf(stampedOf(index, pin.id, pin.version, type))) {
         const options = optionsOf(dependency);
         if (options.length) found.push({ pin, options });
       }

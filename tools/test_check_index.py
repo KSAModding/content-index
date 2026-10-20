@@ -439,12 +439,16 @@ class Members(MemberCase):
         with self.assertRaises(ValueError):
             self.members(("Alpha", "1.0.0"))
 
-    def test_a_vehicle_or_save_is_refused_until_its_type_exists(self):
-        for section in ("vehicles", "saves"):
+    def test_an_unlisted_vehicle_or_save_is_refused_in_its_section(self):
+        for section, kind in (("vehicles", "vehicle"), ("saves", "save")):
             with self.subTest(section=section):
-                errors = self.members(("Craft", "1.0.0"), section=section)
-                self.assertEqual(len(errors), 1)
-                self.assertIn(f"{section}[0]: 'Craft' cannot be pinned", errors[0])
+                self.assertEqual(
+                    self.members(("Craft", "1.0.0"), section=section),
+                    [
+                        f"packs/Pack/1.0.0.toml: {section}[0]: 'Craft' is not a listed {kind}, "
+                        f"and [[{section}]] pins only listed {kind}s"
+                    ],
+                )
 
     def test_a_nested_pack_is_left_to_the_reference_check(self):
         self.pack("Inner")
@@ -568,9 +572,97 @@ class CompleteSet(MemberCase):
         self.assertIn("'Beta' has no stamped release 3.0.0", errors[0])
 
 
+class SharedMembers(MemberCase):
+    """Pins of vehicles and saves (RFC 0085), which need mods pinned in [[mods]]."""
+
+    WHERE = "packs/Pack/1.0.0.toml"
+
+    def setUp(self):
+        super().setUp()
+        self.listing("Parts")
+        self.listing("Alpha")
+        self.stamp("Parts", "1.3.0")
+        self.stamp("Parts", "1.4.0")
+        self.stamp("Alpha", "1.0.0")
+        self.vehicle("Rover")
+        self.stamp("Rover", "1.0.0", dependencies=[requires("Parts", min="1.4.0")])
+        self.vehicle("Base", kind="save")
+        self.stamp("Base", "1.0.0", dependencies=[requires("Parts")])
+
+    def check(self, mods=(), vehicles=(), saves=(), delisted=()):
+        extra = pins(*mods) + pins(*vehicles, section="vehicles") + pins(*saves, section="saves")
+        self.pack("Pack", extra=extra)
+        entries, _ = self.load()
+        errors = check_index.check_members(entries, [self.WHERE], set(delisted), self.releases)
+        return [line.removeprefix(f"{self.WHERE}: ") for line in errors]
+
+    def test_a_vehicle_and_a_save_with_their_mod_pass(self):
+        self.assertEqual(
+            self.check(mods=[("Parts", "1.4.0")], vehicles=[("Rover", "1.0.0")], saves=[("Base", "1.0.0")]), []
+        )
+
+    def test_a_vehicle_whose_mod_is_pinned_below_its_bound_names_the_vehicle_release(self):
+        self.assertEqual(
+            self.check(mods=[("Parts", "1.3.0")], vehicles=[("Rover", "1.0.0")]),
+            ["vehicles[0]: 'Rover' 1.0.0 requires 'Parts' 1.4.0 or newer, and the pack pins 'Parts' 1.3.0"],
+        )
+
+    def test_a_save_without_its_mod_is_refused(self):
+        self.assertEqual(
+            self.check(saves=[("Base", "1.0.0")]),
+            ["saves[0]: 'Base' 1.0.0 requires 'Parts', and the pack does not pin it"],
+        )
+
+    def test_only_a_pinned_mod_meets_a_dependency(self):
+        # A dependency is always a mod, so a vehicle pin with the same id meets nothing.
+        self.stamp("Alpha", "1.0.0", dependencies=[requires("Rover")])
+        self.assertEqual(
+            self.check(mods=[("Alpha", "1.0.0")], vehicles=[("Rover", "1.0.0")]),
+            [
+                "mods[0]: 'Alpha' 1.0.0 requires 'Rover', and the pack does not pin it",
+                "vehicles[0]: 'Rover' 1.0.0 requires 'Parts' 1.4.0 or newer, and the pack does not pin it",
+            ],
+        )
+
+    def test_a_vehicle_that_conflicts_with_a_pinned_mod_is_refused(self):
+        self.stamp("Rover", "1.0.0", dependencies=[requires("Alpha", kind="conflict")])
+        self.assertEqual(
+            self.check(mods=[("Alpha", "1.0.0")], vehicles=[("Rover", "1.0.0")]),
+            ["vehicles[0]: 'Rover' 1.0.0 conflicts with 'Alpha', and the pack pins 'Alpha' 1.0.0"],
+        )
+
+    def test_each_section_pins_only_its_own_type(self):
+        cases = (
+            ({"vehicles": [("Alpha", "1.0.0")]}, "vehicles[0]: 'Alpha' is listed as a mod, and [[vehicles]] pins only vehicles"),
+            ({"saves": [("Rover", "1.0.0")]}, "saves[0]: 'Rover' is listed as a vehicle, and [[saves]] pins only saves"),
+            ({"vehicles": [("Base", "1.0.0")]}, "vehicles[0]: 'Base' is listed as a save, and [[vehicles]] pins only vehicles"),
+            ({"mods": [("Rover", "1.0.0")]}, "mods[0]: 'Rover' is listed as a vehicle, and a pack pins only mods"),
+        )
+        for sections, error in cases:
+            with self.subTest(error):
+                self.setUp()
+                self.assertEqual(self.check(**sections), [error])
+
+    def test_a_delisted_unstamped_or_yanked_vehicle_or_save_is_refused(self):
+        for section, identifier, kind in (("vehicles", "Rover", "vehicle"), ("saves", "Base", "save")):
+            with self.subTest(section=section):
+                self.setUp()
+                pinned = {"mods": [("Parts", "1.4.0")], section: [(identifier, "1.0.0")]}
+                self.assertEqual(
+                    self.check(**pinned, delisted={identifier.casefold()}),
+                    [f"{section}[0]: '{identifier}' is delisted, and [[{section}]] pins only listed {kind}s"],
+                )
+                self.assertEqual(
+                    self.check(mods=[("Parts", "1.4.0")], **{section: [(identifier, "2.0.0")]}),
+                    [f"{section}[0]: '{identifier}' has no stamped release 2.0.0"],
+                )
+                self.stamp(identifier, "1.0.0", yanked=True, yanked_reason="broken")
+                self.assertEqual(self.check(**pinned), [f"{section}[0]: '{identifier}' 1.0.0 is yanked"])
+
+
 PACK_VECTORS = Path(__file__).resolve().parent.parent / "schemas" / "pack-vectors.json"
 VECTOR_KEYS = {"name", "snapshot", "pack", "accepted", "errors", "notes"}
-SNAPSHOT_KEYS = {"listings", "delisted", "disputed"}
+SNAPSHOT_KEYS = {"listings", "vehicles", "saves", "delisted", "disputed"}
 
 
 class PackVectors(MemberCase):
@@ -585,6 +677,9 @@ class PackVectors(MemberCase):
         snapshot = vector["snapshot"]
         for listed in snapshot["listings"]:
             self.listing(listed["id"], kind=listed["type"])
+        for listed in snapshot.get("vehicles", []) + snapshot.get("saves", []):
+            self.vehicle(listed["id"], kind=listed["type"])
+        for listed in snapshot["listings"] + snapshot.get("vehicles", []) + snapshot.get("saves", []):
             folder = self.releases / listed["id"]
             folder.mkdir(exist_ok=True)
             for release in listed["releases"]:
@@ -650,6 +745,21 @@ class DisputedMembers(MemberCase):
             ["packs/Pack/1.0.0.toml: mods[0]: 'Alpha' is disputed, and a client warns about it"],
         )
         self.assertEqual(check_index.member_notes(entries, [], {"alpha"}), [])
+
+    def test_a_disputed_vehicle_or_save_is_noted_in_its_section_only(self):
+        self.vehicle("Rover")
+        self.vehicle("Base", kind="save")
+        extra = pins(("Rover", "1.0.0"), section="vehicles") + pins(("Base", "1.0.0"), section="saves")
+        extra += pins(("Rover", "1.0.0"), section="saves")
+        self.pack("Pack", extra=extra)
+        entries, _ = self.load()
+        self.assertEqual(
+            check_index.member_notes(entries, ["packs/Pack/1.0.0.toml"], {"rover", "base"}),
+            [
+                "packs/Pack/1.0.0.toml: vehicles[0]: 'Rover' is disputed, and a client warns about it",
+                "packs/Pack/1.0.0.toml: saves[0]: 'Base' is disputed, and a client warns about it",
+            ],
+        )
 
 
 class Forums(IndexCase):

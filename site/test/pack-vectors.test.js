@@ -14,13 +14,16 @@ const { vectors } = JSON.parse(read("../../schemas/pack-vectors.json"));
 function snapshotOf(mini) {
   const folded = (ids) => new Set((ids || []).map((id) => id.toLowerCase()));
   const [delisted, disputed] = [folded(mini.delisted), folded(mini.disputed)];
+  const entries = (list) => (list || []).map((listing) => {
+    const key = listing.id.toLowerCase();
+    if (delisted.has(key)) return { id: listing.id, index_status: { state: "delisted" } };
+    const entry = { id: listing.id, authored: { type: listing.type }, releases: listing.releases };
+    return disputed.has(key) ? { ...entry, index_status: { state: "disputed" } } : entry;
+  });
   return {
-    listings: mini.listings.map((listing) => {
-      const key = listing.id.toLowerCase();
-      if (delisted.has(key)) return { id: listing.id, index_status: { state: "delisted" } };
-      const entry = { id: listing.id, authored: { type: listing.type }, releases: listing.releases };
-      return disputed.has(key) ? { ...entry, index_status: { state: "disputed" } } : entry;
-    }),
+    listings: entries(mini.listings),
+    vehicles: entries(mini.vehicles),
+    saves: entries(mini.saves),
     packs: [],
     game_versions: { versions: [] },
   };
@@ -39,14 +42,15 @@ for (const vector of vectors) {
     const { pins } = missingDependencies(document, index);
     assert.deepEqual(pins, vector.adds || []);
     if (pins.length) {
-      assert.deepEqual(lines(memberMessages({ ...document, mods: [...document.mods, ...pins] }, index), ERROR), []);
+      assert.deepEqual(lines(memberMessages({ ...document, mods: [...(document.mods || []), ...pins] }, index), ERROR), []);
     }
   });
 }
 
 test("every dependency bound in a vector is full SemVer, as the stamper writes it", () => {
   for (const vector of vectors) {
-    for (const listing of vector.snapshot.listings) {
+    const { listings, vehicles = [], saves = [] } = vector.snapshot;
+    for (const listing of [...listings, ...vehicles, ...saves]) {
       for (const dependency of listing.releases.flatMap((entry) => entry.dependencies || [])) {
         for (const option of Array.isArray(dependency.any_of) ? [dependency, ...dependency.any_of] : [dependency]) {
           for (const bound of [option.min, option.max].filter((value) => value !== undefined)) {

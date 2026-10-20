@@ -386,14 +386,17 @@ def entry(where, document):
     return check_index.Entry(Path(where), where, holder, identifier, document)
 
 
-def pack_members(*pins):
+def pack_members(*pins, section="mods"):
     with tempfile.TemporaryDirectory() as folder:
         releases = Path(folder)
-        (releases / "Lib").mkdir()
-        (releases / "Lib" / "1.0.0.json").write_text("{}", encoding="utf-8")
+        for name in ("Lib", "Rover"):
+            (releases / name).mkdir()
+            (releases / name / "1.0.0.json").write_text("{}", encoding="utf-8")
+        rover = {"id": "Rover", "type": "vehicle"}
         entries = [
             entry("listings/Lib.toml", dict(MOD, id="Lib")),
-            entry(PACK_WHERE, dict(PACK, mods=[{"id": name, "version": version} for name, version in pins])),
+            check_index.Entry(Path("vehicles/Rover.toml"), "vehicles/Rover.toml", ("vehicle", "Rover"), "Rover", rover),
+            entry(PACK_WHERE, dict(PACK, **{section: [{"id": name, "version": version} for name, version in pins]})),
         ]
         return check_index.check_members(entries, [PACK_WHERE], set(), releases)
 
@@ -846,6 +849,16 @@ CASES = [
     ]), "a dependency has to be a mod")),
     ("Check the spelling of `Lib2`", False, lambda: one(pack_members(("Lib2", "1.0.0")), "Lib2")),
     ("The index has no release `9.9.9` of `Lib`", False, lambda: one(pack_members(("Lib", "9.9.9")), "9.9.9")),
+    ("Check the spelling of `Craft`", False, lambda: one(pack_members(("Craft", "1.0.0"), section="vehicles"), "Craft")),
+    ("Check the spelling of `Base`", False, lambda: one(pack_members(("Base", "1.0.0"), section="saves"), "Base")),
+    ("The index has no release `9.9.9` of `Rover`", False, lambda: one(
+        pack_members(("Rover", "9.9.9"), section="vehicles"), "9.9.9")),
+    ("`Lib` is listed as a `mod`, and a pack pins each kind in its own list", False, lambda: one(
+        pack_members(("Lib", "1.0.0"), section="vehicles"), "Lib")),
+    ("`Rover` is listed as a `vehicle`, and a pack pins each kind in its own list", False, lambda: one(
+        pack_members(("Rover", "1.0.0")), "Rover")),
+    ("Move the entry into the list of its kind", False, lambda: one(
+        pack_members(("Rover", "1.0.0"), section="saves"), "Rover")),
     ("Mods of one family can share a forum thread", False, lambda: one(index_notes(), "forums")),
     ("of at most 280 characters", False, lambda: one(index_notes(), "abstract")),
     ("Keep it only when the content is known to break", False, lambda: one(game_max_notes())),
