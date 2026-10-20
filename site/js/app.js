@@ -1,6 +1,6 @@
 import { createChecker, addTag, ERROR, NOTE, ABSTRACT_LIMIT } from "./rules.js";
 import { parseDocument, writeDocument } from "./toml.js";
-import { indexFacts, gameVersionChoices, SNAPSHOT_URL } from "./snapshot.js";
+import { indexFacts, gameVersionChoices, readTypeFile, withTypeFiles, SNAPSHOT_URL, TYPE_FILES } from "./snapshot.js";
 import { emptyForm, emptyRecord, formFromDocument, documentFromForm, isFixedLink, sectionsOf, nounOf, releaseTime, PLATFORMS } from "./model.js";
 import { measure, readCapped, LIMITS, MEASURE_FACTOR, ICON, DESCRIPTION } from "./images.js";
 import { renderPreview } from "./markdown.js";
@@ -1583,9 +1583,12 @@ async function start() {
 
 async function loadSnapshot() {
   try {
-    const response = await fetch(SNAPSHOT_URL, { cache: "no-cache", signal: AbortSignal.timeout(TIMEOUT) });
+    const keys = Object.keys(TYPE_FILES);
+    const [response, ...typed] = await Promise.all([SNAPSHOT_URL, ...keys.map((key) => TYPE_FILES[key])]
+      .map((url) => fetch(url, { cache: "no-cache", signal: AbortSignal.timeout(TIMEOUT) })));
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    index = indexFacts(await response.json(), checker.threadPattern);
+    const parts = await Promise.all(keys.map(async (key, number) => [key, await readTypeFile(typed[number], key)]));
+    index = indexFacts(withTypeFiles(await response.json(), Object.fromEntries(parts)), checker.threadPattern);
     snapshotState = "ready";
   } catch {
     index = null;
