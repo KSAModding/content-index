@@ -42,7 +42,7 @@ https://ksamodding.github.io/content-index-releases/v1/index.json
 ## Getting listed
 
 Write your authored document per RFC 0031, or let the [listing page](https://ksamodding.github.io/content-index/) write it, and open a pull request that adds it. One pull request can carry several documents.
-A mod, a mod loader, a pack and a vehicle can be listed, and a vehicle also follows RFC 0085, see [Listing a vehicle](CONTRIBUTING.md#listing-a-vehicle).
+A mod, a mod loader, a pack, a vehicle and a save can be listed, and a vehicle or a save also follows RFC 0085, see [Listing a vehicle or a save](CONTRIBUTING.md#listing-a-vehicle-or-a-save).
 
 Checks validate it, a further check verifies that you control the release host the listing points at, and when everything is green the pull request merges itself.
 
