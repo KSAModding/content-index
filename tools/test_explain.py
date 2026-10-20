@@ -204,6 +204,39 @@ class RealMessages(unittest.TestCase):
         self.assertFalse(first.outside_pull_request)
         self.assertIn("Add at least one tag", second.text)
 
+    def test_the_archive_messages_of_a_vehicle(self):
+        stamp_release, _ = stamper()
+        if not hasattr(stamp_release, "check_folder"):
+            self.skipTest("the checkout of content-index-releases cannot stamp a vehicle yet")
+        meta = 'name = "Example Rover"\nversion = "v2026.9.22.5482"\n'
+        xml = "<VehicleSaveData />"
+        rooted = changed(VEHICLE, "install", {"root": "Example Rover"})
+        cases = {
+            "name rule": ({"Rover.v2/meta.toml": meta.replace("Example Rover", "Rover.v2"),
+                           "Rover.v2/vehicle.xml": xml}, VEHICLE),
+            "folder": ({"Rover/meta.toml": meta, "Rover/vehicle.xml": xml}, VEHICLE),
+            "folder case": ({"example rover/meta.toml": meta, "example rover/vehicle.xml": xml}, VEHICLE),
+            "no game file": ({"Example Rover/meta.toml": meta}, VEHICLE),
+            "game file case": ({"Example Rover/meta.toml": meta, "Example Rover/Vehicle.xml": xml}, rooted),
+            "no meta.toml": ({"Example Rover/vehicle.xml": xml}, rooted),
+            "no game folder": ({"Example Rover/vehicle.xml": xml}, VEHICLE),
+            "xml": ({"Example Rover/meta.toml": meta, "Example Rover/vehicle.xml": "<a>"}, VEHICLE),
+            "doctype": ({"Example Rover/meta.toml": meta,
+                         "Example Rover/vehicle.xml": "<!DOCTYPE a><a/>"}, VEHICLE),
+            "toml": ({"Example Rover/meta.toml": "name = x\n", "Example Rover/vehicle.xml": xml}, rooted),
+            "version": ({"Example Rover/meta.toml": meta.replace(".5482", ".0"),
+                         "Example Rover/vehicle.xml": xml}, VEHICLE),
+            "collision": ({"Example Rover/meta.toml": meta, "Example Rover/vehicle.xml": xml},
+                          changed(VEHICLE, "id", "OtherRover")),
+        }
+        for name, (files, document) in cases.items():
+            with self.subTest(name):
+                message = one(game_stamped(files, document), "cannot be stamped")
+                found = explain.explain(message)
+                self.assertIsNotNone(found, message)
+                self.assertNotIn("mod.toml", found.text)
+                self.assertNotIn("named after its id", found.text)
+
     def test_the_ownership_reasons(self):
         class Api:
             def __init__(self, fork):
@@ -265,6 +298,18 @@ PACK = {
     "released_at": "2026-01-01T00:00:00Z",
     "mods": [{"id": "Lib", "version": "1.0.0"}],
 }
+VEHICLE_WHERE = "vehicles/ExampleRover.toml"
+VEHICLE = {
+    "spec_version": 1,
+    "id": "ExampleRover",
+    "type": "vehicle",
+    "name": "Example Rover",
+    "authors": ["Me"],
+    "abstract": "A rover.",
+    "license": "CC-BY-4.0",
+    "releases": {"github": "me/Rovers"},
+}
+GAME_PREFIX = f"{VEHICLE_WHERE}: the latest release v1.0.0 cannot be stamped: "
 IMAGE = {"url": "https://example.invalid/a.png", "sha256": "a" * 64, "width": 512, "height": 512, "size": 1000}
 SIGNED = (
     "https://forums.example.invalid/attachments/2036.data?X-Amz-Algorithm=AWS4-HMAC-SHA256&"
@@ -304,7 +349,7 @@ def changed(document, path, value):
 
 def schema(path, value, base=MOD):
     errors = []
-    where = PACK_WHERE if base is PACK else WHERE
+    where = {id(PACK): PACK_WHERE, id(VEHICLE): VEHICLE_WHERE}.get(id(base), WHERE)
     check_schema.check_parsed(where, changed(base, path, value), validator(), errors)
     return errors
 
@@ -443,6 +488,29 @@ def stamped(files=GOOD, document=MOD, data=None, download=None, release=None):
     archive = zipped(files) if data is None else data
     authority = Authority([release], download=download or (lambda _: (archive, "application/zip")))
     return inspected(document, authority, stamp_release, game_versions, hosts.HostError)
+
+
+def game_stamped(files, document=VEHICLE):
+    """The release lines of a vehicle whose latest release holds `files`, through the real stamper.
+
+    The listing `OldRover` already installs into the folder `Example Rover`.
+    """
+    stamp_release, hosts = stamper()
+    release = SimpleNamespace(
+        version="1.0.0", tag="v1.0.0", release_date=FACTS["release_date"], facts=lambda: dict(FACTS)
+    )
+    authority = Authority([release], download=lambda _: (zipped(files), "application/zip"))
+    fake = SimpleNamespace(build=lambda *_: (authority, None), HostError=hosts.HostError)
+    with tempfile.TemporaryDirectory() as folder:
+        releases = Path(folder)
+        (releases / "OldRover").mkdir()
+        held = {"id": "OldRover", "type": "vehicle", "install": {"folder": "Example Rover"}}
+        (releases / "OldRover" / "1.0.0.json").write_text(json.dumps(held), encoding="utf-8")
+        outcome = check_release.inspect(
+            document, stamp_release, fake, [], None,
+            lambda content_type: stamp_release.folder_holders(releases, content_type),
+        )
+    return [f"{VEHICLE_WHERE}: {message}" for message in outcome.messages]
 
 
 def offering(*names):
@@ -617,6 +685,46 @@ CASES = [
             facts=lambda: dict(FACTS))))),
     ("each release needs its own pull request", False, lambda: one(
         inspected(changed(MOD, "releases", DELETE), Authority()))),
+    # The archive of a vehicle or a save, in the words of the stamper of content-index-releases.
+    ("only under a name of 1 to 64 letters", True, lambda: (
+        f"{GAME_PREFIX}`name` in the archive's Rover.v2/meta.toml is 'Rover.v2', and the name "
+        "holds U+002E, and the game keeps only letters, digits, spaces, '-' and '_' (RFC 0085)")),
+    ("the folder in the zip of release `v1.0.0` is `Rover`", True, lambda: (
+        f"{GAME_PREFIX}the archive's folder is 'Rover', which does not match `name` 'Example Rover' "
+        "in its meta.toml: the game saves into a folder named after `name`")),
+    ("the folder in the zip of release `v1.0.0` is `example rover`", True, lambda: (
+        f"{GAME_PREFIX}the archive's folder is 'example rover' and `name` in its meta.toml is "
+        "'Example Rover': the game saves into a folder named after `name`, so the casing has to match")),
+    ("only through vehicle.xml and a save only through universe.xml", True, lambda: (
+        f"{GAME_PREFIX}the archive has no Example Rover/vehicle.xml, so the game does not see the vehicle")),
+    ("only through vehicle.xml and a save only through universe.xml", True, lambda: (
+        f"{GAME_PREFIX}the archive has 'Example Rover/Vehicle.xml' and no 'Example Rover/vehicle.xml', "
+        "and the game opens vehicle.xml with that exact case")),
+    ("The index takes one folder from the zip of release `v1.0.0`", True, lambda: (
+        f"{GAME_PREFIX}the archive has no meta.toml, which the game reads for every folder")),
+    ("The index takes one folder from the zip of release `v1.0.0`", True, lambda: (
+        f"{GAME_PREFIX}the install root is neither derivable from the archive nor authored: the standard "
+        "layout is one top-level directory named after `name` in its meta.toml, holding meta.toml and "
+        "vehicle.xml")),
+    ("The game cannot read `Example Rover/vehicle.xml`", True, lambda: (
+        f"{GAME_PREFIX}the archive's Example Rover/vehicle.xml is not well-formed XML, no element found: "
+        "line 1, column 0")),
+    ("The game cannot read `Example Rover/vehicle.xml`", True, lambda: (
+        f"{GAME_PREFIX}the archive's Example Rover/vehicle.xml carries a DOCTYPE, which the game never writes")),
+    ("This error is in `Example Rover/meta.toml` inside the zip", True, lambda: (
+        f"{GAME_PREFIX}the archive's Example Rover/meta.toml is not valid TOML, Invalid value (at line 1, "
+        "column 8)")),
+    ("already installs into the folder `Example Rover`", True, lambda: (
+        f"{GAME_PREFIX}`ExampleRover` installs into the folder `Example Rover`, which the vehicle listing "
+        "`OldRover` already holds, compared without case; a player who has that vehicle could not "
+        "install this one (RFC 0085)")),
+    ("Add a `[compatibility]` section with game_min to the listing", False, lambda: (
+        f"{GAME_PREFIX}meta.toml says version 'v2026.9.22.0', which is the game's mark of an unknown "
+        "build, and the listing authors no game_min")),
+    ("A vehicle or a save cannot set this key", False, lambda: one(
+        schema("install", {"target": "user-data"}, VEHICLE), "install.target")),
+    ("A vehicle or a save cannot set this key", False, lambda: one(
+        schema("install", {"folder": "Example Rover"}, VEHICLE), "'folder' was unexpected")),
     # The images of a listing.
     ("short-lived download link", False, lambda: one(fetched(SIGNED, Response(403)))),
     ("Open the address in a private browser window", False, lambda: one(

@@ -31,7 +31,17 @@ RELEASE = (
     r"(?: \(tag_prefix `(?P<prefix>[^`]*)`\))? cannot be stamped: "
 )
 
+# The same for a vehicle or a save, whose archive holds a game folder and not a
+# mod folder (RFC 0085), so the texts of the mod rules do not fit it.
+GAME_RELEASE = (
+    r"^(?:vehicles|saves)/(?P<id>[^/]+)\.toml: the latest release (?P<tag>.+?)"
+    r"(?: \(tag_prefix `(?P<prefix>[^`]*)`\))? cannot be stamped: "
+)
+
 REPLACE = "Then upload the zip to release {tag} in place of the old one."
+
+# The fix of most archive problems of a vehicle or a save.
+SAVE_AGAIN = "Save it again in the game and zip the folder exactly as the game wrote it. "
 
 # The links and numbers in the texts. A test compares them with the checks,
 # which explain.py does not import, because decide.py runs it with no
@@ -204,6 +214,96 @@ RULES = [
         "or .7z file with its name changed to .zip, or an upload that stopped early. Pack "
         "the mod folder as a zip again. " + REPLACE,
         True,
+    ),
+    # The archive of a vehicle or a save (RFC 0085).
+    (
+        re.compile(GAME_RELEASE + r"`name` in the archive's .+? is .+?, and .+ \(RFC 0085\)$"),
+        "The game keeps a vehicle or a save only under a name of 1 to 64 letters, digits, "
+        "spaces, - and _, with no space at the start or the end and no two spaces together, "
+        "and the name in meta.toml in the zip of release {tag} breaks that rule. Save it again "
+        "in the game under such a name, and zip the folder exactly as the game wrote it. "
+        + REPLACE,
+        True,
+    ),
+    (
+        re.compile(
+            GAME_RELEASE + r"the archive's folder is '(?P<folder>[^']*)'(?: and|, which does not "
+            r"match) `name`"
+        ),
+        "The game saves a vehicle or a save into a folder named exactly as `name` in its "
+        "meta.toml, and the folder in the zip of release {tag} is {folder}. Rename that folder "
+        "to the name in meta.toml, with the same upper and lower case, or zip the folder "
+        "exactly as the game wrote it. " + REPLACE,
+        True,
+    ),
+    (
+        re.compile(
+            GAME_RELEASE + r"the archive has (?:no .+?, so the game does not see the (?:vehicle|save)$"
+            r"|.+? and no .+?, and the game opens \S+ with that exact case)"
+        ),
+        "The game sees a vehicle only through vehicle.xml and a save only through universe.xml, "
+        "spelled in lower case next to meta.toml, and the zip of release {tag} has no such "
+        "file there. " + SAVE_AGAIN + REPLACE,
+        True,
+    ),
+    (
+        re.compile(
+            GAME_RELEASE + r"(?:the archive has no .+?, which the game reads for every folder"
+            r"|the install root is neither derivable from the archive nor authored: the standard "
+            r"layout is one top-level directory named after `name`)"
+        ),
+        "The index takes one folder from the zip of release {tag}, named after `name` in its "
+        "meta.toml, with meta.toml and vehicle.xml or universe.xml directly in it, and the zip "
+        "has no such folder. Zip that folder exactly as the game wrote it, with nothing else at "
+        "the top of the zip. " + REPLACE,
+        True,
+    ),
+    (
+        re.compile(
+            GAME_RELEASE + r"the archive's (?P<path>.+?) (?:is not well-formed XML|carries a "
+            r"DOCTYPE)"
+        ),
+        "The game cannot read {path} in the zip of release {tag}, because it is not well-formed "
+        "XML or it carries a DOCTYPE, which the game never writes. " + SAVE_AGAIN
+        + "Do not change the file by hand. " + REPLACE,
+        True,
+    ),
+    (
+        re.compile(GAME_RELEASE + r"the archive's (?P<path>.+?) is not valid TOML, "),
+        "This error is in {path} inside the zip of release {tag}, not in the listing. The game "
+        "writes that file, so the simplest fix is to save it again in the game and zip the "
+        "folder exactly as the game wrote it. " + REPLACE,
+        True,
+    ),
+    (
+        re.compile(
+            GAME_RELEASE + r"`[^`]*` installs into the folder `(?P<folder>[^`]*)`, which the "
+            r"(?:vehicle|save) listing .+? already holds"
+        ),
+        "Another listing of the same type already installs into the folder {folder}, so a "
+        "player who has it could not install this one. The folder is `name` in meta.toml. "
+        "Save it again in the game under another name, and zip the folder exactly as the game "
+        "wrote it. " + REPLACE,
+        True,
+    ),
+    (
+        re.compile(GAME_RELEASE + r"meta\.toml says version .+?, and the listing authors no game_min"),
+        "Without game_min in the listing, the index takes it from version in meta.toml, and "
+        "that version is not a game version such as `v2026.10.13.5602`. Add a `[compatibility]` "
+        "section with game_min to the listing, such as `game_min = \"2026.10\"`, or save it "
+        "again in a released build of the game.",
+        False,
+    ),
+    (
+        re.compile(
+            r"^(?:vehicles|saves)/\S+: (?:(?:loader|provides|version|released_at|changelog|mods|"
+            r"vehicles|saves|install\.(?:target|path|manages)): this key is not allowed here"
+            r"|install: Additional properties are not allowed \('folder' was unexpected\))"
+        ),
+        "A vehicle or a save cannot set this key: the game decides where it goes, `name` in "
+        "its meta.toml names its folder, and it has no loader, nothing to provide and no pack "
+        "members. Remove the key from the file, and remove a section that is empty then.",
+        False,
     ),
     (
         re.compile(

@@ -202,6 +202,24 @@ class TheChangedListings(unittest.TestCase):
         self.assertIn("reaches `1.1.0`", notes[0])
         load.assert_called_once_with(self.releases)
 
+    def test_a_dependency_edit_on_a_vehicle_reaches_its_newest_release(self):
+        folder = self.releases / "releases" / "ExampleRover"
+        folder.mkdir()
+        (folder / "1.0.0.json").write_text(json.dumps({"type": "vehicle"}), encoding="utf-8")
+        base = {"id": "ExampleRover", "type": "vehicle", "dependencies": [{"id": "Parts", "kind": "required"}]}
+        head = copy.deepcopy(base)
+        head["dependencies"][0]["min"] = "1.4"
+        where = "vehicles/ExampleRover.toml"
+        entry = Entry(None, where, ("vehicle", "ExampleRover"), "ExampleRover", head)
+        with mock.patch.object(check_edits.check_images, "base_document", return_value=base), \
+                mock.patch.object(check_edits, "load_rules", return_value=RULES):
+            notes = check_edits.notes([entry], [where], "HEAD^1", self.releases, self.status)
+        self.assertEqual(len(notes), 1)
+        self.assertTrue(
+            notes[0].startswith(f"{where}: the change to [[dependencies]] reaches `1.0.0`, the newest release"),
+            notes,
+        )
+
     def test_an_unrelated_edit_reads_nothing(self):
         notes, load = self.notes(listing(description="New."))
         self.assertEqual(notes, [])
