@@ -627,3 +627,21 @@ test("a pack form writes each member into its section, and a loaded pack with ve
   loaded.type = "mod";
   for (const key of ["mods", "vehicles", "saves"]) assert.equal(documentFromForm(loaded, null)[key], undefined, key);
 });
+
+test("a vehicle pin counts for the game_min proposal and gets the note of a gone download", () => {
+  const rover = (version, gameMin, gone) => ({
+    version, release_status: "stable", game_min: gameMin, game_min_revision: Number(gameMin.split(".")[3]),
+    download: gone ? { unavailable_since: "2026-10-01T00:00:00Z" } : {},
+  });
+  const facts = indexFacts({
+    ...snapshot,
+    vehicles: [{ id: "NewRover", authored: { type: "vehicle" }, releases: [rover("1.0.0", "2026.10.19.5638", true), rover("1.1.0", "2026.10.19.5638", false)] }],
+  }, checker.threadPattern);
+  const document = { type: "modpack", mods: [{ id: "Compendium", version: "0.9.13" }], vehicles: [{ id: "NewRover", version: "1.0.0" }], compatibility: { game_min: "2026.9" } };
+  assert.deepEqual(pinNotes(document, facts).map((entry) => [entry.path, entry.text]), [
+    ["vehicles[0]", "'NewRover' 1.0.0 is no longer downloadable since 2026-10-01, so the page does not offer it; the pin stays as it is"],
+  ]);
+  assert.deepEqual(gameMinNotes(document, facts).map((entry) => entry.text), [
+    "the pinned releases need at least '2026.10.19.5638', the highest game_min among them, so that is the proposed oldest game version",
+  ]);
+});

@@ -320,12 +320,12 @@ export function missingDependencies(document, index) {
 
 function pinnedReleases(document, index) {
   const found = [];
-  (Array.isArray(document.mods) ? document.mods : []).forEach((pin, number) => {
-    if (!isObject(pin) || typeof pin.id !== "string") return;
-    const member = memberOf(index, pin.id, "mod");
+  for (const { section, pin, where } of pinsOf(document)) {
+    if (typeof pin.id !== "string") continue;
+    const member = memberOf(index, pin.id, SECTION_TYPES[section]);
     const release = member ? member.releases.find((entry) => entry.version === pin.version) : undefined;
-    found.push({ pin, number, member, release });
-  });
+    found.push({ pin, where, member, release });
+  }
   return found;
 }
 
@@ -333,11 +333,11 @@ function pinnedReleases(document, index) {
 export function pinNotes(document, index) {
   if (!index || document.type !== "modpack") return [];
   const found = [];
-  for (const { pin, number, member } of pinnedReleases(document, index)) {
+  for (const { pin, where, member } of pinnedReleases(document, index)) {
     if (!member || !member.gone.has(pin.version)) continue;
     found.push({
       level: NOTE,
-      path: `mods[${number}]`,
+      path: where,
       text: `'${pin.id}' ${pin.version} is no longer downloadable since ${dateOf(member.gone.get(pin.version).since)}, so the page does not offer it; the pin stays as it is`,
     });
   }
