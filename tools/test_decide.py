@@ -1481,7 +1481,7 @@ class Act(unittest.TestCase):
             self.assertIn("type that the index does not accept yet", error)
 
         schema = copy.deepcopy(deployed.schema)
-        schema["properties"]["type"].pop("not")
+        schema["properties"]["type"].pop("not", None)
         errors = []
         check_schema.check_parsed(path, document, Draft202012Validator(schema), errors)
         self.assertEqual(errors, [])

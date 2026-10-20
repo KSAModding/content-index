@@ -203,7 +203,8 @@ test("switching a vehicle form to mod and back keeps every field", () => {
 });
 
 test("the page offers a type only when the deployed schema accepts it", () => {
-  assert.deepEqual(typeChoices(schema).filter((type) => sectionsOf(type).share), schema.properties.type.not ? [] : ["vehicle", "save"]);
+  const gated = schema.properties.type.not ? schema.properties.type.not.enum : [];
+  assert.deepEqual(typeChoices(schema).filter((type) => sectionsOf(type).share), ["vehicle", "save"].filter((type) => !gated.includes(type)));
   assert.deepEqual(typeChoices(ungated), ["mod", "mod-loader", "modpack", "vehicle", "save"]);
   assert.deepEqual(typeChoices({ properties: { type: { enum: ["mod", "plugin"] } } }), ["mod"]);
   assert.deepEqual(typeChoices({}), []);
