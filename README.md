@@ -59,7 +59,7 @@ Nothing here changes it.
 ## License
 
 Metadata is dedicated to the public domain under [CC0 1.0](LICENSE).
-That means `listings/`, `packs/`, `index-status.toml`, `tags.toml`, and the published snapshot.
+That means `listings/`, `vehicles/`, `saves/`, `packs/`, `index-status.toml`, `tags.toml`, and the published snapshot.
 
 A mirror, a client, or a website can therefore copy and re-serve the whole index with no conditions attached, which is the point.
 
