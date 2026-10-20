@@ -183,6 +183,30 @@ The mini snapshot has these keys:
 | `delisted` | Optional. The ids that `index-status.toml` delists. In a real snapshot such a listing is a tombstone. |
 | `disputed` | Optional. The ids that `index-status.toml` marks disputed. In a real snapshot such a listing ships whole, with `index_status.state` set to `disputed`. |
 
+## Save and vehicle names
+
+The game takes the identity of a vehicle or a save from `name` in the `meta.toml` of its folder (`UncompressedVehicleSave.FromDirectory`, `UncompressedSave.FromDirectory`), and it keeps a name only when `SaveName.Sanitize` gives it back unchanged (`SaveName.IsSanitized`).
+[RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md) writes that rule out:
+
+- 1 to 64 UTF-16 code units.
+- Each code unit is in the Unicode categories Lu, Ll, Lt, Lm, Lo or Nd (`char.IsLetterOrDigit`), or is a space, `-` or `_`. So a letter outside the Basic Multilingual Plane fails.
+- No space at the start or the end, and no two spaces together.
+- Not `CON`, `PRN`, `AUX`, `NUL`, `COM1` to `COM9` or `LPT1` to `LPT9`, compared without case.
+
+`save-names.json` holds the cases a checker gets wrong most easily, such as U+00B2, which Python's `str.isalnum` accepts and `char.IsLetterOrDigit` does not, and a name whose length in characters and in UTF-16 code units differs.
+The file is an object with one key, `vectors`, a list of cases with the keys `name` (what the case shows, unique in the file), `value` (the name), `accepted` (`true` when the game keeps the name as it is) and `why`.
+Every character outside ASCII is a JSON `\u` escape, so the file stays ASCII.
+A case uses only characters that Unicode 15.0 or older assigns, so Python, .NET and a browser agree on their category; `tools/test_save_name_vectors.py` fails on a runner whose table is older or does not know a character.
+
+Every copy of the rule runs this file:
+
+- the Python copy is `stamp_release.valid_save_name` of content-index-releases ([content-index-releases#102](https://github.com/KSAModding/content-index-releases/issues/102)), which the checks here load through `check_release.load_stamper`, so this repository keeps no copy of its own,
+- the listing page has `site/js/savename.js`, which `site/test/save-names.test.js` runs,
+- Borea has `GameSaveName` ([Borea#790](https://github.com/KSAModding/Borea/issues/790)),
+- a share host ([RFC 0094](https://github.com/KSAModding/content-manager-design/pull/94)) checks the name of an upload with it too.
+
+A change here needs the same change in each copy.
+
 ## Where the schema is stricter than the RFC text
 
 Each of these has a hook in an RFC's reasoning rather than in its field table.

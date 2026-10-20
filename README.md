@@ -31,6 +31,7 @@ https://ksamodding.github.io/content-index-releases/v1/index.json
 | `tools/` | The checks that run on every pull request. |
 | `schemas/vectors.json` | Test documents with the result the checks give, which `tools/test_vectors.py` and the tests of the listing page both run, so the page and the checks keep one rule set. |
 | `schemas/pack-vectors.json` | Pack versions with a small index and the result of the pack member rules, which the checks and the listing page both run, and which Borea is to run too ([Borea#567](https://github.com/KSAModding/Borea/issues/567)). See the [schemas README](schemas/README.md#pack-member-vectors). |
+| `schemas/save-names.json` | Names of a vehicle or a save with the verdict of the name rule of RFC 0085, which the stamper of content-index-releases, the listing page and Borea all run. See the [schemas README](schemas/README.md#save-and-vehicle-names). |
 | `site/` | The [listing page](https://ksamodding.github.io/content-index/), which writes a listing or a pack version, or changes a listing, and checks it in the browser before the pull request. It also says whether a pack id is free and writes the owner record of a first pack claim. It uses the schema and `tags.toml` of the commit it was deployed from. |
 
 ## Getting listed
