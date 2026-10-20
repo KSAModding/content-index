@@ -189,6 +189,14 @@ def inspect(document, stamp_release, hosts, game_versions, http, folders=None):
     except (hosts.HostError, urllib.error.HTTPError, OSError) as error:
         return Outcome(COULD_NOT_EVALUATE, [f"the latest release {named} could not be read: {error}"])
 
+    folder = (stamped.get("install") or {}).get("folder") if holders is not None else None
+    if isinstance(folder, str):
+        # As the watcher does after a stamp, so another document of this run
+        # cannot take the same folder.
+        holding = holders.setdefault(folder.lower(), [])
+        if stamped.get("id") not in holding:
+            holding.append(stamped.get("id"))
+
     return Outcome(PASS, [f"the latest release {release.version} stamps cleanly", *notes])
 
 

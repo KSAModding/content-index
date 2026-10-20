@@ -352,7 +352,7 @@ class FolderStamper(FakeStamper):
         return {"id": document["id"], "type": document["type"], "install": {"folder": "Example Rover"}}
 
     def check_folder(self, stamped, holders):
-        self.checked.append((stamped, holders))
+        self.checked.append((stamped, dict(holders)))
         if holders.get("example rover"):
             raise StampError("`OtherRover` installs into the folder `Example Rover`")
 
@@ -434,6 +434,20 @@ class Vehicles(unittest.TestCase):
         self.assertEqual(outcome.outcome, check_release.PASS)
         self.assertEqual(outcome.messages, ["the latest release 1.0.0 stamps cleanly"])
         self.assertEqual(self.read, [])
+
+    def test_a_clean_stamp_holds_its_folder_for_the_rest_of_the_run(self):
+        holders = {}
+        stamper = FolderStamper()
+        outcomes = [
+            check_release.inspect(
+                dict(VEHICLE, id=listing), stamper,
+                FakeHosts(FakeHost([FakeRelease("v1.0.0", "1.0.0", "2026-08-01T00:00:00Z")])),
+                [], None, lambda content_type: holders,
+            )
+            for listing in ("OtherRover", "ThirdRover")
+        ]
+        self.assertEqual([outcome.outcome for outcome in outcomes], [check_release.PASS, check_release.REJECT])
+        self.assertEqual(holders, {"example rover": ["OtherRover"]})
 
     def test_the_folders_are_read_once_per_type_and_run(self):
         calls = []
@@ -566,6 +580,21 @@ class VehiclesWithTheRealStamper(unittest.TestCase):
         outcome = self.inspect(ROVER, dict(AUTHORED_VEHICLE, id="OtherRover"))
         self.assert_rejected(
             outcome, "`OtherRover` installs into the folder `Example Rover`", "vehicle listing `ExampleRover`"
+        )
+
+    def test_two_vehicles_of_one_run_with_the_same_folder(self):
+        # The folders are cached once per run, as inspect_paths reads them.
+        folders = check_release._stamped_folders(self.stamp_release, self.releases.parent)
+        outcomes = []
+        for listing in ("ExampleRover", "OtherRover"):
+            host = ZipHost([FakeRelease("v1.0.0", "1.0.0", "2026-10-01T00:00:00Z")], zipped(ROVER))
+            outcomes.append(check_release.inspect(
+                dict(AUTHORED_VEHICLE, id=listing), self.stamp_release, FakeHosts(host),
+                self.game_versions, None, folders,
+            ))
+        self.assertEqual(outcomes[0].outcome, check_release.PASS, outcomes[0].messages)
+        self.assert_rejected(
+            outcomes[1], "`OtherRover` installs into the folder `Example Rover`", "vehicle listing `ExampleRover`"
         )
 
     def test_its_own_older_release_and_a_save_with_the_folder_are_no_collision(self):
