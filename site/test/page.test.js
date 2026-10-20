@@ -116,6 +116,15 @@ test("the member rules run on every refresh, and the missing dependencies are on
   assert.match(html, /<button type="button" id="add-missing"[^>]*hidden>Add the missing dependencies<\/button>/);
 });
 
+test("a member row knows its pack section, and a message on vehicles[n] or saves[n] finds its row", () => {
+  assert.match(app, /const PIN_PATH = \/\^\(mods\|vehicles\|saves\)\\\[\(\\d\+\)\\\]\$\/;/);
+  assert.match(body("function renderMembers()"), /entry\.section = memberSection\(index, value\);/);
+  assert.match(body("function place("), /const number = memberRows\(member\[1\]\)\[Number\(member\[2\]\)\];/);
+  assert.match(body("function movePin("), /PIN_PATH\.exec\(path\)/);
+  assert.match(body("function memberRows("), /\(state\.form\.members\[number\]\.section \|\| "mods"\) === section/);
+  assert.match(body("function addMissing()"), /section: "mods"/);
+});
+
 test("Pin <newer> shows only for a newer release that the other pins accept", () => {
   assert.match(body("function renderMessages()"), /if \(entry\.newer && entry\.fits\) target\.append\(element\("button", \{ type: "button", text: `Pin \$\{entry\.newer\}`/);
 });

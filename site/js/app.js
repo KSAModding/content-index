@@ -14,7 +14,7 @@ import {
 } from "./dependencies.js";
 import {
   memberChoices, versionChoices, defaultVersion, pinNotes, gameMinNotes, packOf, ownIds, nextPackForm, freeVersion, newerNotes, nextVersionNotes, forumLines,
-  memberMessages, missingDependencies,
+  memberMessages, missingDependencies, memberSection,
 } from "./pack.js";
 import { isLogin, userApiUrl, ownerRecordText, accountFromAnswer, packIdState, firstClaimText, FREE } from "./owner.js";
 
@@ -23,6 +23,7 @@ const TIMEOUT = 20000;
 const SECTION_INPUTS = { links: "link-forums", compatibility: "game-min" };
 const MANUAL = new Set(["msg-load", "msg-prefill", "msg-output", "msg-pr", "msg-forum-list", "msg-owner", "msg-owner-file", "msg-members-fix", "archive-result", "msg-declared"]);
 const ROW_MESSAGES = ["link", "dependency", "member"];
+const PIN_PATH = /^(mods|vehicles|saves)\[(\d+)\]$/;
 
 const $ = (id) => document.getElementById(id);
 
@@ -210,7 +211,7 @@ function bindStatic() {
   });
   $("add-listed-dependency").addEventListener("click", addListedDependency);
   $("add-member").addEventListener("click", () => {
-    state.form.members.push({ id: "", version: "" });
+    state.form.members.push({ id: "", version: "", section: "mods" });
     renderMembers();
     refresh();
     $("members").lastElementChild.querySelector("select").focus();
@@ -612,8 +613,9 @@ function renderMembers() {
     const version = selectField("Release", entry.version, releases(), (value) => {
       entry.version = value;
     }, remove);
-    const mod = selectField("Mod", entry.id, [["", "Choose a mod"], ...memberChoices(index, entry.id)], (value) => {
+    const mod = selectField("Member", entry.id, [["", "Choose a mod, a vehicle or a save"], ...memberChoices(index, entry.id)], (value) => {
       entry.id = value;
+      entry.section = memberSection(index, value);
       entry.version = defaultVersion(index, value);
       fillSelect(version.querySelector("select"), releases(), entry.version);
     });
@@ -623,7 +625,7 @@ function renderMembers() {
 
 function addMissing() {
   const { pins } = missingDependencies(current.document, index);
-  state.form.members.push(...pins.map(({ id, version }) => ({ id, version })));
+  state.form.members.push(...pins.map(({ id, version }) => ({ id, version, section: "mods" })));
   renderMembers();
   refresh();
 }
@@ -894,9 +896,9 @@ function place(entry) {
       const number = filledRows(state.form.dependencies)[Number(dependency[1])];
       if (number !== undefined) return $("dependencies").querySelector(`[data-dependency="${number}"]`);
     }
-    const member = /^mods\[(\d+)\]$/.exec(path);
+    const member = PIN_PATH.exec(path);
     if (member) {
-      const number = filledRows(state.form.members)[Number(member[1])];
+      const number = memberRows(member[1])[Number(member[2])];
       if (number !== undefined) return $("members").querySelector(`[data-member="${number}"]`);
     }
     const target = $(`msg-${path}`);
@@ -912,6 +914,11 @@ function filledRows(entries) {
     if (entry.kept !== undefined || entry.id.trim()) rows.push(number);
   });
   return rows;
+}
+
+// The rows of one pack section, which the written document numbers on its own.
+function memberRows(section) {
+  return filledRows(state.form.members).filter((number) => (state.form.members[number].section || "mods") === section);
 }
 
 function extraMessages() {
@@ -956,7 +963,8 @@ function renderMessages() {
 }
 
 function movePin(path, version) {
-  const number = filledRows(state.form.members)[Number(/^mods\[(\d+)\]$/.exec(path)[1])];
+  const [, section, row] = PIN_PATH.exec(path);
+  const number = memberRows(section)[Number(row)];
   if (number === undefined) return;
   state.form.members[number].version = version;
   renderMembers();

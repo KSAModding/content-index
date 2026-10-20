@@ -23,10 +23,17 @@ function fold(id) {
   return typeof id === "string" ? id.toLowerCase() : null;
 }
 
-function memberOf(index, id) {
+// A listing the picker offers, of any type, or only of `type`. A dependency is always a mod.
+function memberOf(index, id, type = null) {
   if (!index || typeof id !== "string" || !id) return null;
   const folded = id.toLowerCase();
-  return index.members.find((member) => member.id.toLowerCase() === folded) || null;
+  return index.members.find((member) => member.id.toLowerCase() === folded && (!type || member.type === type)) || null;
+}
+
+// The pack section the chosen member goes into. An id the index does not offer stays a mod.
+export function memberSection(index, id) {
+  const member = memberOf(index, id);
+  return (member && Object.keys(SECTION_TYPES).find((section) => SECTION_TYPES[section] === member.type)) || MEMBER_SECTION;
 }
 
 // The stamped release a pin names, when it is a listed mod, or a listing of the
@@ -46,7 +53,7 @@ function requiredOf(release) {
 }
 
 function anyListed(index, options) {
-  return options.some((option) => memberOf(index, option.id));
+  return options.some((option) => memberOf(index, option.id, "mod"));
 }
 
 // The required dependencies of a release where no choice is a listed mod, so no
@@ -69,10 +76,16 @@ function cannotBePinned(needs) {
 }
 
 // A pin the snapshot does not offer stays a choice, so loading a document never drops it.
+// A vehicle or a save says its type, because one list offers every type.
 export function memberChoices(index, current = "") {
   const choices = (index ? index.members : [])
     .filter((member) => member.releases.length)
-    .map((member) => [member.id, member.name && member.name !== member.id ? `${member.name} (${member.id})` : member.id]);
+    .map((member) => {
+      const named = Boolean(member.name) && member.name !== member.id;
+      const facts = [named ? member.id : null, member.type === "mod" ? null : member.type].filter(Boolean);
+      const head = named ? member.name : member.id;
+      return [member.id, facts.length ? `${head} (${facts.join(", ")})` : head];
+    });
   if (current && !choices.some(([id]) => id === current)) choices.push([current, `${current} (not offered by the index)`]);
   return choices;
 }
@@ -81,7 +94,7 @@ export function versionChoices(index, id, current = "") {
   const member = memberOf(index, id);
   const choices = (member ? member.releases : []).map((release) => {
     const marks = release.status ? [release.status] : [];
-    const needs = unlistedNeeds(index, stampedOf(index, member.id, release.version));
+    const needs = unlistedNeeds(index, stampedOf(index, member.id, release.version, member.type));
     if (needs.length) marks.push(cannotBePinned(needs));
     return [release.version, marks.length ? `${release.version} (${marks.join(", ")})` : release.version];
   });
@@ -101,7 +114,7 @@ function dateOf(time) {
 export function defaultVersion(index, id) {
   const member = memberOf(index, id);
   if (!member || !member.releases.length) return "";
-  const pinnable = member.releases.filter((release) => !unlistedNeeds(index, stampedOf(index, member.id, release.version)).length);
+  const pinnable = member.releases.filter((release) => !unlistedNeeds(index, stampedOf(index, member.id, release.version, member.type)).length);
   const choices = pinnable.length ? pinnable : member.releases;
   const stable = choices.find((release) => release.status === "stable");
   return (stable || choices[0]).version;
@@ -280,13 +293,13 @@ export function missingDependencies(document, index) {
     const needed = new Map();
     for (const { options } of requirements()) {
       const key = options.length === 1 ? fold(options[0].id) : null;
-      if (!key || written.has(key) || !memberOf(index, key)) continue;
+      if (!key || written.has(key) || !memberOf(index, key, "mod")) continue;
       if (!needed.has(key)) needed.set(key, []);
       needed.get(key).push(options[0]);
     }
     const next = [];
     for (const [key, needs] of needed) {
-      const member = memberOf(index, key);
+      const member = memberOf(index, key, "mod");
       const release = choose(member, needs);
       if (release) next.push({ id: member.id, version: release.version });
     }
@@ -309,7 +322,7 @@ function pinnedReleases(document, index) {
   const found = [];
   (Array.isArray(document.mods) ? document.mods : []).forEach((pin, number) => {
     if (!isObject(pin) || typeof pin.id !== "string") return;
-    const member = memberOf(index, pin.id);
+    const member = memberOf(index, pin.id, "mod");
     const release = member ? member.releases.find((entry) => entry.version === pin.version) : undefined;
     found.push({ pin, number, member, release });
   });
@@ -419,7 +432,7 @@ function stability(status) {
 // A pin on a yanked release keeps the stability of that release. A pin whose
 // release the snapshot does not have at all is held to stable, the strictest level.
 export function newerRelease(index, pin) {
-  const member = isObject(pin) ? memberOf(index, pin.id) : null;
+  const member = isObject(pin) ? memberOf(index, pin.id, "mod") : null;
   if (!member) return null;
   const least = stability(member.statuses.has(pin.version) ? member.statuses.get(pin.version) : "stable");
   return member.releases.find((release) =>

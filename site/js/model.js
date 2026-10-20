@@ -4,7 +4,10 @@ export const PLATFORMS = ["windows", "linux", "macos"];
 export const KINDS = ["required", "optional", "recommends", "suggests", "conflict"];
 export const ANCHORS = ["mods", "user-data", "game-root", "standalone"];
 export const TYPES = ["mod", "mod-loader", "modpack"];
-const PACK_KEYS = ["version", "released_at", "changelog", "mods"];
+// The pack sections in the order the form lists their members. A row without a
+// section is a mod.
+const PINNED_SECTIONS = ["mods", "vehicles", "saves"];
+const PACK_KEYS = ["version", "released_at", "changelog", ...PINNED_SECTIONS];
 const NOT_IN_PACK = ["releases", "loader", "dependencies", "install", "provides"];
 const FIXED_LINKS = ["forums", "homepage", "repository", "spacedock", "bugtracker", "discussions"];
 const LINK_ORDER = FIXED_LINKS;
@@ -146,8 +149,8 @@ export function formFromDocument(document) {
   form.version = text(document.version);
   form.releasedAt = text(document.released_at);
   form.changelog = text(document.changelog);
-  form.members = (Array.isArray(document.mods) ? document.mods : []).map((entry) =>
-    isObject(entry) ? { id: text(entry.id), version: text(entry.version) } : { kept: entry });
+  form.members = PINNED_SECTIONS.flatMap((section) => (Array.isArray(document[section]) ? document[section] : []).map((entry) =>
+    isObject(entry) ? { id: text(entry.id), version: text(entry.version), section } : { kept: entry, section }));
   return form;
 }
 
@@ -204,19 +207,20 @@ export function documentFromForm(form, base) {
     set(document, "version", trimmed(form.version));
     set(document, "released_at", trimmed(form.releasedAt));
     set(document, "changelog", text(form.changelog).trim() ? text(form.changelog) : "");
-    const members = [];
+    const members = Object.fromEntries(PINNED_SECTIONS.map((section) => [section, []]));
     for (const entry of form.members) {
+      const pinned = members[entry.section] || members.mods;
       if (entry.kept !== undefined) {
-        members.push(entry.kept);
+        pinned.push(entry.kept);
         continue;
       }
       if (!trimmed(entry.id)) continue;
       const member = {};
       set(member, "id", trimmed(entry.id));
       set(member, "version", trimmed(entry.version));
-      members.push(member);
+      pinned.push(member);
     }
-    set(document, "mods", members);
+    for (const section of PINNED_SECTIONS) set(document, section, members[section]);
   }
 
   const wanted = new Map(FIXED_LINKS.map((key) => [key, trimmed(form.links[key])]));
