@@ -1,7 +1,7 @@
 import { createChecker, addTag, ERROR, NOTE, ABSTRACT_LIMIT } from "./rules.js";
 import { parseDocument, writeDocument } from "./toml.js";
 import { indexFacts, gameVersionChoices, readTypeFile, withTypeFiles, SNAPSHOT_URL, TYPE_FILES } from "./snapshot.js";
-import { emptyForm, emptyRecord, formFromDocument, documentFromForm, isFixedLink, sectionsOf, nounOf, releaseTime, PLATFORMS } from "./model.js";
+import { emptyForm, emptyRecord, formFromDocument, documentFromForm, isFixedLink, sectionsOf, nounOf, releaseTime, typeChoices, PLATFORMS } from "./model.js";
 import { measure, readCapped, LIMITS, MEASURE_FACTOR, ICON, DESCRIPTION } from "./images.js";
 import { renderPreview } from "./markdown.js";
 import { inspectArchive, StampError } from "./archive.js";
@@ -28,6 +28,8 @@ const PIN_PATH = /^(mods|vehicles|saves)\[(\d+)\]$/;
 const $ = (id) => document.getElementById(id);
 
 let checker = null;
+// The types the deployed schema accepts, or null before it loads.
+let types = null;
 let index = null;
 let snapshotState = "loading";
 let state = { mode: "new", baseText: null, base: null, form: emptyForm() };
@@ -318,12 +320,24 @@ function renderMode() {
   for (const radio of document.querySelectorAll("input[name=mode]")) radio.checked = radio.value === state.mode;
   $("load").hidden = !editing;
   $("id").readOnly = Boolean(base);
+  renderTypeOptions();
   // A loaded document keeps the folder it lives in, so a listing cannot become a pack or a vehicle.
   for (const option of $("type").options) option.disabled = Boolean(base) && folderOf(option.value) !== folderOf(base.type);
   $("editing").hidden = !base;
   $("editing").textContent = pack
     ? `Making the next version of the pack ${pack.id} after ${pack.version}. It is a new file, and the id cannot change.`
     : base ? `Changing ${listingPath(state.form.id, base.type)}. The id cannot change.` : "";
+}
+
+// The static options stand until the schema loads. A type the schema does not
+// accept stays in the list while the form holds it, and its check says why.
+function renderTypeOptions() {
+  if (!types) return;
+  const offered = types.includes(state.form.type) ? types : [...types, state.form.type];
+  if ([...$("type").options].map((option) => option.value).join() !== offered.join()) {
+    $("type").replaceChildren(...offered.map((type) => element("option", { value: type, text: type })));
+  }
+  $("hint-type-share").hidden = !offered.some((type) => sectionsOf(type).share);
 }
 
 function renderFields() {
@@ -378,6 +392,8 @@ function renderTypeSections() {
   $("pack-steps").hidden = !shown.pack;
   for (const word of document.querySelectorAll(".noun")) word.textContent = nounOf(state.form.type);
   for (const part of document.querySelectorAll(".not-pack")) part.hidden = shown.pack;
+  for (const part of document.querySelectorAll(".share-only")) part.hidden = !shown.share;
+  for (const part of document.querySelectorAll(".not-share")) part.hidden = shown.share;
   // The topic note of a prefill is about a release host, which a pack does not have.
   $("organization-note").hidden = shown.pack || !$("organization-note").textContent;
 }
@@ -1579,7 +1595,9 @@ async function start() {
   status("Loading the rules of the index.");
   try {
     const [schemaText, tagsText] = await Promise.all([loadText("rules/authored.schema.json"), loadText("rules/tags.toml")]);
-    checker = createChecker({ schema: JSON.parse(schemaText), tagsText });
+    const schema = JSON.parse(schemaText);
+    checker = createChecker({ schema, tagsText });
+    types = typeChoices(schema);
   } catch (error) {
     status(`The rules did not load, so the page cannot check anything. Reload the page. (${error.message})`);
     return;

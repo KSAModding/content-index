@@ -58,7 +58,7 @@
             <option value="modpack">modpack</option>
           </select>
           <div class="aside">
-            <p id="hint-type" class="hint">A mod-loader loads other mods. A modpack is a set of listed mods, each at one release, and every version of it is a file of its own. Everything else is a mod.</p>
+            <p id="hint-type" class="hint">A mod-loader loads other mods. A modpack is a set of listed mods, each at one release, and every version of it is a file of its own.<span id="hint-type-share" hidden> A vehicle or a save is a folder the game wrote, shared together with the mods it needs.</span> Everything else is a mod.</p>
             <div id="msg-type" class="messages" aria-live="polite"></div>
           </div>
         </div>
@@ -102,7 +102,7 @@
           <label for="tag-prefix">Start of the tags of mod releases (optional)</label>
           <input id="tag-prefix" name="tag-prefix" placeholder="mymod-v" autocomplete="off" spellcheck="false" aria-describedby="hint-tag-prefix msg-releases.tag_prefix">
           <div class="aside">
-            <p id="hint-tag-prefix" class="hint">Leave it empty when every release of the repository is a release of this mod. When the repository also publishes other releases, such as tools or images, write the text that every tag of a mod release starts with, such as mymod- for the tag mymod-v1.2.0. The index then takes only the releases whose tag starts with it, with upper and lower case as written, and reads the version from the rest of the tag. A release whose tag does not start with it is not a release of this mod, so change it too when you change the form of your tags.</p>
+            <p id="hint-tag-prefix" class="hint">Leave it empty when every release of the repository is a release of this mod. When the repository also publishes other releases, such as tools or images, write the text that every tag of a mod release starts with, such as mymod- for the tag mymod-v1.2.0. The index then takes only the releases whose tag starts with it, with upper and lower case as written, and reads the version from the rest of the tag. A release whose tag does not start with it is not a release of this mod, so change it too when you change the form of your tags.<span class="share-only" hidden> One repository can hold many vehicles and saves, each with a prefix of its own, such as ExampleRover- for the tag ExampleRover-1.0.0.</span></p>
             <div id="msg-releases.tag_prefix" class="messages" aria-live="polite"></div>
           </div>
         </div>
@@ -131,7 +131,7 @@
           <label for="id">Id</label>
           <input id="id" name="id" autocomplete="off" spellcheck="false" aria-describedby="hint-id msg-id">
           <div class="aside">
-            <p id="hint-id" class="hint">The folder name your mod installs as, which the game sees, or the name of your pack in the index. 1 to 64 letters, digits, <code>.</code>, <code>_</code> and <code>-</code>, starting and ending with a letter or digit. It cannot change later.</p>
+            <p id="hint-id" class="hint"><span class="not-share">The folder name your mod installs as, which the game sees, or the name of your pack in the index.</span><span class="share-only" hidden>The name of your <span class="noun">mod</span> in the index. It is never compared with <code>name</code> in its <code>meta.toml</code>, which names the folder in the game.</span> 1 to 64 letters, digits, <code>.</code>, <code>_</code> and <code>-</code>, starting and ending with a letter or digit. It cannot change later.</p>
             <div id="msg-id" class="messages" aria-live="polite"></div>
           </div>
         </div>
@@ -254,7 +254,7 @@
           <label for="link-forums">Forums thread</label>
           <input id="link-forums" type="url" autocomplete="off" spellcheck="false" placeholder="https://forums.ahwoo.com/threads/my-mod.783/" aria-describedby="hint-forums msg-links.forums">
           <div class="aside">
-            <p id="hint-forums" class="hint">Required. The thread of your <span class="noun">mod</span> on forums.ahwoo.com. It ties the listing to your forum account and settles a dispute about the id.</p>
+            <p id="hint-forums" class="hint"><span class="not-share">Required.</span><span class="share-only" hidden>Optional for a vehicle or a save, because the forum may have no place for them. Without it, the account on the release host ties the listing to you in a dispute or a takedown.</span> The thread of your <span class="noun">mod</span> on forums.ahwoo.com. It ties the listing to your forum account and settles a dispute about the id.</p>
             <div id="msg-links.forums" class="messages" aria-live="polite"></div>
           </div>
         </div>
@@ -305,7 +305,7 @@
           <label for="game-min">Oldest game version that works</label>
           <input id="game-min" list="game-versions" autocomplete="off" spellcheck="false" aria-describedby="hint-game-min msg-compatibility.game_min">
           <div class="aside">
-            <p id="hint-game-min" class="hint">Required. The oldest version you know your <span class="noun">mod</span> works on, as the game shows it, such as <code>2026.9.10.5438</code>, or a whole month, such as <code>2026.9</code>.</p>
+            <p id="hint-game-min" class="hint"><span class="not-share">Required.</span><span class="share-only" hidden>Optional. When you leave it empty, the watcher takes it from <code>version</code> in the <code>meta.toml</code> in the zip, the build that wrote the folder. Lower it only when you know an older build loads the file.</span> The oldest version you know your <span class="noun">mod</span> works on, as the game shows it, such as <code>2026.9.10.5438</code>, or a whole month, such as <code>2026.9</code>.</p>
             <div id="msg-compatibility.game_min" class="messages" aria-live="polite"></div>
           </div>
         </div>
@@ -421,7 +421,8 @@
 
       <section class="card" aria-labelledby="section-dependencies" id="dependencies-section">
         <h2 id="section-dependencies">Dependencies</h2>
-        <p class="hint">Other listed mods yours works with. Code dependencies come from the <code>mod.toml</code> in your release by themselves, so add here only bounds or kinds the release cannot say.</p>
+        <p class="hint not-share">Other listed mods yours works with. Code dependencies come from the <code>mod.toml</code> in your release by themselves, so add here only bounds or kinds the release cannot say.</p>
+        <p class="hint share-only" hidden>The mods your <span class="noun">mod</span> needs, and only mods. A client that shares it fills this list from the mods of its instance, with <code>min</code> at the version it installed. The page does not read the part ids in <code>vehicle.xml</code> or <code>universe.xml</code>, so check that every mod is here, and add a mod that only changes how parts behave as <code>recommends</code>.</p>
         <div id="declared" class="declared" hidden>
           <p id="declared-text" class="hint" hidden></p>
           <ul id="declared-list" class="declared-list"></ul>
@@ -494,7 +495,7 @@
             <ul>
               <li>the repository under Releases is in your own account,</li>
               <li>the repository carries the topic <code>ksa-index-&lt;your-github-username&gt;</code> in lowercase, which is the easy way for an organization repository,</li>
-              <li>the repository has a file <code>.github/ksa-content-index.toml</code> that names the listing id and your username.</li>
+              <li>the repository has a file <code>.github/ksa-content-index.toml</code> that names the listing id and your username.<span class="share-only" hidden> A file that names only your username covers every vehicle and save in that repository.</span></li>
             </ul>
             A SpaceDock mod proves it through the source code link on its SpaceDock page. A fork proves it through its owner or the topic only, because it inherits the files of the repository it was forked from. A listing from a fork needs an id of its own.
           </li>

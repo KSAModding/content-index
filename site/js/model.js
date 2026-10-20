@@ -3,7 +3,8 @@ import { RECORD_KEYS } from "./images.js";
 export const PLATFORMS = ["windows", "linux", "macos"];
 export const KINDS = ["required", "optional", "recommends", "suggests", "conflict"];
 export const ANCHORS = ["mods", "user-data", "game-root", "standalone"];
-export const TYPES = ["mod", "mod-loader", "modpack"];
+export const TYPES = ["mod", "mod-loader", "modpack", "vehicle", "save"];
+const SHARE_TYPES = ["vehicle", "save"];
 // The pack sections in the order the form lists their members. A row without a
 // section is a mod.
 const PINNED_SECTIONS = ["mods", "vehicles", "saves"];
@@ -80,11 +81,22 @@ export function sectionsOf(type) {
     dependencies: !pack,
     pack,
     members: pack,
+    share: SHARE_TYPES.includes(type),
   };
+}
+
+// The types the deployed schema accepts, so a type behind the rollout gate of
+// RFC 0085 is offered once the index lifts the gate, with no change here.
+export function typeChoices(schema) {
+  const type = schema && schema.properties ? schema.properties.type : null;
+  const known = type && Array.isArray(type.enum) ? type.enum : [];
+  const gated = type && type.not && Array.isArray(type.not.enum) ? type.not.enum : [];
+  return TYPES.filter((name) => known.includes(name) && !gated.includes(name));
 }
 
 // The word the page uses for what is listed, so a text visible for every type fits the chosen one.
 export function nounOf(type) {
+  if (SHARE_TYPES.includes(type)) return type;
   return type === "modpack" ? "pack" : type === "mod-loader" ? "mod loader" : "mod";
 }
 

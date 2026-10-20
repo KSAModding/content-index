@@ -410,9 +410,9 @@ test("switching the type back to mod keeps the mod fields the author typed", () 
 });
 
 test("a pack shows the pack sections and hides releases, loader, dependencies and install", () => {
-  assert.deepEqual(sectionsOf("modpack"), { releases: false, loader: false, launch: false, dependencies: false, pack: true, members: true });
-  assert.deepEqual(sectionsOf("mod"), { releases: true, loader: true, launch: false, dependencies: true, pack: false, members: false });
-  assert.deepEqual(sectionsOf("mod-loader"), { releases: true, loader: false, launch: true, dependencies: true, pack: false, members: false });
+  assert.deepEqual(sectionsOf("modpack"), { releases: false, loader: false, launch: false, dependencies: false, pack: true, members: true, share: false });
+  assert.deepEqual(sectionsOf("mod"), { releases: true, loader: true, launch: false, dependencies: true, pack: false, members: false, share: false });
+  assert.deepEqual(sectionsOf("mod-loader"), { releases: true, loader: false, launch: true, dependencies: true, pack: false, members: false, share: false });
 });
 
 test("the page calls what is listed a mod, a mod loader or a pack", () => {

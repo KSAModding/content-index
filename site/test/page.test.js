@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { createChecker, ERROR, NOTE } from "../js/rules.js";
 import { indexFacts, readTypeFile, withTypeFiles, SNAPSHOT_URL, TYPE_FILES } from "../js/snapshot.js";
+import { typeChoices } from "../js/model.js";
+
+const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const app = fs.readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
@@ -54,6 +57,34 @@ test("a text that a pack shows names what is listed through the word the type se
   const render = /function renderTypeSections\(\) \{([\s\S]*?)\n\}/.exec(app)[1];
   assert.match(render, /querySelectorAll\("\.noun"\)\) word\.textContent = nounOf\(state\.form\.type\)/);
   assert.match(render, /querySelectorAll\("\.not-pack"\)\) part\.hidden = shown\.pack/);
+});
+
+test("the type select offers what the deployed schema accepts, so lifting the gate needs no page change", () => {
+  const schema = JSON.parse(read("../../schemas/authored.schema.json"));
+  const ungated = structuredClone(schema);
+  delete ungated.properties.type.not;
+  const gated = new Set(schema.properties.type.not ? schema.properties.type.not.enum : []);
+  for (const type of ["vehicle", "save"]) {
+    assert.equal(typeChoices(schema).includes(type), !gated.has(type), type);
+    assert.ok(typeChoices(ungated).includes(type), type);
+  }
+  assert.match(app, /checker = createChecker\(\{ schema, tagsText \}\);\n    types = typeChoices\(schema\);/);
+  assert.match(body("function renderMode()"), /renderTypeOptions\(\);/);
+  assert.match(body("function renderTypeOptions()"), /\$\("type"\)\.replaceChildren\(\.\.\.offered\.map/);
+});
+
+test("a vehicle or a save shows its own texts in place of the mod ones", () => {
+  const render = body("function renderTypeSections()");
+  assert.match(render, /querySelectorAll\("\.share-only"\)\) part\.hidden = !shown\.share/);
+  assert.match(render, /querySelectorAll\("\.not-share"\)\) part\.hidden = shown\.share/);
+  for (const id of ["hint-forums", "hint-game-min", "hint-id"]) {
+    const hint = new RegExp(`<p id="${id}"[^>]*>([\\s\\S]*?)</p>`).exec(html)[1];
+    assert.match(hint, /<span class="not-share">/, id);
+    assert.match(hint, /<span class="share-only" hidden>/, id);
+  }
+  assert.match(html, /Optional for a vehicle or a save, because the forum may have no place for them\./);
+  assert.match(html, /the watcher takes it from <code>version<\/code> in the <code>meta\.toml<\/code> in the zip/);
+  assert.match(html, /The page does not read the part ids in <code>vehicle\.xml<\/code> or <code>universe\.xml<\/code>/);
 });
 
 test("the game_max hint says that clients block above it", () => {
@@ -152,7 +183,6 @@ test("a new or a loaded form forgets the selected zip and what it declared", () 
   assert.match(render, /dependencyNotes\(current\.document, index, checker\.validId\)/);
 });
 
-const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const checker = createChecker({ schema: JSON.parse(read("../../schemas/authored.schema.json")), tagsText: read("../../tags.toml") });
 const main = JSON.parse(read("fixtures/snapshot.json"));
 const vehicleFile = JSON.parse(read("fixtures/snapshot-vehicles.json"));
