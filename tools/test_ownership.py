@@ -960,5 +960,81 @@ class VerifyChange(unittest.TestCase):
         self.assertIn("moves to", result.reason)
 
 
+class ShareListings(unittest.TestCase):
+    """A vehicle or a save on a repository of its own (RFC 0085), with one
+    repository and a tag prefix per share (RFC 0096)."""
+
+    TARGET = "Maxi/KSA-Rovers"
+    MARKER = (TARGET, ownership.MARKER_PATH)
+
+    def document(self, identifier="ExampleRover", kind="vehicle", prefix="ExampleRover-"):
+        return {
+            "id": identifier,
+            "type": kind,
+            "releases": {"github": self.TARGET, "tag_prefix": prefix},
+        }
+
+    def api(self, owner_id=99, **rest):
+        return FakeApi({self.TARGET: repository(self.TARGET, owner_id=owner_id)}, **rest)
+
+    def test_the_repository_is_the_authority_and_the_prefix_is_no_host(self):
+        self.assertEqual(ownership.authority(self.document()), ("github", self.TARGET, ""))
+
+    def test_each_proof_verifies_a_vehicle_and_a_save(self):
+        cases = {
+            "owner id": (self.api(owner_id=7), 7),
+            "topic": (self.api(topics={self.TARGET: ["ksa-index-maxi"]}), 1),
+            "marker file": (self.api(files={self.MARKER: 'login = "Maxi"\n'}), 1),
+        }
+        for kind in ownership.SHARE_TYPES:
+            for proof, (api, author_id) in cases.items():
+                with self.subTest(kind=kind, proof=proof):
+                    result = ownership.verify(self.document(kind=kind), "Maxi", author_id, api)
+                    self.assertEqual(result.state, ownership.VERIFIED)
+                    self.assertEqual(result.proof, proof)
+
+    def test_a_marker_with_only_a_login_covers_every_share_of_the_repository(self):
+        api = self.api(files={self.MARKER: 'login = "Maxi"\n'})
+        for identifier in ("ExampleRover", "OtherRover"):
+            document = self.document(identifier, prefix=f"{identifier}-")
+            self.assertEqual(ownership.verify(document, "Maxi", 1, api).state, ownership.VERIFIED)
+
+    def test_a_marker_that_names_one_share_covers_only_that_one(self):
+        api = self.api(files={self.MARKER: 'id = "ExampleRover"\nlogin = "Maxi"\n'})
+        verdict = ownership.verify(self.document("OtherRover", prefix="OtherRover-"), "Maxi", 1, api)
+        self.assertEqual(verdict.state, ownership.UNVERIFIED)
+
+    def test_no_host_gets_the_advice_that_names_every_path(self):
+        for kind in ownership.SHARE_TYPES:
+            with self.subTest(kind=kind):
+                result = ownership.verify({"id": "ExampleRover", "type": kind}, "Maxi", 1, FakeApi())
+                self.assertEqual(result.state, ownership.UNVERIFIED)
+                self.assertEqual(
+                    result.reason, "the document names no release host and no GitHub repository"
+                )
+                self.assertEqual(result.instructions, ownership.SHARE_ADVICE)
+        for part in ("`[releases] github`", "`tag_prefix`", "share host", "release pull request"):
+            self.assertIn(part, ownership.SHARE_ADVICE)
+
+    def test_a_mod_with_no_host_keeps_the_common_advice(self):
+        result = ownership.verify({"id": "AutoStage", "type": "mod"}, "Maxi", 1, FakeApi())
+        self.assertEqual(result.state, ownership.UNVERIFIED)
+        self.assertIsNone(result.instructions)
+
+    def test_a_new_tag_prefix_is_no_new_host(self):
+        base, submitted = self.document(prefix="A-"), self.document(prefix="B-")
+        self.assertTrue(ownership.same_authority(base, submitted))
+        api = self.api(owner_id=7)
+        result = ownership.verify_change(base, submitted, "Maxi", 7, api)
+        self.assertEqual(result.state, ownership.VERIFIED)
+        self.assertEqual(api.asked, [self.TARGET])
+
+    def test_an_organization_repository_names_the_login_of_its_marker(self):
+        api = FakeApi(
+            organization(self.TARGET), files={self.MARKER: 'login = "Bob"\n'}
+        )
+        self.assertEqual(ownership.owner_logins(self.document(), api), (("Bob",), ""))
+
+
 if __name__ == "__main__":
     unittest.main()
