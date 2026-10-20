@@ -6,7 +6,7 @@ import { measure, readCapped, LIMITS, MEASURE_FACTOR, ICON, DESCRIPTION } from "
 import { renderPreview } from "./markdown.js";
 import { inspectArchive, StampError } from "./archive.js";
 import {
-  pullRequestLink, copyAndOpen, rawListingUrl, rawPackUrl, rawOwnerUrl, repositoryApiUrl, prefillFromRepository, listingPath, packPath, ownerPath, documentPath,
+  pullRequestLink, copyAndOpen, rawListingUrl, rawPackUrl, rawOwnerUrl, repositoryApiUrl, prefillFromRepository, listingPath, packPath, ownerPath, documentPath, folderOf,
 } from "./github.js";
 import {
   TEXTS, kindText, kindChoices, isListedLoader, boundChoices, newestBound, canNeedNewest, canAddBounds, dependencyCandidates,
@@ -318,12 +318,12 @@ function renderMode() {
   for (const radio of document.querySelectorAll("input[name=mode]")) radio.checked = radio.value === state.mode;
   $("load").hidden = !editing;
   $("id").readOnly = Boolean(base);
-  // A listing cannot become a pack, or a pack a listing, because each lives at a path of its own.
-  for (const option of $("type").options) option.disabled = Boolean(base) && (option.value === "modpack") !== Boolean(pack);
+  // A loaded document keeps the folder it lives in, so a listing cannot become a pack or a vehicle.
+  for (const option of $("type").options) option.disabled = Boolean(base) && folderOf(option.value) !== folderOf(base.type);
   $("editing").hidden = !base;
   $("editing").textContent = pack
     ? `Making the next version of the pack ${pack.id} after ${pack.version}. It is a new file, and the id cannot change.`
-    : base ? `Changing ${listingPath(state.form.id)}. The id cannot change.` : "";
+    : base ? `Changing ${listingPath(state.form.id, base.type)}. The id cannot change.` : "";
 }
 
 function renderFields() {
@@ -1184,8 +1184,8 @@ async function fetchRaw(url, path) {
   }
 }
 
-function fetchListing(id) {
-  return fetchRaw(rawListingUrl(id), listingPath(id));
+function fetchListing(id, type) {
+  return fetchRaw(rawListingUrl(id, type), listingPath(id, type));
 }
 
 async function packVersionTaken(id, version) {
@@ -1197,7 +1197,7 @@ async function packVersionTaken(id, version) {
 async function checkBase() {
   if (state.mode !== "edit" || !state.base || packBase()) return;
   const { base, baseText } = state;
-  const answer = await fetchListing(base.id);
+  const answer = await fetchListing(base.id, base.type);
   if (state.base !== base || answer.text === baseText) return;
   const reload = element("button", {
     type: "button",
@@ -1208,8 +1208,8 @@ async function checkBase() {
     },
   });
   const text = answer.error
-    ? `The page could not check whether ${listingPath(base.id)} changed on main since you loaded it. ${answer.error}`
-    : `${listingPath(base.id)} changed on main since you loaded it, and pasting this file would undo that change. Load it again and redo your changes.`;
+    ? `The page could not check whether ${listingPath(base.id, base.type)} changed on main since you loaded it. ${answer.error}`
+    : `${listingPath(base.id, base.type)} changed on main since you loaded it, and pasting this file would undo that change. Load it again and redo your changes.`;
   $("msg-load").replaceChildren(line(NOTE, text), reload);
 }
 
@@ -1225,15 +1225,16 @@ async function loadListing() {
     return;
   }
   const id = holder ? holder.id : typed;
-  say("msg-load", null, `Loading ${listingPath(id)}.`);
-  const answer = await fetchListing(id);
+  const type = holder ? holder.type : "mod";
+  say("msg-load", null, `Loading ${listingPath(id, type)}.`);
+  const answer = await fetchListing(id, type);
   if (answer.error) {
-    // Only the snapshot tells a pack id from a listing id.
-    say("msg-load", ERROR, answer.missing && !index ? `${answer.error} A pack loads once the index snapshot has loaded.` : answer.error);
+    // Only the snapshot tells a pack, a vehicle or a save id from a listing id.
+    say("msg-load", ERROR, answer.missing && !index ? `${answer.error} A pack, a vehicle or a save loads once the index snapshot has loaded.` : answer.error);
     return;
   }
   const base = parseBase(answer.text, "listing");
-  if (base) useBase(answer.text, base, formFromDocument(base), `Loaded ${listingPath(id)}.`);
+  if (base) useBase(answer.text, base, formFromDocument(base), `Loaded ${listingPath(id, type)}.`);
 }
 
 function parseBase(text, kind) {
