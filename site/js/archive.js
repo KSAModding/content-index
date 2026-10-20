@@ -1,3 +1,6 @@
+import { parse } from "../vendor/smol-toml.js";
+import { saveNameProblem } from "./savename.js";
+
 const MOD_TOML = "mod.toml";
 const END = 0x06054b50;
 const END_SIZE = 22;
@@ -184,6 +187,176 @@ export async function modTomlFiles(file, entries) {
   return files;
 }
 
+// The archive rules of a vehicle and a save (RFC 0085), as the stamper of
+// content-index-releases checks them. The game sees a folder only when it holds
+// its game file (`VehicleSaveData.ExistsIn`, `UniverseData.ExistsIn`).
+export const META_TOML = "meta.toml";
+export const GAME_FILES = { vehicle: "vehicle.xml", save: "universe.xml" };
+const META_VERSION = /^v?([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$/;
+const GAME_FILE_LIMIT = 256 * 1024 * 1024;
+// A save can be large, and the page parses in the browser, so above this it
+// leaves the game file to the watcher.
+export const PAGE_XML_LIMIT = 32 * 1024 * 1024;
+const NOTE_NAMES = 20;
+
+function gameFileOf(type) {
+  return Object.hasOwn(GAME_FILES, type) ? GAME_FILES[type] : null;
+}
+
+// A TOML file as the stamper reads it, which drops a UTF-8 BOM.
+export function readToml(bytes, name, options = {}) {
+  try {
+    return parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes), options);
+  } catch (error) {
+    throw new StampError(`the archive's ${name} is not valid TOML, ${error.message}`);
+  }
+}
+
+// How Python prints a value with repr, which the stamper puts into its messages.
+function pythonRepr(value) {
+  if (value === undefined || value === null) return "None";
+  if (typeof value === "boolean") return value ? "True" : "False";
+  if (typeof value !== "string") return typeof value === "object" ? JSON.stringify(value) : String(value);
+  const quote = value.includes("'") && !value.includes("\"") ? "\"" : "'";
+  const escaped = value.replace(/[\\\n\r\t]|[\x00-\x1f\x7f]/g, (character) => (
+    { "\\": "\\\\", "\n": "\\n", "\r": "\\r", "\t": "\\t" }[character] || `\\x${character.charCodeAt(0).toString(16).padStart(2, "0")}`
+  ));
+  return quote + (quote === "'" ? escaped.replace(/'/g, "\\'") : escaped) + quote;
+}
+
+function atTop(name, file) {
+  const parts = name.split("/");
+  return parts[parts.length - 1] === file && parts.length <= 2;
+}
+
+// The meta.toml files and the verdicts on the game files at the archive root or
+// one folder down, where the root of a vehicle or a save is. The type can change
+// after the zip is chosen, so both game files are read. `wellFormed` gives null
+// for well-formed XML and else what is wrong.
+export async function gameFiles(file, entries, wellFormed) {
+  const latest = new Map();
+  for (const entry of entries) {
+    if ([META_TOML, ...Object.values(GAME_FILES)].some((name) => atTop(entry.name, name))) latest.set(entry.name, entry);
+  }
+  const files = new Map();
+  for (const [name, entry] of latest) {
+    try {
+      files.set(name, atTop(name, META_TOML) ? await metaFile(file, entry) : await xmlVerdict(file, entry, wellFormed));
+    } catch (error) {
+      if (!(error instanceof StampError)) throw error;
+      files.set(name, { problem: error.message });
+    }
+  }
+  return files;
+}
+
+async function metaFile(file, entry) {
+  if (entry.size > MOD_TOML_LIMIT) {
+    throw new StampError(`the archive's ${entry.name} is ${entry.size} bytes, above the ${MOD_TOML_LIMIT} byte limit`);
+  }
+  return { meta: readToml(await readEntry(file, entry), entry.name) };
+}
+
+// `XmlSerializer` never writes a DOCTYPE, and the stamper refuses one, so the
+// page refuses it before any parse.
+async function xmlVerdict(file, entry, wellFormed) {
+  if (entry.size > GAME_FILE_LIMIT) {
+    throw new StampError(`the archive's ${entry.name} is ${entry.size} bytes, above the ${GAME_FILE_LIMIT} byte limit`);
+  }
+  if (entry.size > PAGE_XML_LIMIT) return { unchecked: true };
+  let text;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(await readEntry(file, entry));
+  } catch (error) {
+    if (error instanceof StampError) throw error;
+    throw new StampError(`the archive's ${entry.name} is not well-formed XML, it is not UTF-8 text`);
+  }
+  if (text.includes("<!DOCTYPE")) throw new StampError(`the archive's ${entry.name} carries a DOCTYPE, which the game never writes`);
+  const detail = wellFormed(text);
+  if (detail) throw new StampError(`the archive's ${entry.name} is not well-formed XML, ${detail}`);
+  return { xml: true };
+}
+
+// The root of a vehicle or a save, as _game_root of the stamper: the archive root
+// when it holds meta.toml and the game file, else the one top-level folder that
+// holds both, else the one place with a meta.toml, so the checks can name what is missing.
+function gameRoot(names, gameFile) {
+  const present = new Set(names);
+  if (present.has(META_TOML) && present.has(gameFile)) return "";
+  const directories = topLevelDirectories(names);
+  const complete = directories.filter((name) => present.has(`${name}/${META_TOML}`) && present.has(`${name}/${gameFile}`));
+  if (complete.length) return complete.length === 1 ? complete[0] : null;
+  const withMeta = [...(present.has(META_TOML) ? [""] : []), ...directories.filter((name) => present.has(`${name}/${META_TOML}`))];
+  return withMeta.length === 1 ? withMeta[0] : null;
+}
+
+// The checks of game_folder in the stamper, in its order and words, and the
+// folder the release installs as. A file the page did not read is left to the watcher.
+function gameFolder(names, files, root, type, notes) {
+  const metaEntry = root ? `${root}/${META_TOML}` : META_TOML;
+  if (!names.includes(metaEntry)) throw new StampError(`the archive has no ${metaEntry}, which the game reads for every folder`);
+  const metaFile = files.get(metaEntry);
+  if (!metaFile) {
+    notes.push(`the page reads ${META_TOML} only at the top of the zip or one folder down, so the watcher checks ${metaEntry}`);
+    return null;
+  }
+  if (metaFile.problem) throw new StampError(metaFile.problem);
+  const meta = metaFile.meta;
+  const name = meta.name;
+  if (typeof name !== "string") throw new StampError(`the archive's ${metaEntry} has no \`name\` string, which the game shows`);
+  const problem = saveNameProblem(name);
+  if (problem) throw new StampError(`\`name\` in the archive's ${metaEntry} is ${pythonRepr(name)}, and ${problem} (RFC 0085)`);
+  const folder = root ? root.slice(root.lastIndexOf("/") + 1) : null;
+  if (folder !== null && folder !== name) {
+    if (folder.toLowerCase() === name.toLowerCase()) {
+      throw new StampError(
+        `the archive's folder is '${folder}' and \`name\` in its meta.toml is '${name}': ` +
+        "the game saves into a folder named after `name`, so the casing has to match",
+      );
+    }
+    throw new StampError(
+      `the archive's folder is '${folder}', which does not match \`name\` '${name}' in its meta.toml: ` +
+      "the game saves into a folder named after `name`",
+    );
+  }
+  const game = GAME_FILES[type];
+  const entry = root ? `${root}/${game}` : game;
+  if (!names.includes(entry)) {
+    const near = names.find((other) => other.toLowerCase() === entry.toLowerCase());
+    if (near !== undefined) {
+      throw new StampError(`the archive has ${pythonRepr(near)} and no ${pythonRepr(entry)}, and the game opens ${game} with that exact case`);
+    }
+    throw new StampError(`the archive has no ${entry}, so the game does not see the ${type}`);
+  }
+  const verdict = files.get(entry);
+  if (verdict && verdict.problem) throw new StampError(verdict.problem);
+  if (!verdict || verdict.unchecked) notes.push(`the page did not parse ${entry}, so the watcher checks that it is well-formed XML`);
+  if (type === "vehicle") {
+    const prefix = root ? `${root}/` : "";
+    const others = entriesUnder(names, root)
+      .map((other) => other.replace(/\\/g, "/"))
+      .filter((other) => other !== metaEntry && other !== entry)
+      .map((other) => other.slice(prefix.length));
+    if (others.length) {
+      // json.dumps of the stamper escapes every character outside ASCII.
+      const quoted = others.slice(0, NOTE_NAMES).map((other) => JSON.stringify(other).replace(/[^\x00-\x7f]/g, (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`));
+      const more = others.length > NOTE_NAMES ? `, and ${others.length - NOTE_NAMES} more` : "";
+      notes.push(`the vehicle folder holds files besides ${META_TOML} and ${game}, which the game drops when it saves the vehicle again: ${quoted.join(", ")}${more}`);
+    }
+  }
+  return meta;
+}
+
+// meta_game_min of the stamper, which runs only when the listing authors no game_min.
+function metaGameMin(meta) {
+  const version = meta.version;
+  const match = typeof version === "string" ? META_VERSION.exec(version) : null;
+  let reason = null;
+  if (!match) reason = "not a game version Y.M.B.R without a suffix";
+  else if (Number(match[4]) === 0) reason = "the game's mark of an unknown build";
+  if (reason) throw new StampError(`meta.toml says version ${pythonRepr(version)}, which is ${reason}, and the listing authors no game_min`);
+}
+
 export function topLevelDirectories(names) {
   const seen = [];
   for (const entry of names) {
@@ -203,6 +376,7 @@ export function entriesUnder(names, root) {
 }
 
 export function deriveRoot(names, listingId, contentType) {
+  if (gameFileOf(contentType)) return gameRoot(names, gameFileOf(contentType));
   if (contentType !== "mod") return "";
   const directories = topLevelDirectories(names);
   const withManifest = directories.filter((name) => names.includes(`${name}/${MOD_TOML}`));
@@ -245,10 +419,14 @@ function launchIn(names, root, launch, what) {
   }
 }
 
-export function inspectArchive(names, document) {
+// `files` holds what readArchive read from the zip. Without it, a vehicle or a
+// save gets only the checks of the file names.
+export function inspectArchive(names, document, files = new Map()) {
   const problems = [];
+  const notes = [];
   const install = document.install && typeof document.install === "object" ? document.install : {};
   const provides = document.provides && typeof document.provides === "object" ? document.provides : {};
+  const game = gameFileOf(document.type);
   let root = null;
   let derived = false;
   try {
@@ -260,6 +438,12 @@ export function inspectArchive(names, document) {
     } else {
       derived = true;
       root = deriveRoot(names, document.id, document.type);
+      if (root === null && game) {
+        throw new StampError(
+          "the install root is neither derivable from the archive nor authored: " +
+          `the standard layout is one top-level directory named after \`name\` in its meta.toml, holding meta.toml and ${game}`,
+        );
+      }
       if (root === null) {
         throw new StampError(
           "the install root is neither derivable from the archive nor authored: " +
@@ -270,7 +454,22 @@ export function inspectArchive(names, document) {
   } catch (error) {
     if (!(error instanceof StampError)) throw error;
     problems.push(error.message);
-    return { root: null, derived, problems, launches: [] };
+    return { root: null, derived, problems, notes, launches: [], folder: null };
+  }
+  if (game) {
+    let folder = null;
+    try {
+      const meta = gameFolder(names, files, root, document.type, notes);
+      const compatibility = document.compatibility && typeof document.compatibility === "object" ? document.compatibility : {};
+      if (meta) {
+        folder = meta.name;
+        if (!compatibility.game_min) metaGameMin(meta);
+      }
+    } catch (error) {
+      if (!(error instanceof StampError)) throw error;
+      problems.push(error.message);
+    }
+    return { root, derived, problems, notes, launches: [], folder };
   }
   const launches = [];
   const check = (launch, what) => {
@@ -292,5 +491,5 @@ export function inspectArchive(names, document) {
       }
     }
   }
-  return { root, derived, problems, launches };
+  return { root, derived, problems, notes, launches, folder: null };
 }

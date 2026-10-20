@@ -118,7 +118,7 @@
           <label for="archive">Release zip (optional)</label>
           <input id="archive" type="file" accept=".zip,application/zip" aria-describedby="hint-archive archive-result">
           <div class="aside">
-            <p id="hint-archive" class="hint">Select the zip of your latest release. The page reads the file names and the <code>mod.toml</code> in it, and shows the install root and, under Dependencies, the dependencies the index derives. The zip stays on your computer.</p>
+            <p id="hint-archive" class="hint">Select the zip of your latest release. <span class="not-share">The page reads the file names and the <code>mod.toml</code> in it, and shows the install root and, under Dependencies, the dependencies the index derives.</span><span class="share-only" hidden>The page reads the file names, the <code>meta.toml</code> and the <code>vehicle.xml</code> or <code>universe.xml</code> in it, checks them as the index does, and shows the folder the release installs as.</span> The zip stays on your computer.</p>
             <div id="archive-result" class="messages" aria-live="polite"></div>
           </div>
         </div>

@@ -172,6 +172,15 @@ test("the dependency help has the order of the Borea card", () => {
   assert.match(row, /versions,\n\s+kindLine,\n\s+messages,/);
 });
 
+test("the archive of a vehicle or a save is checked with the files the page read from it", () => {
+  assert.equal(app.match(/inspectArchive\(archiveFile\.names, current\.document, archiveFile\.files\)/g).length, 2);
+  const render = body("function renderArchiveResult()");
+  assert.match(render, /if \(result\.folder\) lines\.push\(line\(null, `It installs as the folder '\$\{result\.folder\}', the name in its meta\.toml\.`\)\);/);
+  assert.match(render, /for \(const note of result\.notes\) lines\.push\(line\(NOTE, note\)\);/);
+  const hint = /<p id="hint-archive"[^>]*>([\s\S]*?)<\/p>/.exec(html)[1];
+  assert.match(hint, /<span class="share-only" hidden>The page reads the file names, the <code>meta\.toml<\/code> and the <code>vehicle\.xml<\/code> or <code>universe\.xml<\/code> in it/);
+});
+
 test("a new or a loaded form forgets the selected zip and what it declared", () => {
   for (const start of ['$("reset").addEventListener', "function useBase("]) {
     assert.match(body(start), /forgetArchive\(\);/, `${start} keeps the archive of the earlier form`);

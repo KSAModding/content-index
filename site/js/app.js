@@ -953,7 +953,7 @@ function extraMessages() {
   }
   if (tagError) found.push({ level: ERROR, path: "tags", text: tagError });
   if (archiveFile && current.document.type !== "modpack") {
-    for (const problem of inspectArchive(archiveFile.names, current.document).problems) {
+    for (const problem of inspectArchive(archiveFile.names, current.document, archiveFile.files).problems) {
       found.push({ level: ERROR, path: "archive", text: problem });
     }
   }
@@ -1389,14 +1389,16 @@ function renderArchiveResult() {
     $("archive-result").replaceChildren(...lines);
     return;
   }
-  const result = inspectArchive(archiveFile.names, current.document);
+  const result = inspectArchive(archiveFile.names, current.document, archiveFile.files);
   if (result.root !== null) {
     const where = result.root ? `'${result.root}'` : "the archive root";
     const matches = current.document.type === "mod" && result.root === current.document.id;
     lines.push(line(null, `The install root is ${where}${result.derived ? ", derived from the archive" : ""}${matches ? ", and it matches the id" : ""}.`));
   }
+  if (result.folder) lines.push(line(null, `It installs as the folder '${result.folder}', the name in its meta.toml.`));
   for (const launch of result.launches) lines.push(line(null, `${launch} is in the archive.`));
   for (const problem of result.problems) lines.push(line(ERROR, problem));
+  for (const note of result.notes) lines.push(line(NOTE, note));
   $("archive-result").replaceChildren(...lines);
 }
 
