@@ -1471,15 +1471,14 @@ class Act(unittest.TestCase):
             '[[dependencies]]\nid = "ExamplePartsMod"\nkind = "required"\nmin = "1.4.0"\n'
         )
         document = tomllib.loads(text)
-        # The deployed schema still refuses the type, so this run lifts the gate on a copy,
-        # as the lift will.
+        # While the deployed schema refuses the type, this run lifts the gate on a copy,
+        # as the lift will. Once it is lifted, the copy equals the deployed schema.
         deployed = check_schema.validator()
         errors = []
         check_schema.check_parsed(path, document, deployed, errors)
-        if not errors:
-            self.skipTest("the rollout gate no longer holds vehicles")
-        self.assertEqual(len(errors), 1)
-        self.assertIn("type that the index does not accept yet", errors[0])
+        self.assertLessEqual(len(errors), 1)
+        for error in errors:
+            self.assertIn("type that the index does not accept yet", error)
 
         schema = copy.deepcopy(deployed.schema)
         schema["properties"]["type"].pop("not")
