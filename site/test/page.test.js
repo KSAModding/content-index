@@ -214,6 +214,7 @@ test("an id that a vehicle, a save or a vehicle tombstone holds collides, in any
       .includes(`id: the id '${id}' is already held by ${where}, and ids compare case-insensitively`), id);
   }
   assert.deepEqual(shared.holders.get("retiredrover"), { id: "RetiredRover", type: "vehicle", where: "vehicles/RetiredRover.toml" });
+  assert.equal(shared.listed.get("retiredrover").state, "delisted");
   assert.equal(shared.listed.get("moonbase").type, "save");
 });
 

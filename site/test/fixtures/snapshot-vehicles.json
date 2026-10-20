@@ -30,6 +30,6 @@
         }
       ]
     },
-    { "id": "RetiredRover" }
+    { "id": "RetiredRover", "index_status": { "state": "delisted" } }
   ]
 }
