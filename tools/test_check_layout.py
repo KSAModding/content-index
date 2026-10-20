@@ -221,5 +221,16 @@ class VehiclesAndSaves(LayoutCase):
         self.assertTrue(any("lowercase" in error for error in self.errors()))
 
 
+class SnapshotDispatch(unittest.TestCase):
+    """A merged document in any folder has to rebuild the snapshot."""
+
+    def test_every_document_folder_rebuilds_the_snapshot(self):
+        workflow = check_layout.ROOT / ".github" / "workflows" / "snapshot-dispatch.yml"
+        text = workflow.read_text(encoding="utf-8")
+        for folder in (*check_layout.FOLDERS, "packs"):
+            with self.subTest(folder=folder):
+                self.assertIn(f"      - {folder}/**\n", text)
+
+
 if __name__ == "__main__":
     unittest.main()

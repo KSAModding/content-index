@@ -41,6 +41,8 @@ LABELS = {
     STEWARD_LABEL: ("d93f0b", "waiting on a steward"),
     check_scope.LISTING_KIND: ("0e8a16", "changes a listing document"),
     check_scope.PACK_KIND: ("0e8a16", "changes a pack document"),
+    check_scope.VEHICLE_KIND: ("0e8a16", "changes a vehicle document"),
+    check_scope.SAVE_KIND: ("0e8a16", "changes a save document"),
 }
 
 # One label per kind of document, so the queue separates a submission from a
@@ -53,7 +55,15 @@ PULL_REQUEST_EVENT = "pull_request"
 
 STATUS_FILE = "index-status.toml"
 # A listing path that is safe to put into a URL and into Markdown.
-PLAIN_LISTING = re.compile(r"listings/[A-Za-z0-9._-]+\.toml")
+PLAIN_LISTING = re.compile(r"(?:listings|vehicles|saves)/[A-Za-z0-9._-]+\.toml")
+
+# The kinds of document that are one file each, by the folder that holds them.
+# A vehicle or a save is a listing in every rule that reads its owner.
+LISTING_FOLDERS = {
+    "listings": check_scope.LISTING_KIND,
+    "vehicles": check_scope.VEHICLE_KIND,
+    "saves": check_scope.SAVE_KIND,
+}
 
 PASS = "pass"
 REJECT = "reject"
@@ -729,8 +739,9 @@ def status_subjects(api, base_ref, head_sha):
         base = _states(api.file(api.repository, STATUS_FILE, ref=merge_base))
         head = _states(api.file(api.repository, STATUS_FILE, ref=head_sha))
         listings = {
-            name[: -len(".toml")].casefold(): name
-            for name, kind in api.folder("listings", base_ref)
+            name[: -len(".toml")].casefold(): (subject, f"{folder}/{name}")
+            for folder, subject in LISTING_FOLDERS.items()
+            for name, kind in api.folder(folder, base_ref)
             if kind == "file" and name.lower().endswith(".toml")
         }
         packs = {name.casefold(): name for name, kind in api.folder("packs", base_ref) if kind == "dir"}
@@ -744,7 +755,7 @@ def status_subjects(api, base_ref, head_sha):
         if base.get(folded, set()) == head.get(folded, set()):
             continue
         if folded in listings:
-            subjects.append((check_scope.LISTING_KIND, f"listings/{listings[folded]}"))
+            subjects.append(listings[folded])
         elif folded in packs:
             subjects.append((check_scope.PACK_KIND, packs[folded]))
     return subjects, ""
@@ -775,8 +786,8 @@ def owner_notes(api, pull, changes, head_sha):
     for change in changes:
         path = change.previous_path or change.path
         parts = path.split("/")
-        if check_scope.kind_of(path) == check_scope.LISTING_KIND:
-            subjects.append((check_scope.LISTING_KIND, path, changed))
+        if check_scope.kind_of(path) in LISTING_FOLDERS.values():
+            subjects.append((check_scope.kind_of(path), path, changed))
         elif len(parts) == 3 and parts[0] == "packs":
             subjects.append((check_scope.PACK_KIND, parts[1], changed))
     lines = []
