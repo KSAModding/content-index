@@ -226,6 +226,12 @@ RULES = [
         True,
     ),
     (
+        re.compile(GAME_RELEASE + r"the archive's (?P<path>.+?) has no `name` string, which the game shows$"),
+        "The game shows a vehicle or a save under `name` in its meta.toml, and {path} in the zip "
+        "of release {tag} has no such text. " + SAVE_AGAIN + REPLACE,
+        True,
+    ),
+    (
         re.compile(
             GAME_RELEASE + r"the archive's folder is '(?P<folder>[^']*)'(?: and|, which does not "
             r"match) `name`"

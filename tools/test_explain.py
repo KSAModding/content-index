@@ -214,6 +214,8 @@ class RealMessages(unittest.TestCase):
         cases = {
             "name rule": ({"Rover.v2/meta.toml": meta.replace("Example Rover", "Rover.v2"),
                            "Rover.v2/vehicle.xml": xml}, VEHICLE),
+            "no name": ({"Example Rover/meta.toml": 'version = "v2026.9.22.5482"\n',
+                         "Example Rover/vehicle.xml": xml}, rooted),
             "folder": ({"Rover/meta.toml": meta, "Rover/vehicle.xml": xml}, VEHICLE),
             "folder case": ({"example rover/meta.toml": meta, "example rover/vehicle.xml": xml}, VEHICLE),
             "no game file": ({"Example Rover/meta.toml": meta}, VEHICLE),
@@ -689,6 +691,8 @@ CASES = [
     ("only under a name of 1 to 64 letters", True, lambda: (
         f"{GAME_PREFIX}`name` in the archive's Rover.v2/meta.toml is 'Rover.v2', and the name "
         "holds U+002E, and the game keeps only letters, digits, spaces, '-' and '_' (RFC 0085)")),
+    ("`Example Rover/meta.toml` in the zip of release `v1.0.0` has no such text", True, lambda: (
+        f"{GAME_PREFIX}the archive's Example Rover/meta.toml has no `name` string, which the game shows")),
     ("the folder in the zip of release `v1.0.0` is `Rover`", True, lambda: (
         f"{GAME_PREFIX}the archive's folder is 'Rover', which does not match `name` 'Example Rover' "
         "in its meta.toml: the game saves into a folder named after `name`")),
