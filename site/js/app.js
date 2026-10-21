@@ -1,7 +1,7 @@
 import { createChecker, addTag, ERROR, NOTE, ABSTRACT_LIMIT } from "./rules.js";
 import { parseDocument, writeDocument } from "./toml.js";
 import { indexFacts, gameVersionChoices, readTypeFile, withTypeFiles, SNAPSHOT_URL, TYPE_FILES } from "./snapshot.js";
-import { emptyForm, emptyRecord, formFromDocument, documentFromForm, isFixedLink, sectionsOf, nounOf, releaseTime, typeChoices, PLATFORMS } from "./model.js";
+import { emptyForm, emptyRecord, formFromDocument, documentFromForm, isFixedLink, namedHosts, sectionsOf, nounOf, releaseTime, typeChoices, PLATFORMS } from "./model.js";
 import { measure, readCapped, LIMITS, MEASURE_FACTOR, ICON, DESCRIPTION } from "./images.js";
 import { renderPreview } from "./markdown.js";
 import { inspectArchive, StampError } from "./archive.js";
@@ -1136,6 +1136,19 @@ function currentLink() {
   return pullRequestLink(documentPath(current.document, encodeURIComponent), current.text, loadedBase());
 }
 
+// The choice offers the hosts the section names, and also a written value that
+// names none of them, so the author sees it and can change it.
+function renderAuthority(hosts) {
+  const select = $("authority");
+  const written = state.form.authority;
+  const offered = written && !hosts.includes(written) ? [...hosts, written] : hosts;
+  if ([...select.options].slice(1).map((option) => option.value).join() !== offered.join()) {
+    select.replaceChildren(select.options[0], ...offered.map((host) => element("option", { value: host, text: host })));
+  }
+  select.value = written;
+  $("authority-field").hidden = hosts.length < 2;
+}
+
 function refresh() {
   if (!checker) return;
   const base = loadedBase();
@@ -1156,9 +1169,10 @@ function refresh() {
   current.messages = current.messages.filter((entry) => !(explained.has(entry.path) && SPDX_SHAPE.test(entry.text)));
   const count = Array.from(state.form.abstract.trim()).length;
   $("abstract-count").textContent = `${count} of ${ABSTRACT_LIMIT}.`;
-  $("authority-field").hidden = !(state.form.github.trim() && state.form.spacedock.trim());
+  const hosts = namedHosts(state.form);
+  renderAuthority(hosts);
   $("tag-prefix-field").hidden = !state.form.github.trim();
-  $("since-field").hidden = !(state.form.github.trim() || state.form.spacedock.trim());
+  $("since-field").hidden = !hosts.length;
   renderMessages();
   renderMemberFix();
   renderDeclared();

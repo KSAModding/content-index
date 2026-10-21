@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { parseDocument, writeDocument } from "../js/toml.js";
-import { emptyForm, formFromDocument, documentFromForm, typeChoices, sectionsOf, nounOf } from "../js/model.js";
+import { emptyForm, formFromDocument, documentFromForm, namedHosts, typeChoices, sectionsOf, nounOf } from "../js/model.js";
 import { newFileUrl, editUrl, pullRequestLink, copyAndOpen, prefillFromRepository, repositoryApiUrl, listingPath, packPath, documentPath, folderOf, rawListingUrl, URL_LIMIT, PASTE_NEW, PASTE_EDIT } from "../js/github.js";
 
 const LISTINGS = new URL("../../listings/", import.meta.url);
@@ -142,6 +142,16 @@ test("a share host key is kept on an edit, with its authority and since", () => 
   assert.deepEqual(documentFromForm(form, base).releases, base.releases);
   form.github = "";
   assert.deepEqual(documentFromForm(form, base).releases, { ksamods: "ExampleRover", since: "1.0" });
+});
+
+test("a share host next to an added GitHub repository writes the chosen share key as authority", () => {
+  const base = parseDocument("type = \"vehicle\"\n\n[releases]\nksamods = \"ExampleRover\"\n");
+  const form = formFromDocument(base);
+  assert.deepEqual(namedHosts(form), ["ksamods"]);
+  form.github = "a/b";
+  assert.deepEqual(namedHosts(form), ["github", "ksamods"]);
+  form.authority = "ksamods";
+  assert.deepEqual(documentFromForm(form, base).releases, { ksamods: "ExampleRover", github: "a/b", authority: "ksamods" });
 });
 
 test("a share host alone keeps its since and writes no authority", () => {

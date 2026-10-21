@@ -198,6 +198,15 @@ export function recordFromForm(form) {
   return record;
 }
 
+// The hosts that the written [releases] names.
+export function namedHosts(form) {
+  return [
+    ...(trimmed(form.github) ? ["github"] : []),
+    ...(trimmed(form.spacedock) ? ["spacedock"] : []),
+    ...(form.shareHosts || []).filter((share) => trimmed(share.id)).map((share) => share.key),
+  ];
+}
+
 export function documentFromForm(form, base) {
   const document = base ? structuredClone(base) : {};
   set(document, "spec_version", document.spec_version ?? 1);
@@ -216,7 +225,7 @@ export function documentFromForm(form, base) {
   set(releases, "spacedock", integerOr(form.spacedock));
   // A share host key is edited on the host, so the page keeps it as it was read.
   for (const share of form.shareHosts || []) set(releases, share.key, trimmed(share.id));
-  const hosts = Object.keys(releases).length;
+  const hosts = namedHosts(form).length;
   set(releases, "authority", hosts > 1 ? trimmed(form.authority) : "");
   // tag_prefix picks releases by their GitHub tag, so it is written only next to github.
   set(releases, "tag_prefix", releases.github !== undefined ? trimmed(form.tagPrefix) : "");
