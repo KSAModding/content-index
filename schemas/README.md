@@ -208,6 +208,15 @@ A steward lifts the gate by pull request ([#210](https://github.com/KSAModding/c
 No check reads `hosts.toml` of the generated repository for it.
 A vector of `vectors.json` for a gated type carries `"gated": "vehicle"` or `"gated": "save"`. While the schema holds that type, both runners expect the gate line, and they also run each such vector against a copy of the schema without the gate and expect its `accepted`, `noted` and `says`, so a lift changes the schema alone.
 
+## Share hosts
+
+`hosts.schema.json` covers `hosts.toml`, the share hosts of [RFC 0094](https://github.com/KSAModding/content-manager-design/pull/94), one table per host, which stewards edit.
+The table name is the key a listing names the host with under `[releases]`: 2 to 32 lowercase ASCII letters, digits or `-`, starting with a letter, and not `github`, `spacedock`, `authority` or `since`.
+That is `HOST_KEY` of `tools/authored.py` in content-index-releases, which the watcher, the download counts and the snapshot read, so a change of the form is a change there too.
+A `storage` repository of the KSAModding organization is refused, because the index never hosts files.
+
+`tools/check_hosts.py` runs the schema and adds the rules it cannot express: every type in `types` has a size in `max_bytes`, a host with `data` and no `storage` is refused while the watcher and the ownership check read only a storage repository, and `pages` is the GitHub Pages address of `storage`.
+
 ## Save and vehicle names
 
 The game takes the identity of a vehicle or a save from `name` in the `meta.toml` of its folder (`UncompressedVehicleSave.FromDirectory`, `UncompressedSave.FromDirectory`), and it keeps a name only when `SaveName.Sanitize` gives it back unchanged (`SaveName.IsSanitized`).

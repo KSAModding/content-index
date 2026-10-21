@@ -13,6 +13,7 @@
 
 /index-status.toml @KSAModding/content-manager-stewards
 /tags.toml        @KSAModding/content-manager-stewards
+/hosts.toml       @KSAModding/content-manager-stewards
 /.github/          @KSAModding/content-manager-stewards
 /tools/            @KSAModding/content-manager-stewards
 /schemas/          @KSAModding/content-manager-stewards

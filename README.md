@@ -28,6 +28,7 @@ https://ksamodding.github.io/content-index-releases/v1/index.json
 | `packs/<id>/owner.json` | The GitHub account that owns a pack id, recorded by its first claim. |
 | `index-status.toml` | The index's own voice about a listing. Stewards only. |
 | `tags.toml` | The curated tag vocabulary that clients use for filters. Stewards only. |
+| `hosts.toml` | The share hosts the index trusts to say who owns an upload, per [RFC 0094](https://github.com/KSAModding/content-manager-design/pull/94). Stewards only. |
 | `POLICY.md` | How a takedown or an id dispute is filed, and what a steward does with it. |
 | `schemas/` | What a document may contain, as JSON Schema. See its [README](schemas/README.md). |
 | `tools/` | The checks that run on every pull request. |
@@ -59,7 +60,7 @@ Nothing here changes it.
 ## License
 
 Metadata is dedicated to the public domain under [CC0 1.0](LICENSE).
-That means `listings/`, `vehicles/`, `saves/`, `packs/`, `index-status.toml`, `tags.toml`, and the published snapshot.
+That means `listings/`, `vehicles/`, `saves/`, `packs/`, `index-status.toml`, `tags.toml`, `hosts.toml`, and the published snapshot.
 
 A mirror, a client, or a website can therefore copy and re-serve the whole index with no conditions attached, which is the point.
 
