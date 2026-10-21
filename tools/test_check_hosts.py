@@ -2,14 +2,21 @@
 # SPDX-License-Identifier: MIT
 """Tests for hosts.toml and its schema."""
 
+import importlib.util
+import json
+import os
+import re
 import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
 import check_hosts
+import check_release
+import check_schema
 
 HOST = """[ksamods]
 kind = "share"
@@ -134,6 +141,146 @@ class Load(unittest.TestCase):
 
     def test_a_file_that_does_not_parse(self):
         self.assert_refused("[ksamods\n", "cannot read the share hosts")
+
+
+TABLES = {"ksamods": tomllib.loads(HOST)["ksamods"]}
+SAVES_ONLY = {"ksamods": dict(TABLES["ksamods"], types=["save"])}
+
+
+def vehicle(**releases):
+    return {"id": "ExampleRover", "type": "vehicle", "releases": releases}
+
+
+class Documents(unittest.TestCase):
+    def errors(self, document, tables=TABLES):
+        return check_hosts.check_document("vehicles/ExampleRover.toml", document, tables)
+
+    def test_a_vehicle_on_a_registered_host_passes(self):
+        self.assertEqual(self.errors(vehicle(ksamods="ExampleRover")), [])
+
+    def test_a_key_hosts_toml_does_not_register_is_refused(self):
+        self.assertEqual(
+            self.errors(vehicle(otherhost="ExampleRover")),
+            [
+                "vehicles/ExampleRover.toml: releases.otherhost: 'otherhost' is not a share host "
+                "that hosts.toml registers"
+            ],
+        )
+
+    def test_no_key_is_registered_while_hosts_toml_is_empty(self):
+        self.assertIn("is not a share host that hosts.toml registers", self.errors(vehicle(ksamods="ExampleRover"), {})[0])
+
+    def test_a_vehicle_on_a_host_that_takes_only_saves_is_refused(self):
+        self.assertEqual(
+            self.errors(vehicle(ksamods="ExampleRover"), SAVES_ONLY),
+            [
+                "vehicles/ExampleRover.toml: releases.ksamods: the share host 'ksamods' takes save, "
+                "and this document is a vehicle"
+            ],
+        )
+
+    def test_a_mod_cannot_name_a_share_host(self):
+        document = {"id": "ExampleMod", "type": "mod", "releases": {"ksamods": "ExampleMod"}}
+        self.assertIn("this document is a mod", self.errors(document)[0])
+
+    def test_the_value_is_the_id_of_the_listing(self):
+        for value in ("OtherRover", "examplerover"):
+            with self.subTest(value):
+                self.assertEqual(
+                    self.errors(vehicle(ksamods=value)),
+                    [
+                        "vehicles/ExampleRover.toml: releases.ksamods: a share host is named with the "
+                        f"id of the listing, 'ExampleRover', and not '{value}'"
+                    ],
+                )
+
+    def test_a_share_host_and_another_host_need_an_authority(self):
+        self.assertIn(
+            "releases: the section names several hosts, so it needs an 'authority' key that "
+            "names one of github, ksamods",
+            self.errors(vehicle(ksamods="ExampleRover", github="a/b"))[0],
+        )
+        self.assertEqual(self.errors(vehicle(ksamods="ExampleRover", github="a/b", authority="ksamods")), [])
+
+    def test_the_authority_names_a_host_of_the_section(self):
+        self.assertEqual(
+            self.errors(vehicle(github="a/b", authority="ksamods")),
+            ["vehicles/ExampleRover.toml: releases.authority: 'ksamods' is not a host this section names"],
+        )
+
+    def test_github_spacedock_and_the_other_keys_are_not_share_hosts(self):
+        document = vehicle(github="a/b", spacedock=4, authority="github", since="1.0", tag_prefix="x-")
+        self.assertEqual(self.errors(document, {}), [])
+
+    def test_a_document_without_releases_has_nothing_to_check(self):
+        self.assertEqual(self.errors({"id": "ExampleRover", "type": "vehicle"}), [])
+
+    def test_every_listing_of_this_repository_still_passes(self):
+        tables, errors = check_hosts.load()
+        self.assertEqual(errors, [])
+        found = []
+        for path in check_schema.documents():
+            with path.open("rb") as handle:
+                document = tomllib.load(handle)
+            found += check_hosts.check_document(path.relative_to(check_hosts.ROOT).as_posix(), document, tables)
+        self.assertEqual(found, [])
+
+    def test_check_reads_the_documents_and_skips_one_that_does_not_parse(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        hosts = Path(folder.name) / "hosts.toml"
+        hosts.write_text(HOST, encoding="utf-8")
+        good = Path(folder.name) / "Good.toml"
+        good.write_text('id = "Good"\ntype = "vehicle"\n[releases]\nksamods = "Good"\n', encoding="utf-8")
+        bad = Path(folder.name) / "Bad.toml"
+        bad.write_text('id = "Bad"\ntype = "mod"\n[releases]\nksamods = "Bad"\n', encoding="utf-8")
+        broken = Path(folder.name) / "Broken.toml"
+        broken.write_text("[releases\n", encoding="utf-8")
+        errors = check_hosts.check([good, bad, broken, Path(folder.name) / "Gone.toml"], hosts)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("this document is a mod", errors[0])
+
+    def test_a_broken_hosts_toml_is_reported_before_any_document(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        hosts = Path(folder.name) / "hosts.toml"
+        hosts.write_text(host(replace='kind = "mirror"'), encoding="utf-8")
+        errors = check_hosts.check([], hosts)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("ksamods.kind", errors[0])
+
+
+class HostKey(unittest.TestCase):
+    """The host key form has copies in two schemas here and in the watcher."""
+
+    def test_every_copy_of_the_pattern_is_the_same(self):
+        hosts = json.loads(check_hosts.SCHEMA.read_text(encoding="utf-8"))
+        authored = json.loads(check_schema.SCHEMA.read_text(encoding="utf-8"))
+        pattern = hosts["$defs"]["hostKey"]["pattern"]
+        self.assertEqual(authored["$defs"]["hostKey"]["pattern"], pattern)
+        self.assertEqual(list(authored["properties"]["releases"]["patternProperties"]), [pattern])
+        self.assertEqual(hosts["$defs"]["hostKey"]["title"], authored["$defs"]["hostKey"]["title"])
+
+    def test_the_pattern_is_the_one_of_the_watcher(self):
+        root = Path(os.environ.get("CONTENT_INDEX_RELEASES") or check_release.DEFAULT_RELEASES)
+        tools = root / "tools" if (root / "tools").is_dir() else root
+        if not (tools / "authored.py").is_file():
+            self.skipTest("content-index-releases is not checked out next to this repository")
+        spec = importlib.util.spec_from_file_location("releases_authored", tools / "authored.py")
+        authored = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(authored)
+        if not hasattr(authored, "host_key"):
+            self.skipTest("the checkout of content-index-releases reads no share host yet")
+
+        pattern = re.compile(json.loads(check_hosts.SCHEMA.read_text(encoding="utf-8"))["$defs"]["hostKey"]["pattern"])
+        keys = [
+            "ksamods", "ab", "a" * 32, "a" * 33, "a", "share-host", "s3", "9lives", "KSAMods",
+            "share_host", "-x", "github", "spacedock", "authority", "since", "tag_prefix",
+            "githubs", "sincere", "ksamods\n", "",
+        ]
+        for key in keys:
+            with self.subTest(key):
+                self.assertEqual(pattern.search(key) is not None, authored.host_key(key))
 
 
 if __name__ == "__main__":

@@ -114,6 +114,17 @@ def explain(error):
             return f"{error.message}; for example, use {sample!r}"
         title = titled(error.schema)
         return f"{error.instance!r} is not {title}" if title else error.message
+    if error.validator == "additionalProperties" and "patternProperties" in error.schema:
+        # The raw message would show the regex of the share host keys, so it
+        # is worded as it is for a section without one.
+        extras = [
+            key
+            for key in error.instance
+            if key not in error.schema.get("properties", {})
+            and not any(re.search(pattern, key) for pattern in error.schema["patternProperties"])
+        ]
+        verb = "was" if len(extras) == 1 else "were"
+        return f"Additional properties are not allowed ({', '.join(map(repr, extras))} {verb} unexpected)"
     if error.validator != "not":
         return error.message
     if error.validator_value == {}:

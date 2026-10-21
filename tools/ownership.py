@@ -62,6 +62,18 @@ RENAMED_HOST = "the repository the listing's host was renamed into"
 # (RFC 0096) only say which releases the watcher stamps, so they never count as a host.
 NOT_HOSTS = ("authority", "since", "tag_prefix")
 
+# The hosts every listing can name. Any other key of [releases] names a share
+# host of RFC 0094, a table of hosts.toml.
+FIXED_HOSTS = ("github", "spacedock")
+SHARE_KIND = "share"
+
+
+def share_keys(releases):
+    """The keys of a `[releases]` section that name a share host."""
+    if not isinstance(releases, dict):
+        return []
+    return [key for key in releases if key not in FIXED_HOSTS and key not in NOT_HOSTS]
+
 
 class Unavailable(Exception):
     """The host could not answer, so the check reached no verdict."""

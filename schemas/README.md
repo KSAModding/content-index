@@ -217,6 +217,10 @@ A `storage` repository of the KSAModding organization is refused, because the in
 
 `tools/check_hosts.py` runs the schema and adds the rules it cannot express: every type in `types` has a size in `max_bytes`, a host with `data` and no `storage` is refused while the watcher and the ownership check read only a storage repository, and `pages` is the GitHub Pages address of `storage`.
 
+`authored.schema.json` cannot read `hosts.toml`, so under `[releases]` it takes any key of the host key form with a listing id as its value, and `authority` takes such a key too.
+`tools/check_hosts.py` then refuses, for the documents a pull request changes, a key that `hosts.toml` does not register, a host whose `types` does not hold the type of the document, a value that is not the id of the document, a share host next to another host without `authority`, and an `authority` that names no host of the section.
+These rules are not in `vectors.json`, because its runners have no `hosts.toml`.
+
 ## Save and vehicle names
 
 The game takes the identity of a vehicle or a save from `name` in the `meta.toml` of its folder (`UncompressedVehicleSave.FromDirectory`, `UncompressedSave.FromDirectory`), and it keeps a name only when `SaveName.Sanitize` gives it back unchanged (`SaveName.IsSanitized`).
