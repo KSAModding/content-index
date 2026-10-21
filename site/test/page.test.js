@@ -59,15 +59,9 @@ test("a text that a pack shows names what is listed through the word the type se
   assert.match(render, /querySelectorAll\("\.not-pack"\)\) part\.hidden = shown\.pack/);
 });
 
-test("the type select offers what the deployed schema accepts, so lifting the gate needs no page change", () => {
+test("the type select offers what the deployed schema accepts", () => {
   const schema = JSON.parse(read("../../schemas/authored.schema.json"));
-  const ungated = structuredClone(schema);
-  delete ungated.properties.type.not;
-  const gated = new Set(schema.properties.type.not ? schema.properties.type.not.enum : []);
-  for (const type of ["vehicle", "save"]) {
-    assert.equal(typeChoices(schema).includes(type), !gated.has(type), type);
-    assert.ok(typeChoices(ungated).includes(type), type);
-  }
+  for (const type of ["vehicle", "save"]) assert.ok(typeChoices(schema).includes(type), type);
   assert.match(app, /checker = createChecker\(\{ schema, tagsText, hostsText \}\);\n    types = typeChoices\(schema\);/);
   assert.match(body("function renderMode()"), /renderTypeOptions\(\);/);
   assert.match(body("function renderTypeOptions()"), /\$\("type"\)\.replaceChildren\(\.\.\.offered\.map/);
