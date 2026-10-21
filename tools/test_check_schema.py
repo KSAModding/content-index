@@ -197,6 +197,8 @@ REJECTED = [
     ("unknown release host", mod(append='\n[releases]\nCurseForge = 12\n'), "releases: Additional properties are not allowed ('CurseForge'"),
     ("a share host key with capital letters", mod(append='\n[releases]\nKSAMods = "TestMod"\n'), "releases: Additional properties are not allowed ('KSAMods'"),
     ("a share host key with a number as its value", mod(append='\n[releases]\nksamods = 12\n'), "releases.ksamods: 12 is not of type 'string'"),
+    ("a misspelt spacedock", mod(append='\n[releases]\nspacdock = 4253\n'), "releases.spacdock: 4253 is not of type 'string'; 'spacdock' is not github or spacedock, so the index reads it as a share host"),
+    ("a misspelt github", mod(append='\n[releases]\ngihub = "a/b"\n'), "releases.gihub: 'a/b' is not 1 to 64 ASCII letters, digits, '.', '_' or '-', starting and ending with a letter or digit; 'gihub' is not github or spacedock"),
     ("a share host key whose value is not an id", mod(append='\n[releases]\nksamods = "Test Mod"\n'), "releases.ksamods: 'Test Mod' is not 1 to 64 ASCII letters"),
     ("unknown authority", mod(append='\n[releases]\ngithub = "a/b"\nauthority = "Forums"\n'), "releases.authority: 'Forums' is not a host key"),
     ("a section with a share host authority and no host", mod(append='\n[releases]\nauthority = "ksamods"\n'), "releases: {'authority': 'ksamods'} is not valid under any"),
@@ -485,6 +487,25 @@ def untitled_patterns(node, where="#"):
     return found
 
 
+def untyped_nots(node, where="#"):
+    """The places of every "not" with a pattern that does not also name the string type.
+
+    A pattern holds for every value that is not a string, so such a "not"
+    refuses a number with its title, such as 1234 is a reserved name.
+    """
+    found = []
+    if isinstance(node, dict):
+        rule = node.get("not")
+        if isinstance(rule, dict) and "pattern" in rule and rule.get("type") != "string":
+            found.append(f"{where}/not")
+        for key, value in node.items():
+            found.extend(untyped_nots(value, f"{where}/{key}"))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            found.extend(untyped_nots(value, f"{where}/{index}"))
+    return found
+
+
 def main():
     checker = check_schema.validator()
     failures = []
@@ -493,6 +514,10 @@ def main():
     checked += 1
     for where in untitled_patterns(checker.schema):
         failures.append(f"the pattern at {where} has no title and no example")
+
+    checked += 1
+    for where in untyped_nots(checker.schema):
+        failures.append(f"the not at {where} has a pattern but does not name the string type")
 
     for path in sorted(VALID.glob("*.toml")):
         checked += 1

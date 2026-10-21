@@ -505,6 +505,7 @@
                 "items": {
                   "not": {
                     "title": "the game's own manifest, which no descriptor may claim",
+                    "type": "string",
                     "$comment": "Trailing dots and spaces are matched too: Windows strips them, so 'manifest.toml ' opens the same file.",
                     "pattern": "^[Mm][Aa][Nn][Ii][Ff][Ee][Ss][Tt][.][Tt][Oo][Mm][Ll][ .]*(?![\\s\\S])"
                   }
@@ -531,6 +532,7 @@
       "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,62}[A-Za-z0-9])?(?![\\s\\S])",
       "not": {
         "title": "a reserved name, compared up to the first dot",
+        "type": "string",
         "$comment": "Case-insensitive, because Windows treats CON.mod as a device too. Core is the game's own (Content/Core, exempted in ModLibrary.PrepareManifest).",
         "pattern": "^(?:[Cc][Oo][Rr][Ee]|[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:[.]|(?![\\s\\S]))"
       }
@@ -566,12 +568,14 @@
         {
           "not": {
             "title": "a path that leaves its anchor",
+            "type": "string",
             "pattern": "(?:^|/)[.]{1,2}(?:/|(?![\\s\\S]))"
           }
         },
         {
           "not": {
             "title": "a path through a reserved Windows device name",
+            "type": "string",
             "$comment": "A segment naming a device swallows every write on Windows, so a manager would report success and change nothing. Everything after the first dot is ignored when Windows resolves the device, and trailing dots and spaces are stripped, so all of those spellings are matched. Core is absent here: it is reserved as an id, not as a path.",
             "pattern": "(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:[.][^/]*)?[ .]*(?:/|(?![\\s\\S]))"
           }

@@ -159,6 +159,14 @@ function extraStep(error) {
   return error.propertyName;
 }
 
+// A misspelt github or spacedock is read as a share host key, so its error
+// says why, in the words of check_schema.SHARE_KEY_HINT.
+function shareKeyHint(schema, error) {
+  const found = /^\/releases\/([^/]+)$/.exec(error.instancePath);
+  if (!found || Object.hasOwn(schema.properties.releases.properties, found[1])) return "";
+  return `; ${pyRepr(found[1])} is not github or spacedock, so the index reads it as a share host, whose value is the id of the listing`;
+}
+
 export function schemaMessages(validate, document) {
   if (validate(document)) {
     return [];
@@ -173,7 +181,7 @@ export function schemaMessages(validate, document) {
   const found = [];
   for (const error of kept) {
     const where = pointer(document, error.instancePath) || "the document";
-    const text = explain(error);
+    const text = explain(error) + shareKeyHint(validate.schema, error);
     const unique = where + "\n" + text;
     if (seen.has(unique)) {
       continue;

@@ -35,6 +35,10 @@ MONTH_BOUND = re.compile(r"^([0-9]{4})\.([0-9]+)(?![\s\S])")
 
 PINNED_SECTIONS = ("mods", "vehicles", "saves")
 
+# A misspelt github or spacedock is read as a share host key, so its error says
+# why. The listing page adds the same words.
+SHARE_KEY_HINT = "{key} is not github or spacedock, so the index reads it as a share host, whose value is the id of the listing"
+
 
 def normalise(value):
     """Turn TOML's native date and time values into the strings the schema expects.
@@ -136,7 +140,10 @@ def explain(error):
 def check_schema(path, document, validator, errors):
     for error in sorted(validator.iter_errors(document), key=lambda e: list(map(str, e.absolute_path))):
         deepest = best_match([error]) or error
-        errors.append(f"{path}: {pointer(deepest)}: {explain(deepest)}")
+        text = explain(deepest)
+        if "patternProperties" in deepest.absolute_schema_path:
+            text += "; " + SHARE_KEY_HINT.format(key=repr(deepest.absolute_path[-1]))
+        errors.append(f"{path}: {pointer(deepest)}: {text}")
 
 
 def semver_key(version):
