@@ -133,6 +133,24 @@ test("tag_prefix comes back from a loaded listing and is kept on an edit", () =>
   assert.match(written, /\[releases\]\ngithub = "a\/b"\nspacedock = 12\nauthority = "github"\ntag_prefix = "gatos-v"\nsince = "0\.4"\n/);
 });
 
+test("a share host key is kept on an edit, with its authority and since", () => {
+  const text = "type = \"vehicle\"\n\n[releases]\nksamods = \"ExampleRover\"\ngithub = \"a/b\"\nauthority = \"ksamods\"\nsince = \"1.0\"\n";
+  const base = parseDocument(text);
+  const form = formFromDocument(base);
+  assert.deepEqual(form.shareHosts, [{ key: "ksamods", id: "ExampleRover" }]);
+  assert.equal(form.authority, "ksamods");
+  assert.deepEqual(documentFromForm(form, base).releases, base.releases);
+  form.github = "";
+  assert.deepEqual(documentFromForm(form, base).releases, { ksamods: "ExampleRover", since: "1.0" });
+});
+
+test("a share host alone keeps its since and writes no authority", () => {
+  const base = parseDocument("type = \"vehicle\"\n\n[releases]\nksamods = \"ExampleRover\"\nsince = \"1.0\"\n");
+  const form = formFromDocument(base);
+  assert.deepEqual(documentFromForm(form, base).releases, { ksamods: "ExampleRover", since: "1.0" });
+  assert.deepEqual(emptyForm().shareHosts, []);
+});
+
 test("the new-file address carries the file until it gets too long", () => {
   const short = newFileUrl(listingPath("MyMod"), "id = \"MyMod\"\n");
   assert.equal(short.filled, true);

@@ -219,6 +219,7 @@ A `storage` repository of the KSAModding organization is refused, because the in
 
 `authored.schema.json` cannot read `hosts.toml`, so under `[releases]` it takes any key of the host key form with a listing id as its value, and `authority` takes such a key too.
 `tools/check_hosts.py` then refuses, for the documents a pull request changes, a key that `hosts.toml` does not register, a host whose `types` does not hold the type of the document, a value that is not the id of the document, a share host next to another host without `authority`, and an `authority` that names no host of the section.
+The listing page runs the same rules, with the same words, against the `hosts.toml` it was deployed with.
 These rules are not in `vectors.json`, because its runners have no `hosts.toml`.
 
 ### Attestation vectors

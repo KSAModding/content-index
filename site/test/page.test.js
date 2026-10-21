@@ -68,7 +68,7 @@ test("the type select offers what the deployed schema accepts, so lifting the ga
     assert.equal(typeChoices(schema).includes(type), !gated.has(type), type);
     assert.ok(typeChoices(ungated).includes(type), type);
   }
-  assert.match(app, /checker = createChecker\(\{ schema, tagsText \}\);\n    types = typeChoices\(schema\);/);
+  assert.match(app, /checker = createChecker\(\{ schema, tagsText, hostsText \}\);\n    types = typeChoices\(schema\);/);
   assert.match(body("function renderMode()"), /renderTypeOptions\(\);/);
   assert.match(body("function renderTypeOptions()"), /\$\("type"\)\.replaceChildren\(\.\.\.offered\.map/);
 });

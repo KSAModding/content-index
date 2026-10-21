@@ -1596,9 +1596,13 @@ async function start() {
   restore();
   status("Loading the rules of the index.");
   try {
-    const [schemaText, tagsText] = await Promise.all([loadText("rules/authored.schema.json"), loadText("rules/tags.toml")]);
+    const [schemaText, tagsText, hostsText] = await Promise.all([
+      loadText("rules/authored.schema.json"),
+      loadText("rules/tags.toml"),
+      loadText("rules/hosts.toml"),
+    ]);
     const schema = JSON.parse(schemaText);
-    checker = createChecker({ schema, tagsText });
+    checker = createChecker({ schema, tagsText, hostsText });
     types = typeChoices(schema);
   } catch (error) {
     status(`The rules did not load, so the page cannot check anything. Reload the page. (${error.message})`);
