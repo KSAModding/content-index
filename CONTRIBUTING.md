@@ -174,7 +174,7 @@ The [listing page](https://ksamodding.github.io/content-index/) checks a zip you
 A vehicle needs a release host that proves who shares it, and you have these paths:
 
 - A GitHub repository of your own under `[releases] github`. One repository can hold many vehicles, each with a `tag_prefix` of its own, see [A repository with other releases](#a-repository-with-other-releases). The proof is the same as for any repository, and a marker file that names only your username covers every vehicle in it.
-- A share host, once the index registers one.
+- A share host that [`hosts.toml`](hosts.toml) registers for vehicles, named under `[releases]` by its key with the id of the vehicle as the value. You publish through the host, and it opens the pull request, see [Proving you control the release host](#proving-you-control-the-release-host).
 - No `[releases]` at all. Each release then enters by a [release pull request](https://github.com/KSAModding/content-index-releases/blob/main/CONTRIBUTING.md#a-release) in content-index-releases.
 
 ## Claiming and updating a pack
