@@ -43,8 +43,8 @@ spacedock = "https://spacedock.info/mod/4054/ModMenu"
 bugtracker = "https://github.com/MrJeranimo/ModMenu/issues"
 
 [compatibility]
-game_min = "2026.9.7.5402"
+game_min = "2026.10.19.5638"
 
 [loader]
 id = "StarMap"
-min = "0.4.6"
+min = "0.4.8"
