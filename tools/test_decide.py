@@ -1344,7 +1344,7 @@ class Act(unittest.TestCase):
         }
         asked = []
 
-        def verify(document, login, author_id, api):
+        def verify(document, login, author_id, api, registry=None):
             asked.append(document["releases"]["github"])
             return VERIFIED if document["releases"]["github"] == "Attacker/Mod" else UNVERIFIED
 
@@ -1386,7 +1386,7 @@ class Act(unittest.TestCase):
         }
         asked = []
 
-        def verify(document, login, author_id, api):
+        def verify(document, login, author_id, api, registry=None):
             host = document["releases"]["github"]
             asked.append(host)
             return VERIFIED if host == "Attacker/Mod" else UNVERIFIED
