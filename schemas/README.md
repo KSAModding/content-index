@@ -2,7 +2,7 @@
 
 `authored.schema.json` is the machine-readable form of the authored document defined by [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md) and extended by [RFC 0035](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0035-content-install-descriptor.md), [RFC 0049](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0049-instance-handover.md), [RFC 0058](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0058-listing-images-and-dates.md) and [RFC 0067](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0067-per-platform-launch.md), and amended by [RFC 0065](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0065-icon-center-crop.md), [RFC 0072](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0072-version-forms.md) and [RFC 0079](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0079-author-freedom.md).
 
-It is JSON Schema 2020-12, and it covers the five types the format defines today: `mod`, `mod-loader`, `modpack`, and `vehicle` and `save` from [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md), which [the rollout gate](#the-rollout-gate) still refuses.
+It is JSON Schema 2020-12, and it covers the five types the format defines today: `mod`, `mod-loader`, `modpack`, and `vehicle` and `save` from [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md), of which [the rollout gate](#the-rollout-gate) still refuses `save`.
 
 `index-status.schema.json` covers `index-status.toml`, the index's own voice about a listing, per [RFC 0033](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0033-content-index.md).
 A state the snapshot builder cannot place fails the build, so a delisting written with a typo never reaches a client.
@@ -200,12 +200,13 @@ The checks of the archive, such as the name rule below, the root folder and the 
 
 ## The rollout gate
 
-RFC 0085 lets the index accept a `vehicle` only once a release host for it exists, and the listing checks, the watcher, the snapshot builder and a released Borea support the type, and later the same for a `save`.
+RFC 0085 lets the index accept a `save` only once a release host for it exists, and the listing checks, the watcher, the snapshot builder and a released Borea support the type.
+[#210](https://github.com/KSAModding/content-index/issues/210) lifted the gate for `vehicle` first, and it holds only `save` now.
 No file here can see whether those are ready, so the schema holds the gate itself: `properties.type.not` lists the types the index does not accept yet, and a document of such a type is refused with its title, "a type that the index does not accept yet, because no release host for it exists (RFC 0085 Rollout)".
 `tools/check_schema.py`, the listing page and Borea's `ListingValidator` all run this schema, so the gate refuses everywhere with the same words, and `tools/decide.py` never arms auto-merge for such a document.
 
-A steward lifts the gate by pull request ([#210](https://github.com/KSAModding/content-index/issues/210)): first `vehicle`, then `save`, each by removing it from the `enum` of the `not`, and the whole `not` once its `enum` is empty.
-No check reads `hosts.toml` of the generated repository for it.
+A steward lifts the gate for `save` by pull request ([#210](https://github.com/KSAModding/content-index/issues/210)), by removing the whole `not`.
+A share host in `hosts.toml` whose `types` holds `save` does not lift it by itself.
 A vector of `vectors.json` for a gated type carries `"gated": "vehicle"` or `"gated": "save"`. While the schema holds that type, both runners expect the gate line, and they also run each such vector against a copy of the schema without the gate and expect its `accepted`, `noted` and `says`, so a lift changes the schema alone.
 
 ## Share hosts
@@ -277,7 +278,7 @@ They are collected here so any one of them can be argued down on its own.
 | `superseded_by` requires `status = "deprecated"` | RFC 0031 calls it "only meaningful together with" a deprecation. Alone it is a successor no client will ever show, which is more likely a forgotten `status` line than an intention. |
 | A `mod` may not set `install.target` or `install.path` | RFC 0035: "a mod's install location is not the author's to choose in the first place", because the folder name is the identity `Mod.MakeUsing` assigns, and "stating it as a default rather than an authorable field keeps it that way". The stamper refuses both keys on a mod, so the schema refuses even `target = "mods"`, which only repeats the default. |
 | A `modpack` may not carry `[releases]`, `[loader]` or `[[dependencies]]` | RFC 0031 lists these under what a pack does not have, and RFC 0035 already makes `[install]` on a pack invalid. A section that does nothing is a section its author believed in. |
-| A `vehicle` or a `save` is refused until the rollout gate lifts its type | RFC 0085 makes a release host and support in the watcher, the snapshot builder and the clients the condition, and says nothing about how the index enforces it. The gate in the schema is that enforcement, see [The rollout gate](#the-rollout-gate). |
+| A `save` is refused until the rollout gate lifts its type | RFC 0085 makes a release host and support in the watcher, the snapshot builder and the clients the condition, and says nothing about how the index enforces it. The gate in the schema is that enforcement, see [The rollout gate](#the-rollout-gate). |
 | A `mod-loader` carrying `[install]` must state `target` | RFC 0035's Relationship section claims every RFC 0031 file stays valid, but its own table requires `target` on a type with no default, and `mod-loader` has none. The normative table wins. |
 | Authored version bounds reject a leading `v` | Only a release tag gets its `v` stripped, and that happens at stamp time. An authored bound is not a tag. |
 | Game bounds reject a suffix or a `+hash`, take a four-digit year, and take a month of 1 to 12 | RFC 0017 puts builds carrying a suffix outside the compatibility model, and a bound has to resolve to a revision. |
