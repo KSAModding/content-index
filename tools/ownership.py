@@ -6,6 +6,7 @@ RFC 0033 for the marker file and the owner id, RFC 0038 for the topic, RFC 0079
 for a fork and for a SpaceDock mod.
 """
 
+import hashlib
 import json
 import re
 import tomllib
@@ -73,6 +74,39 @@ def share_keys(releases):
     if not isinstance(releases, dict):
         return []
     return [key for key in releases if key not in FIXED_HOSTS and key not in NOT_HOSTS]
+
+
+BLOB = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+
+
+def canonical_change(changes):
+    """The canonical form of a pull request's change, which a share host attests (RFC 0094).
+
+    One line per path the change touches, `<path> <blob>` with the git blob id
+    of the file at the head, or `<path> deleted`. A rename deletes the old path.
+    The lines are sorted by the UTF-8 bytes of the path, and each ends with LF.
+    `changes` are as `check_scope.Change` gives them, with `blob`. Raises
+    ValueError for a file that has no blob id.
+    """
+    lines = {}
+    for change in changes:
+        if change.status == "removed":
+            lines[change.path] = "deleted"
+            continue
+        if change.status == "renamed" and change.previous_path:
+            lines[change.previous_path] = "deleted"
+        blob = (change.blob or "").lower()
+        if not BLOB.fullmatch(blob):
+            raise ValueError(f"GitHub gives no blob id of {change.path}")
+        lines[change.path] = blob
+    return "".join(
+        f"{path} {lines[path]}\n" for path in sorted(lines, key=lambda path: path.encode("utf-8"))
+    )
+
+
+def change_digest(changes):
+    """The lowercase hex SHA-256 of the canonical form, which names the attestation file."""
+    return hashlib.sha256(canonical_change(changes).encode("utf-8")).hexdigest()
 
 
 class Unavailable(Exception):

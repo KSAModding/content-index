@@ -221,6 +221,17 @@ A `storage` repository of the KSAModding organization is refused, because the in
 `tools/check_hosts.py` then refuses, for the documents a pull request changes, a key that `hosts.toml` does not register, a host whose `types` does not hold the type of the document, a value that is not the id of the document, a share host next to another host without `authority`, and an `authority` that names no host of the section.
 These rules are not in `vectors.json`, because its runners have no `hosts.toml`.
 
+### Attestation vectors
+
+A share host proves the owner of a change it opens from its bot account with an attestation, `attestations/<sha256>.json` in its `storage`, named by the SHA-256 of the canonical form of the change (RFC 0094).
+The canonical form is UTF-8 text with one line per path the pull request touches, `<path> <blob>` with the lowercase git blob id of the file at the head, or `<path> deleted`.
+A rename is a `deleted` line for the old path and a line for the new path.
+The lines are sorted by the UTF-8 bytes of the path, not by UTF-16 code units or by a culture, and each line ends with one LF, the last one too.
+
+`attestation-vectors.json` is an object with one key, `vectors`, a list of cases with the keys `name` (unique in the file), `files` (the change as the pull request files API gives it, with `filename`, `status`, `sha` and `previous_filename`), `canonical` (the canonical form) and `sha256` (its lowercase hex SHA-256).
+Every character outside ASCII is a JSON `\u` escape, so the file stays ASCII.
+`tools/test_attestation_vectors.py` runs it against `ownership.canonical_change` and `ownership.change_digest`, and every share host runs it against its own copy of the form.
+
 ## Save and vehicle names
 
 The game takes the identity of a vehicle or a save from `name` in the `meta.toml` of its folder (`UncompressedVehicleSave.FromDirectory`, `UncompressedSave.FromDirectory`), and it keeps a name only when `SaveName.Sanitize` gives it back unchanged (`SaveName.IsSanitized`).
