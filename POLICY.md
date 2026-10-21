@@ -101,6 +101,21 @@ When no owner can be named, the comment says so and mentions nobody.
 The bot mentions and does not assign, because GitHub assigns only people with access to this repository.
 A mention subscribes the owner to that one pull request, and they can unsubscribe from it on its page.
 
+## Content on a share host
+
+A share host lets a player publish a vehicle or a save without a GitHub repository of their own, per [RFC 0094](https://github.com/KSAModding/content-manager-design/pull/94).
+The stewards register each share host in [`hosts.toml`](hosts.toml), and its operator agrees at registration to transfer its storage repository to a successor the stewards name when it stops operating.
+
+For content on a share host, its operator handles takedowns, abuse reports and the privacy of its accounts, under the policy that its table in `hosts.toml` links:
+
+- No share host is registered yet.
+
+A takedown on the host deletes the release in its storage repository, and the watcher then marks the release gone.
+The index still owns its listing states, so a steward can delist content on a share host through `index-status.toml` as for any other listing, which is the faster path for content that must go at once.
+
+An id dispute between two accounts of one share host is settled by the first upload of that id on the host, which the records of the host show.
+The bot names no owner of a listing on a share host in its comments, because the host reaches its owners through their accounts on the host.
+
 ## Response expectations and escalation
 
 The stewards are volunteers with no rota, so this document promises no response time.

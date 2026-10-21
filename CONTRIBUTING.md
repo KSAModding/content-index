@@ -217,6 +217,11 @@ A SpaceDock mod with no source code link, or with a link that does not name a Gi
 When SpaceDock does not answer, the check reaches no verdict, and the pull request also waits for a steward.
 Release and amendment pull requests in content-index-releases use the same proof.
 
+A listing on a share host, a host that [`hosts.toml`](hosts.toml) registers per [RFC 0094](https://github.com/KSAModding/content-manager-design/pull/94), needs no proof that you set up.
+The host proves the owner in one of two ways: it opens the pull request from its own account and places an attestation of the exact change in its storage repository, or you link your GitHub account to your account on the host and open the pull request yourself.
+A pull request that changes one byte after the host attested it does not verify.
+An edit is verified against the host that the listing already names, as for every other host.
+
 ## Changing a listing that already exists
 
 An edit is checked against the release host your listing names right now, on `main`, and not against the one your pull request writes into it.
