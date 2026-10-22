@@ -53,15 +53,16 @@ spacedock = "https://spacedock.info/mod/4552/Webcast%20Telemetry%20Overlay#info"
 bugtracker = "https://github.com/elevatorctln/KSA-Public-Telemetry/issues"
 
 [compatibility]
-game_min = "2026.9.7.5402"
+game_min = "2026.10.19.5638"
 
 [loader]
 id = "StarMap"
-min = "0.4.5"
+min = "0.4.8"
 
 [[dependencies]]
 id = "ModMenu"
 kind = "recommends"
+min = "0.2.3"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/icon.png"
