@@ -28,13 +28,15 @@ https://ksamodding.github.io/content-index-releases/v1/index.json
 | `packs/<id>/owner.json` | The GitHub account that owns a pack id, recorded by its first claim. |
 | `index-status.toml` | The index's own voice about a listing. Stewards only. |
 | `tags.toml` | The curated tag vocabulary that clients use for filters. Stewards only. |
+| `hosts.toml` | The share hosts the index trusts to say who owns an upload, per [RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md). Stewards only. |
 | `POLICY.md` | How a takedown or an id dispute is filed, and what a steward does with it. |
 | `schemas/` | What a document may contain, as JSON Schema. See its [README](schemas/README.md). |
 | `tools/` | The checks that run on every pull request. |
 | `schemas/vectors.json` | Test documents with the result the checks give, which `tools/test_vectors.py` and the tests of the listing page both run, so the page and the checks keep one rule set. |
 | `schemas/pack-vectors.json` | Pack versions with a small index and the result of the pack member rules, which the checks and the listing page both run, and which Borea is to run too ([Borea#567](https://github.com/KSAModding/Borea/issues/567)). See the [schemas README](schemas/README.md#pack-member-vectors). |
 | `schemas/save-names.json` | Names of a vehicle or a save with the verdict of the name rule of RFC 0085, which the stamper of content-index-releases, the listing page and Borea all run. See the [schemas README](schemas/README.md#save-and-vehicle-names). |
-| `site/` | The [listing page](https://ksamodding.github.io/content-index/), which writes a listing or a pack version, or changes a listing, and checks it in the browser before the pull request. It also says whether a pack id is free and writes the owner record of a first pack claim. It uses the schema and `tags.toml` of the commit it was deployed from. |
+| `schemas/attestation-vectors.json` | Changes with their canonical form and its SHA-256, which the ownership check and every share host of [RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md) run. See the [schemas README](schemas/README.md#attestation-vectors). |
+| `site/` | The [listing page](https://ksamodding.github.io/content-index/), which writes a listing or a pack version, or changes a listing, and checks it in the browser before the pull request. It also says whether a pack id is free and writes the owner record of a first pack claim. It uses the schema, `tags.toml` and `hosts.toml` of the commit it was deployed from. |
 
 ## Getting listed
 
@@ -59,7 +61,7 @@ Nothing here changes it.
 ## License
 
 Metadata is dedicated to the public domain under [CC0 1.0](LICENSE).
-That means `listings/`, `vehicles/`, `saves/`, `packs/`, `index-status.toml`, `tags.toml`, and the published snapshot.
+That means `listings/`, `vehicles/`, `saves/`, `packs/`, `index-status.toml`, `tags.toml`, `hosts.toml`, and the published snapshot.
 
 A mirror, a client, or a website can therefore copy and re-serve the whole index with no conditions attached, which is the point.
 

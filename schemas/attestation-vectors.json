@@ -1,0 +1,143 @@
+{
+  "vectors": [
+    {
+      "name": "one new vehicle",
+      "files": [
+        {
+          "filename": "vehicles/ExampleRover.toml",
+          "status": "added",
+          "sha": "3b18e512dba79e4c8300dd08aeb37f8e728b8dad"
+        }
+      ],
+      "canonical": "vehicles/ExampleRover.toml 3b18e512dba79e4c8300dd08aeb37f8e728b8dad\n",
+      "sha256": "4e0e22e164daafbe2ca682be605b8bdc33fe6244864c17848b33d7090ceaa5db"
+    },
+    {
+      "name": "an edit of a listing",
+      "files": [
+        {
+          "filename": "vehicles/ExampleRover.toml",
+          "status": "modified",
+          "sha": "a5c19667710254f835085b99726e523457150e03"
+        }
+      ],
+      "canonical": "vehicles/ExampleRover.toml a5c19667710254f835085b99726e523457150e03\n",
+      "sha256": "4e17e8cd0249e40a551270a0fe91e343777f0d30f17008786a629f453fdfc978"
+    },
+    {
+      "name": "several listings, given out of order",
+      "files": [
+        {
+          "filename": "vehicles/Zephyr.toml",
+          "status": "added",
+          "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+        },
+        {
+          "filename": "saves/MunBase.toml",
+          "status": "modified",
+          "sha": "3b18e512dba79e4c8300dd08aeb37f8e728b8dad"
+        },
+        {
+          "filename": "vehicles/Albatross.toml",
+          "status": "added",
+          "sha": "a5c19667710254f835085b99726e523457150e03"
+        }
+      ],
+      "canonical": "saves/MunBase.toml 3b18e512dba79e4c8300dd08aeb37f8e728b8dad\nvehicles/Albatross.toml a5c19667710254f835085b99726e523457150e03\nvehicles/Zephyr.toml e69de29bb2d1d6434b8b29ae775ad8c2e48c5391\n",
+      "sha256": "61ba4822220670c18f832c059d8bac5e02a16d88b4fddbf4e34ba9726638519d"
+    },
+    {
+      "name": "a rename is a deletion of the old path",
+      "files": [
+        {
+          "filename": "vehicles/RoverMk2.toml",
+          "status": "renamed",
+          "sha": "8f94139338f9404f26296befa88755fc2598c289",
+          "previous_filename": "vehicles/Rover.toml"
+        }
+      ],
+      "canonical": "vehicles/Rover.toml deleted\nvehicles/RoverMk2.toml 8f94139338f9404f26296befa88755fc2598c289\n",
+      "sha256": "85a1e4e65b7c2b74c5ea59f1ee0ae429f56fb8a7ed627324c5bc5191df7988b3"
+    },
+    {
+      "name": "a deletion carries no blob",
+      "files": [
+        {
+          "filename": "saves/OldBase.toml",
+          "status": "removed",
+          "sha": "d00491fd7e5bb6fa28c517a0bb32b8b506539d4d"
+        },
+        {
+          "filename": "saves/NewBase.toml",
+          "status": "added",
+          "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+        }
+      ],
+      "canonical": "saves/NewBase.toml e69de29bb2d1d6434b8b29ae775ad8c2e48c5391\nsaves/OldBase.toml deleted\n",
+      "sha256": "39e03b05938a7027643d0bb2d47796e409c6fa5cc423def2c681af1263fbf304"
+    },
+    {
+      "name": "upper case sorts before lower case, by byte",
+      "files": [
+        {
+          "filename": "vehicles/apollo.toml",
+          "status": "added",
+          "sha": "3b18e512dba79e4c8300dd08aeb37f8e728b8dad"
+        },
+        {
+          "filename": "vehicles/Zeta.toml",
+          "status": "added",
+          "sha": "a5c19667710254f835085b99726e523457150e03"
+        }
+      ],
+      "canonical": "vehicles/Zeta.toml a5c19667710254f835085b99726e523457150e03\nvehicles/apollo.toml 3b18e512dba79e4c8300dd08aeb37f8e728b8dad\n",
+      "sha256": "c74ee8ec703139991963e53fea4d484df7ccf99435dfec7ec278b24adb395935"
+    },
+    {
+      "name": "a dash sorts before a dot after the same start",
+      "files": [
+        {
+          "filename": "vehicles/Rover.toml",
+          "status": "added",
+          "sha": "3b18e512dba79e4c8300dd08aeb37f8e728b8dad"
+        },
+        {
+          "filename": "vehicles/Rover-2.toml",
+          "status": "added",
+          "sha": "a5c19667710254f835085b99726e523457150e03"
+        }
+      ],
+      "canonical": "vehicles/Rover-2.toml a5c19667710254f835085b99726e523457150e03\nvehicles/Rover.toml 3b18e512dba79e4c8300dd08aeb37f8e728b8dad\n",
+      "sha256": "4cea0db29987a4e0a6eda4f608daa0c5319333a989ac81addf06ca436c0a9626"
+    },
+    {
+      "name": "a non-ASCII path sorts by its UTF-8 bytes and not by UTF-16",
+      "files": [
+        {
+          "filename": "notes/\ud83d\ude80.md",
+          "status": "added",
+          "sha": "3b18e512dba79e4c8300dd08aeb37f8e728b8dad"
+        },
+        {
+          "filename": "notes/\uff21.md",
+          "status": "added",
+          "sha": "a5c19667710254f835085b99726e523457150e03"
+        }
+      ],
+      "canonical": "notes/\uff21.md a5c19667710254f835085b99726e523457150e03\nnotes/\ud83d\ude80.md 3b18e512dba79e4c8300dd08aeb37f8e728b8dad\n",
+      "sha256": "0db30a1c9b8569ef4f1428b9409ed255c373a5e6e962626c8d101e50aebdc1f1"
+    },
+    {
+      "name": "a blob id of a SHA-256 repository",
+      "files": [
+        {
+          "filename": "vehicles/ExampleRover.toml",
+          "status": "added",
+          "sha": "473a0f4c3be8a93681a267e3b1e9a7dcda1185436fe141f7749120a303721813"
+        }
+      ],
+      "canonical": "vehicles/ExampleRover.toml 473a0f4c3be8a93681a267e3b1e9a7dcda1185436fe141f7749120a303721813\n",
+      "sha256": "8dfdc4b1af3c7d1a59882141a0fcb59b274b94fc99c3867d6094ff2b85da0f99"
+    }
+  ]
+}

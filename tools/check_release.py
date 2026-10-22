@@ -8,7 +8,9 @@ could-not-evaluate. A pack, a listing with no release host, and a host with no
 release yet all pass. A `tag_prefix` that no release of the repository starts
 with is rejected, because the watcher would never stamp a release. For a
 vehicle or a save, a release whose install folder another listing of that type
-already holds is rejected too (RFC 0085).
+already holds is rejected too (RFC 0085). A share host is read with the tables of
+hosts.toml in this checkout, and the stamper rejects an archive larger than the
+`max_bytes` of its type (RFC 0094).
 """
 
 import argparse
@@ -18,6 +20,12 @@ import sys
 import tomllib
 import urllib.error
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import ownership
+
+ROOT = Path(__file__).resolve().parent.parent
 
 # The sibling checkout the workflow makes. A local run either has one next to
 # this repository or points at one.
@@ -118,10 +126,25 @@ def inspect(document, stamp_release, hosts, game_versions, http, folders=None):
     if not document.get("releases"):
         return Outcome(PASS, ["the listing names no release host, so releases enter by pull request"])
 
+    # A share host (RFC 0094) needs the type and the tables of hosts.toml, which
+    # only a stamper with `registered` takes.
+    registered = getattr(hosts, "registered", None)
     try:
-        authority, mirrors = hosts.build(document.get("releases"), http, document.get("id"))
+        if registered is not None:
+            authority, mirrors = hosts.build(
+                document.get("releases"), http, document.get("id"), content_type, registered(ROOT)
+            )
+        elif ownership.share_keys(document.get("releases")):
+            return Outcome(
+                COULD_NOT_EVALUATE,
+                ["the stamper of content-index-releases cannot read a share host yet"],
+            )
+        else:
+            authority, mirrors = hosts.build(document.get("releases"), http, document.get("id"))
     except stamp_release.StampError as error:
         return Outcome(REJECT, [str(error)])
+    except hosts.HostError as error:
+        return Outcome(COULD_NOT_EVALUATE, [f"the share host could not be read: {error}"])
     if authority is None:
         return Outcome(PASS, ["the listing names no release host, so releases enter by pull request"])
 

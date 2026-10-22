@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/KSAModding/content-index/main/schemas/hosts.schema.json",
+  "title": "hosts.toml",
+  "description": "The share hosts the index trusts to say who owns an upload, per RFC 0094, one table per host. The rules the schema cannot say are tools/check_hosts.py.",
+  "type": "object",
+  "propertyNames": { "$ref": "#/$defs/hostKey" },
+  "additionalProperties": { "$ref": "#/$defs/host" },
+  "$defs": {
+    "hostKey": {
+      "$comment": "The key a listing names the host with under [releases]. It is HOST_KEY of tools/authored.py in content-index-releases, and it is not a key that [releases] already has. authored.schema.json has the same pattern twice, and tools/test_check_hosts.py keeps the copies equal.",
+      "title": "a host key of 2 to 32 lowercase ASCII letters, digits or '-', starting with a letter, and not github, spacedock, authority or since",
+      "type": "string",
+      "pattern": "^(?!(?:github|spacedock|authority|since)(?![\\s\\S]))[a-z][a-z0-9-]{1,31}(?![\\s\\S])"
+    },
+    "baseUrl": {
+      "title": "an https URL that ends with /, without a query or a fragment",
+      "type": "string",
+      "pattern": "^https://[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::[0-9]{1,5})?/(?:[^\\s\\u0000-\\u001f?#]*/)?(?![\\s\\S])"
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name", "bot", "api", "types", "max_bytes", "new_listings_per_day", "policy"],
+      "oneOf": [
+        { "required": ["storage"] },
+        { "required": ["data"] }
+      ],
+      "properties": {
+        "kind": {
+          "description": "share, the only kind RFC 0094 defines.",
+          "const": "share"
+        },
+        "name": {
+          "description": "The name a client shows for the host.",
+          "type": "string",
+          "minLength": 1
+        },
+        "storage": {
+          "description": "The GitHub repository that holds the archives and the data files of the host, as owner/repo.",
+          "type": "string",
+          "examples": ["owner/repository"],
+          "pattern": "^[A-Za-z0-9-]+/[A-Za-z0-9._-]+(?![\\s\\S])",
+          "not": {
+            "title": "a repository of the KSAModding organization, which never hosts files (RFC 0025)",
+            "pattern": "^[Kk][Ss][Aa][Mm][Oo][Dd][Dd][Ii][Nn][Gg]/"
+          }
+        },
+        "data": {
+          "description": "The base URL that serves the data files, for a host that keeps its archives outside GitHub instead of in storage.",
+          "$ref": "#/$defs/baseUrl"
+        },
+        "bot": {
+          "description": "The numeric id of the GitHub account the host opens pull requests as.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "api": {
+          "description": "The base URL of the upload API.",
+          "$ref": "#/$defs/baseUrl"
+        },
+        "pages": {
+          "description": "The GitHub Pages address of storage, which a reader asks before raw.githubusercontent.com.",
+          "$ref": "#/$defs/baseUrl"
+        },
+        "types": {
+          "description": "The content types the host takes. A listing of another type may not name it.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["vehicle", "save"] }
+        },
+        "max_bytes": {
+          "description": "The largest archive the host takes, per type. The watcher and the listing checks refuse a larger one too.",
+          "type": "object",
+          "propertyNames": { "enum": ["vehicle", "save"] },
+          "additionalProperties": { "type": "integer", "minimum": 1 }
+        },
+        "new_listings_per_day": {
+          "description": "How many new ids one account of the host may claim per day. The host enforces it.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "policy": {
+          "description": "The policy of the host for takedowns, abuse reports and the privacy of its accounts, which POLICY.md links.",
+          "type": "string",
+          "title": "an https URL",
+          "pattern": "^https://[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::[0-9]{1,5})?(?:[/?#][^\\s\\u0000-\\u001f]*)?(?![\\s\\S])"
+        }
+      }
+    }
+  }
+}

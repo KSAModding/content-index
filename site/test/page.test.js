@@ -68,7 +68,7 @@ test("the type select offers what the deployed schema accepts, so lifting the ga
     assert.equal(typeChoices(schema).includes(type), !gated.has(type), type);
     assert.ok(typeChoices(ungated).includes(type), type);
   }
-  assert.match(app, /checker = createChecker\(\{ schema, tagsText \}\);\n    types = typeChoices\(schema\);/);
+  assert.match(app, /checker = createChecker\(\{ schema, tagsText, hostsText \}\);\n    types = typeChoices\(schema\);/);
   assert.match(body("function renderMode()"), /renderTypeOptions\(\);/);
   assert.match(body("function renderTypeOptions()"), /\$\("type"\)\.replaceChildren\(\.\.\.offered\.map/);
 });
@@ -103,10 +103,19 @@ test("the since field shows next to a release host and tells what the watcher st
   const input = html.match(/<input id="since"[^>]*>/);
   assert.ok(input && /aria-describedby="[^"]*\bmsg-releases\.since\b/.test(input[0]), "the since input does not name msg-releases.since");
   assert.match(app, /\n  since: \["since"\],\n/, "the since input is not bound to state.form.since");
-  assert.match(body("function refresh()"), /\$\("since-field"\)\.hidden = !\(state\.form\.github\.trim\(\) \|\| state\.form\.spacedock\.trim\(\)\);/);
+  assert.match(body("function refresh()"), /const hosts = namedHosts\(state\.form\);[\s\S]*\$\("since-field"\)\.hidden = !hosts\.length;/);
   const hint = /<p id="hint-since"[^>]*>([\s\S]*?)<\/p>/.exec(html)[1];
   assert.match(hint, /stamps every older release from that version on, with the facts this listing states today/);
   assert.match(hint, /amendment/);
+});
+
+test("the authority field shows next to two hosts and offers the hosts the section names", () => {
+  const select = /<select id="authority"[^>]*>([\s\S]*?)<\/select>/.exec(html)[1];
+  assert.equal(select.trim(), '<option value="">Choose</option>', "the authority choice has fixed hosts in the markup");
+  assert.match(body("function refresh()"), /renderAuthority\(hosts\);/);
+  const render = body("function renderAuthority(");
+  assert.match(render, /\$\("authority-field"\)\.hidden = hosts\.length < 2;/);
+  assert.match(render, /offered\.map\(\(host\) => element\("option"/);
 });
 
 test("the tag_prefix field shows next to a GitHub repository and tells what it selects", () => {
