@@ -34,11 +34,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The artifact goes outside the checkout, so it never replaces a file that
+      # this job runs.
       - uses: actions/download-artifact@v8
         id: verdict
         continue-on-error: true
         with:
           name: validation-verdict
+          path: ${{ runner.temp }}/verdict
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
 
@@ -65,7 +68,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/decide.py \
-            --verdict verdict.json \
+            --verdict "$RUNNER_TEMP/verdict/verdict.json" \
             --event "$EVENT" \
             --head-repository "$HEAD_REPOSITORY" \
             --head-branch "$HEAD_BRANCH" \
