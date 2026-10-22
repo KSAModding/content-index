@@ -34,22 +34,25 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v8
-        id: verdict
-        continue-on-error: true
-        with:
-          name: validation-verdict
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ github.token }}
-
       # The packages come from the requirements of the default branch, which this
-      # job checked out, never from the head of the pull request. A cache could
+      # job checked out, before the verdict artifact is downloaded. A cache could
       # carry packages from another run into a job that holds the App key.
       - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - run: |
           python -m pip install --only-binary=:all: -r tools/requirements.txt
+
+      # A pull request can change checks.yml and so put any file into this
+      # artifact. It goes outside the checkout, so it can not replace the tools.
+      - uses: actions/download-artifact@v8
+        id: verdict
+        continue-on-error: true
+        with:
+          name: validation-verdict
+          path: ${{ runner.temp }}/verdict
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
 
       # GITHUB_TOKEN would arm a merge that starts no snapshot dispatch.
       - uses: actions/create-github-app-token@v3
@@ -75,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
           python tools/decide.py \
-            --verdict verdict.json \
+            --verdict "$RUNNER_TEMP/verdict/verdict.json" \
             --event "$EVENT" \
             --head-repository "$HEAD_REPOSITORY" \
             --head-branch "$HEAD_BRANCH" \
