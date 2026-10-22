@@ -43,7 +43,8 @@ What a steward does:
 3. Sets `delisted` with a reason when the takedown holds, or closes the issue with a reason when it does not.
 
 Grounds that hold: the content breaks the law or the license of what it contains, the archive carries something harmful, the release host has already taken the files down, or the required forums thread is gone (see below).
-The same grounds hold for a vehicle.
+The same grounds hold for a vehicle or a save.
+In a save, every file beside `meta.toml` and `universe.xml` is the state of a mod and installs as it is, so such a file that carries something harmful is grounds too.
 
 If you are the author and want your own listing gone, read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 A `deprecated` status or a yanked release keeps the id, the successor pointer and every stamped release for the people who installed it.
@@ -71,18 +72,18 @@ A retracted version stays installed where it is, and a client stops offering it,
 
 The id is the folder name the game installs a mod as, so two mods cannot share one, and the index gives an id to the first pull request that claims it and verifies.
 A pack id is given the same way, and a squatted pack id, such as a generic `StarterPack`, is an id dispute like any other.
-A vehicle installs as the `name` in its `meta.toml` and not as its id, but its id is in the same namespace and is given the same way.
+A vehicle or a save installs as the `name` in its `meta.toml` and not as its id, but its id is in the same namespace and is given the same way.
 
 Use the [id dispute form](https://github.com/KSAModding/content-index/issues/new?template=id-dispute.yml) when a listed id is one you believe is yours, or when the ownership of a listing is contested, for example after a handover.
 
 Who was first is decided by the forums thread.
 Every mod, mod loader and pack carries a required `links.forums`, tied to an Ahwoo forums account, and the thread that first announced the content under that folder name is the tiebreaker.
-A vehicle can have no thread, see [The forums link](#the-forums-link), and then the steward decides by the account on its release host, the account that proves control of the host the listing names.
+A vehicle or a save can have no thread, see [The forums link](#the-forums-link), and then the steward decides by the account on its release host, the account that proves control of the host the listing names.
 
 What a steward does:
 
 1. Sets `disputed` on the listing as soon as the dispute is filed, so clients warn while it is open.
-2. Asks both parties to answer on the issue, each with their forums thread, or for a vehicle without one, with the account on its release host.
+2. Asks both parties to answer on the issue, each with their forums thread, or for a vehicle or a save without one, with the account on its release host.
 3. Decides, and writes the decision on the issue.
 
 When the id goes to the other party, the previous holder's listing is `delisted` and its releases go with it, and the content that lost the id can list again under a new id.
@@ -138,8 +139,8 @@ The process itself, including who the stewards are, is changed in the [design re
 - It is the tiebreaker in an id dispute, as above.
 - It is a tripwire: a thread the forum moderators took down, or an author who was banned there, is grounds to review the listing.
 
-It is optional on a vehicle, per [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md), which amends RFC 0079, because vehicles are many more than mods and the forum may have no place for them.
-Without it, the account on the release host is what ties a vehicle to a person in a dispute or a takedown.
+It is optional on a vehicle or a save, per [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md), which amends RFC 0079, because vehicles and saves are many more than mods and the forum may have no place for them.
+Without it, the account on the release host is what ties a vehicle or a save to a person in a dispute or a takedown.
 
 Nothing reads the thread automatically today.
 If you see a listing whose thread is gone, report it with the takedown form.
