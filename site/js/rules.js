@@ -17,7 +17,9 @@ export const ABSTRACT_LIMIT = 280;
 export const TAGS_SPEC = "https://github.com/KSAModding/content-manager-design/blob/main/spec/tags.md";
 const SPDX_LIST = "https://spdx.org/licenses/";
 const CLOSE_LIMIT = 6;
-const TAG_VOCABULARY = { mod: "mod", "mod-loader": "mod", modpack: "mod" };
+// RFC 0085 keeps the tags of a vehicle or a save free-form until spec/tags.md
+// lists some for them, so they get no note.
+const TAG_VOCABULARY = { mod: "mod", "mod-loader": "mod", modpack: "mod", vehicle: null, save: null };
 const PINNED_SECTIONS = ["mods", "vehicles", "saves"];
 
 const REVISION_BOUND = /^[0-9]{4}\.[0-9]+\.[0-9]+\.([0-9]+)(?![\s\S])/;

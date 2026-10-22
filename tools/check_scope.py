@@ -9,6 +9,8 @@ from collections import namedtuple
 SUFFIX = r"\.[Tt][Oo][Mm][Ll]"
 LISTING = re.compile(rf"^listings/[^/]+{SUFFIX}(?![\s\S])")
 PACK = re.compile(rf"^packs/[^/]+/[^/]+{SUFFIX}(?![\s\S])")
+VEHICLE = re.compile(rf"^vehicles/[^/]+{SUFFIX}(?![\s\S])")
+SAVE = re.compile(rf"^saves/[^/]+{SUFFIX}(?![\s\S])")
 OWNER = re.compile(r"^packs/[^/]+/owner\.json(?![\s\S])")
 
 # How many documents merge themselves at once. Each one costs an ownership
@@ -19,10 +21,12 @@ MAX_DOCUMENTS = 15
 
 LISTING_KIND = "listing"
 PACK_KIND = "pack"
+VEHICLE_KIND = "vehicle"
+SAVE_KIND = "save"
 
 # In this order wherever a caller reports several, so two kinds always read the
 # same way around.
-KINDS = ((LISTING_KIND, LISTING), (PACK_KIND, PACK))
+KINDS = ((LISTING_KIND, LISTING), (PACK_KIND, PACK), (VEHICLE_KIND, VEHICLE), (SAVE_KIND, SAVE))
 
 WRITING = ("added", "modified")
 

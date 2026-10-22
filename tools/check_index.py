@@ -57,22 +57,29 @@ def _relative(path, base):
         return path.as_posix()
 
 
-def load_documents(listings=LISTINGS, packs=PACKS):
+def load_documents(listings=LISTINGS, packs=PACKS, vehicles=None, saves=None):
     """Every authored document, keyed by the holder that owns its id.
 
-    A holder is one listing file, or one pack folder with every version under
-    it. The id comes from the path.
+    A holder is one listing, vehicle or save file, or one pack folder with
+    every version under it. The id comes from the path. A folder not given is
+    the sibling of `listings`.
     """
     entries = []
     skipped = []
     base = listings.parent
+    folders = (
+        ("listing", listings),
+        ("vehicle", vehicles or base / "vehicles"),
+        ("save", saves or base / "saves"),
+    )
 
-    for path in _toml_files(listings, depth=1):
-        document = _load(path, base, skipped)
-        if document is not None:
-            entries.append(
-                Entry(path, _relative(path, base), ("listing", path.stem), path.stem, document)
-            )
+    for kind, folder in folders:
+        for path in _toml_files(folder, depth=1):
+            document = _load(path, base, skipped)
+            if document is not None:
+                entries.append(
+                    Entry(path, _relative(path, base), (kind, path.stem), path.stem, document)
+                )
 
     for path in _toml_files(packs, depth=2):
         document = _load(path, base, skipped)

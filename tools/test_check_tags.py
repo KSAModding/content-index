@@ -3,6 +3,7 @@
 """Tests for the curated tag vocabulary and authored tag notes.
 """
 
+import json
 import tempfile
 import sys
 import tomllib
@@ -12,6 +13,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 import check_tags
+
+SCHEMA = Path(__file__).resolve().parent.parent / "schemas" / "authored.schema.json"
 
 
 class Vocabulary(unittest.TestCase):
@@ -153,6 +156,16 @@ class AuthoredDocuments(unittest.TestCase):
 
     def test_a_pack_uses_the_mod_list(self):
         self.assertEqual(self.notes("modpack", ["parts"]), [])
+
+    def test_vehicle_and_save_tags_are_free_form(self):
+        for content_type in ("vehicle", "save"):
+            for tags in (None, [], ["rover"], ["parts", "rover"]):
+                with self.subTest(content_type=content_type, tags=tags):
+                    self.assertEqual(self.notes(content_type, tags), [])
+
+    def test_every_type_of_the_schema_has_an_entry(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        self.assertEqual(set(check_tags.CONTENT_TYPES), set(schema["properties"]["type"]["enum"]))
 
 
 if __name__ == "__main__":

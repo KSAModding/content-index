@@ -13,7 +13,7 @@ body:
     id: listing
     attributes:
       label: Listing id
-      description: The id as it appears under `listings/` or `packs/`.
+      description: The id as it appears under `listings/`, `vehicles/`, `saves/` or `packs/`.
       placeholder: AdvancedFlightComputer
     validations:
       required: true

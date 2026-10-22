@@ -6,6 +6,7 @@ import json
 import re
 import sys
 import tempfile
+import tomllib
 import unittest
 import urllib.error
 import urllib.parse
@@ -14,6 +15,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import check_schema
 import check_scope
 import decide
 import ownership
@@ -693,6 +695,28 @@ class DocumentLabel(unittest.TestCase):
         api = RecordingApi(labels=[decide.STEWARD_LABEL, "area:publishing"])
         decide.sync_document_labels(api, 5, [])
         self.assertEqual(api.sent, [])
+
+    def test_a_vehicle_and_a_save_are_labelled_and_unlabelled(self):
+        api = RecordingApi(labels=["listing", "save"])
+        decide.sync_document_labels(api, 5, ["vehicle"])
+        self.assertEqual(
+            [(method, path, payload) for method, path, payload, _ in api.sent],
+            [
+                ("DELETE", "/issues/5/labels/listing", None),
+                ("POST", "/issues/5/labels", {"labels": ["vehicle"]}),
+                ("DELETE", "/issues/5/labels/save", None),
+            ],
+        )
+
+    def test_a_vehicle_label_the_repository_does_not_have_is_created_first(self):
+        for kind in ("vehicle", "save"):
+            with self.subTest(kind=kind):
+                api = MissingLabelApi(kind)
+                decide.sync_document_labels(api, 5, [kind])
+                self.assertEqual(
+                    api.sent[0][2],
+                    {"name": kind, "color": "0e8a16", "description": f"changes a {kind} document"},
+                )
 
     def test_a_label_the_repository_does_not_have_is_created_first(self):
         api = MissingLabelApi("listing")
@@ -1404,6 +1428,37 @@ class Act(unittest.TestCase):
         self.assertIn("could not be armed", comment["body"])
         self.assertIn("archive checked", comment["body"])
 
+    def test_a_vehicle_is_refused_and_not_merged_while_the_gate_holds(self):
+        checker = check_schema.validator()
+        if "vehicle" not in (checker.schema["properties"]["type"].get("not") or {}).get("enum", []):
+            self.skipTest("the rollout gate no longer holds vehicles")
+        path = "vehicles/ExampleRover.toml"
+        text = (
+            'spec_version = 1\nid = "ExampleRover"\ntype = "vehicle"\nname = "Example Rover"\n'
+            'authors = ["Maxi"]\nabstract = "A rover for the Moon."\nlicense = "CC-BY-4.0"\n'
+        )
+        changes = [check_scope.Change(path, "added")]
+        self.assertEqual(check_scope.evaluate(changes), (True, [path], ""))
+
+        errors = []
+        check_schema.check_parsed(path, tomllib.loads(text), checker, errors)
+        gate = (
+            f"{path}: type: 'vehicle' is a type that the index does not accept yet, because no "
+            "release host for it exists (RFC 0085 Rollout)"
+        )
+        self.assertEqual(errors, [gate])
+        checks = [validate.Check("schema", validate.REJECT, errors).as_dict()]
+        self.api.files = {(path, "abc"): text}
+        with mock.patch.object(decide, "changed_paths", lambda api, number: changes), \
+                mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
+            self.assertEqual(self.act(verdict("reject", checks=checks, documents=[path])), 0)
+
+        self.assertEqual(self.api.graphql_calls, [])
+        self.assertEqual([status["state"] for status in self.statuses()], ["failure"])
+        comment = [p for _, where, p, _ in self.api.sent if where.endswith("/comments")][0]
+        self.assertIn(gate, comment["body"])
+        self.assertEqual(self.labelled(), ["vehicle"])
+
     def test_a_rejection_leaves_a_steward_label_alone(self):
         self.api.labels = [decide.STEWARD_LABEL]
         self.assertEqual(self.act(verdict("reject")), 0)
@@ -1621,6 +1676,7 @@ class Act(unittest.TestCase):
 
 
 VICTIM_LISTING = 'id = "AutoStage"\n[releases]\ngithub = "Victim/Mod"\n'
+VICTIM_VEHICLE = 'id = "ExampleRover"\ntype = "vehicle"\n[releases]\ngithub = "Victim/Rovers"\n'
 
 
 def personal(full_name, login, account_id):
@@ -1802,6 +1858,34 @@ class OwnerNotes(Act):
         self.api.graphql_answer = {"errors": [{"message": "auto-merge is off"}]}
         body = self.run_change(check_scope.Change("packs/Starter/2.0.0.toml", "added"))
         self.assertNotIn("@", body)
+
+    def test_a_steward_edit_of_another_persons_vehicle_mentions_the_owner(self):
+        self.api.files = {("vehicles/ExampleRover.toml", "main"): VICTIM_VEHICLE}
+        self.api.repositories = personal("Victim/Rovers", "Victim", 3)
+        body = self.run_change(check_scope.Change("vehicles/ExampleRover.toml", "modified"))
+        self.assertIn(
+            "- @Victim owns `vehicles/ExampleRover.toml`, which this pull request changes.", body
+        )
+
+    def test_a_state_of_a_vehicle_or_a_save_mentions_its_owner(self):
+        self.api.files = {
+            ("index-status.toml", "main"): "entries = []\n",
+            ("index-status.toml", "abc"): (
+                '[[entries]]\nid = "examplerover"\nstate = "delisted"\n'
+                '[[entries]]\nid = "ExampleBase"\nstate = "disputed"\n'
+            ),
+            ("vehicles/ExampleRover.toml", "main"): VICTIM_VEHICLE,
+            ("saves/ExampleBase.toml", "main"): VICTIM_VEHICLE.replace("ExampleRover", "ExampleBase"),
+        }
+        self.api.folders = {
+            ("vehicles", "main"): [("ExampleRover.toml", "file")],
+            ("saves", "main"): [("ExampleBase.toml", "file")],
+        }
+        self.api.repositories = personal("Victim/Rovers", "Victim", 3)
+        body = self.run_change(check_scope.Change("index-status.toml", "modified"))
+        state = "whose state in `index-status.toml` this pull request changes."
+        self.assertIn(f"- @Victim owns `vehicles/ExampleRover.toml`, {state}", body)
+        self.assertIn(f"- @Victim owns `saves/ExampleBase.toml`, {state}", body)
 
     def test_a_path_that_is_not_plain_is_never_looked_up_or_echoed(self):
         # A rejection runs no ownership check, so every read here is a lookup for a mention.

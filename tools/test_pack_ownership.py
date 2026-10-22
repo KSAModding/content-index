@@ -73,6 +73,8 @@ class PackOwnership(unittest.TestCase):
         for folders in (
             {("packs", BASE): [("starter", "dir")]},
             {("listings", BASE): [("STARTER.toml", "file")]},
+            {("vehicles", BASE): [("Starter.toml", "file")]},
+            {("saves", BASE): [("starter.toml", "file")]},
         ):
             with self.subTest(folders=folders):
                 api = Api({(OWNER, HEAD): owner()}, folders)
@@ -182,6 +184,12 @@ class MissingRecords(unittest.TestCase):
     def test_an_id_that_a_listing_holds_is_not_a_first_claim(self):
         api = Api(folders={("listings", BASE): [("starter.TOML", "file")]})
         self.assertEqual(pack_ownership.missing_records(api, pull(), check_scope.changes([PATH])), [])
+
+    def test_an_id_that_a_vehicle_or_a_save_holds_is_not_a_first_claim(self):
+        for folder in ("vehicles", "saves"):
+            with self.subTest(folder=folder):
+                api = Api(folders={(folder, BASE): [("Starter.toml", "file")]})
+                self.assertEqual(pack_ownership.missing_records(api, pull(), check_scope.changes([PATH])), [])
 
     def test_a_pack_folder_file_or_a_listing_folder_holds_no_id(self):
         api = Api(folders={

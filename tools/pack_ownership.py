@@ -61,15 +61,16 @@ def record_text(login, account_id):
 
 
 def held_ids(api, ref):
-    """The ids that the pack folders and listing files on `ref` hold, folded as
-    check_index compares them."""
+    """The ids that the pack folders and the listing, vehicle and save files on
+    `ref` hold, folded as check_index compares them."""
     held = set()
     for name, kind in api.folder("packs", ref):
         if kind == "dir":
             held.add(name.casefold())
-    for name, kind in api.folder("listings", ref):
-        if kind == "file" and name.lower().endswith(".toml"):
-            held.add(name[: -len(".toml")].casefold())
+    for folder in ("listings", "vehicles", "saves"):
+        for name, kind in api.folder(folder, ref):
+            if kind == "file" and name.lower().endswith(".toml"):
+                held.add(name[: -len(".toml")].casefold())
     return held
 
 

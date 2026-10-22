@@ -14,7 +14,9 @@ TAGS = ROOT / "tags.toml"
 
 SPEC_VERSION = 1
 TAG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-CONTENT_TYPES = {"mod": "mod", "mod-loader": "mod", "modpack": "mod"}
+# RFC 0085 keeps the tags of a vehicle or a save free-form until spec/tags.md
+# lists some for them, so they get no note.
+CONTENT_TYPES = {"mod": "mod", "mod-loader": "mod", "modpack": "mod", "vehicle": None, "save": None}
 ENTRY_KEYS = {"tag", "name", "meaning", "forum_prefix", "forum_prefix_id"}
 REQUIRED_ENTRY_KEYS = {"tag", "name", "meaning"}
 SPEC_URL = "https://github.com/KSAModding/content-manager-design/blob/main/spec/tags.md"

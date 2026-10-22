@@ -180,6 +180,18 @@ class Resolves(StatusCase):
         errors = self.errors(block(id="AutoStge", state="delisted"))
         self.assertTrue(any("neither a listing nor a pack" in error for error in errors))
 
+    def test_a_state_for_a_vehicle_or_a_save_resolves(self):
+        self.vehicle("Rover")
+        self.vehicle("Base", "save")
+        self.assertEqual(
+            self.errors(block(id="rover", state="delisted") + block(id="Base", state="disputed")), []
+        )
+
+    def test_retracting_a_vehicle_is_rejected(self):
+        self.vehicle("Rover")
+        errors = self.errors(block(id="Rover", state="retracted", version="1.0.0"))
+        self.assertTrue(any("'Rover' is not a pack" in error for error in errors), errors)
+
     def test_retracting_a_listing_is_rejected(self):
         self.listing("AutoStage")
         errors = self.errors(block(id="AutoStage", state="retracted", version="1.0.0"))

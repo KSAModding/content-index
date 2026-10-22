@@ -12,10 +12,12 @@ import tempfile
 import tomllib
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).parent))
 
 import check_index
+import check_schema
 
 LISTING = """\
 spec_version = 1
@@ -51,6 +53,16 @@ game_min = "2026.8.3.5117"
 forums = "https://forums.ahwoo.com/threads/x.1/"
 {extra}"""
 
+VEHICLE = """\
+spec_version = 1
+id = "{id}"
+type = "{type}"
+name = "{id}"
+authors = ["Nobody"]
+abstract = "A vehicle or a save that exists only in this test."
+license = "CC-BY-4.0"
+{extra}"""
+
 THREAD = "https://forums.ahwoo.com/threads/x.1/"
 
 
@@ -81,6 +93,14 @@ class IndexCase(unittest.TestCase):
         path.write_text(
             PACK.format(id=identifier, version=version, extra=extra), encoding="utf-8"
         )
+        return path
+
+    def vehicle(self, identifier, kind="vehicle", extra=""):
+        """A vehicle in vehicles/, or with kind "save" a save in saves/ (RFC 0085)."""
+        folder = self.root / f"{kind}s"
+        folder.mkdir(exist_ok=True)
+        path = folder / f"{identifier}.toml"
+        path.write_text(VEHICLE.format(id=identifier, type=kind, extra=extra), encoding="utf-8")
         return path
 
     def load(self):
@@ -159,6 +179,25 @@ class Collisions(IndexCase):
         entries, _ = self.load()
         self.assertEqual(entries[0].identifier, "OnDisk")
 
+    def test_a_vehicle_and_a_mod_sharing_an_id_collide(self):
+        self.vehicle("ExampleRover")
+        self.listing("examplerover")
+        self.assertEqual(
+            self.errors(),
+            [
+                "vehicles/ExampleRover.toml: the id 'ExampleRover' is already held by "
+                "listings/examplerover.toml, and ids compare case-insensitively"
+            ],
+        )
+
+    def test_a_vehicle_collides_with_a_save_and_a_pack(self):
+        self.vehicle("Shared")
+        self.vehicle("shared", "save")
+        self.pack("SHARED")
+        errors = self.errors()
+        self.assertEqual(len(errors), 2)
+        self.assertTrue(all("already held by vehicles/Shared.toml" in error for error in errors), errors)
+
 
 class References(IndexCase):
     def test_a_successor_reference_with_canonical_case_is_fine(self):
@@ -223,6 +262,31 @@ class References(IndexCase):
         errors = self.errors()
         self.assertEqual(len(errors), 1)
         self.assertIn("listed as a modpack", errors[0])
+
+    def test_a_vehicle_depends_on_mods_only(self):
+        self.listing("Parts")
+        self.vehicle("OtherRover")
+        self.vehicle("Rover", extra='\n[[dependencies]]\nid = "Parts"\nkind = "required"\nmin = "1.4"\n')
+        self.assertEqual(self.errors(), [])
+        self.vehicle(
+            "Rover",
+            extra='\n[[dependencies]]\nkind = "recommends"\nany_of = [{ id = "Parts" }, { id = "OtherRover" }]\n',
+        )
+        self.assertEqual(
+            self.errors(),
+            [
+                "vehicles/Rover.toml: dependencies[0].any_of[1]: 'OtherRover' is listed as a vehicle, "
+                "and a dependency has to be a mod"
+            ],
+        )
+
+    def test_a_dependency_on_a_save_is_rejected(self):
+        self.vehicle("Base", "save")
+        self.listing("Mod", extra='\n[[dependencies]]\nid = "Base"\nkind = "required"\n')
+        self.assertEqual(
+            self.errors(),
+            ["listings/Mod.toml: dependencies[0]: 'Base' is listed as a save, and a dependency has to be a mod"],
+        )
 
     def test_an_any_of_alternative_is_checked_too(self):
         self.listing("StarMap", kind="mod-loader")
@@ -746,6 +810,38 @@ class Loading(IndexCase):
         self.listing("Mod")
         entries, _ = self.load()
         self.assertEqual(entries[0].where, "listings/Mod.toml")
+
+    def test_vehicles_and_saves_load_with_their_own_holder(self):
+        self.listing("Mod")
+        self.vehicle("Rover")
+        self.vehicle("Base", "save")
+        entries, _ = self.load()
+        self.assertEqual(
+            [(entry.where, entry.holder) for entry in entries],
+            [
+                ("listings/Mod.toml", ("listing", "Mod")),
+                ("vehicles/Rover.toml", ("vehicle", "Rover")),
+                ("saves/Base.toml", ("save", "Base")),
+            ],
+        )
+
+    def test_a_vehicle_in_a_subfolder_is_not_loaded(self):
+        nested = self.root / "vehicles" / "nested"
+        nested.mkdir(parents=True)
+        (nested / "Rover.toml").write_text(VEHICLE.format(id="Rover", type="vehicle", extra=""), encoding="utf-8")
+        entries, _ = self.load()
+        self.assertEqual(entries, [])
+
+    def test_the_schema_check_reads_the_same_documents(self):
+        self.listing("Mod")
+        self.vehicle("Rover")
+        self.vehicle("Base", "save")
+        self.pack("Pack")
+        folders = {"LISTINGS": "listings", "VEHICLES": "vehicles", "SAVES": "saves", "PACKS": "packs"}
+        with mock.patch.multiple(check_schema, **{name: self.root / folder for name, folder in folders.items()}):
+            read = check_schema.documents()
+        entries, _ = self.load()
+        self.assertEqual(read, [entry.path for entry in entries])
 
 
 if __name__ == "__main__":

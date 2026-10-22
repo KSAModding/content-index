@@ -35,8 +35,18 @@ class LayoutCase(unittest.TestCase):
         path.write_text(PACK.format(id=identifier, version=version, extra=""), encoding="utf-8")
         return path
 
+    def write(self, name, text):
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        return path
+
     def errors(self):
         return check_layout.check(self.listings, self.packs)
+
+
+def document(identifier, content_type):
+    return f'id = "{identifier}"\ntype = "{content_type}"\n'
 
 
 class Suffix(LayoutCase):
@@ -128,8 +138,98 @@ class MissingKeys(LayoutCase):
                 self.assertNotIn("None", error)
 
     def test_a_wrong_type_still_names_the_value(self):
-        (self.listings / "MyMod.toml").write_text('id = "MyMod"\ntype = "vehicle"\n', encoding="utf-8")
-        self.assertEqual(self.errors(), ["listings/MyMod.toml: type 'vehicle' is not one of mod, mod-loader"])
+        (self.listings / "MyMod.toml").write_text('id = "MyMod"\ntype = "addon"\n', encoding="utf-8")
+        self.assertEqual(self.errors(), ["listings/MyMod.toml: type 'addon' is not one of mod, mod-loader"])
+
+    def test_a_vehicle_without_type_and_id(self):
+        self.write("vehicles/ExampleRover.toml", 'name = "Example Rover"\n')
+        self.assertEqual(
+            self.errors(),
+            [
+                'vehicles/ExampleRover.toml: type is missing; write type = "vehicle"',
+                'vehicles/ExampleRover.toml: id is missing; write id = "ExampleRover", the same as the file name',
+            ],
+        )
+
+
+class VehiclesAndSaves(LayoutCase):
+    """RFC 0085: vehicles/<id>.toml and saves/<id>.toml, one document each, with no subfolders."""
+
+    def test_a_vehicle_and_a_save_in_their_folders(self):
+        self.write("vehicles/ExampleRover.toml", document("ExampleRover", "vehicle"))
+        self.write("saves/ExampleBase.toml", document("ExampleBase", "save"))
+        self.listing("ExampleMod")
+        self.pack("ExamplePack")
+        self.assertEqual(self.errors(), [])
+        self.assertEqual(check_layout.counted(self.listings, self.packs), 4)
+
+    def test_a_document_in_the_folder_of_another_type(self):
+        cases = (
+            ("listings", "vehicle", "vehicles"),
+            ("saves", "vehicle", "vehicles"),
+            ("vehicles", "save", "saves"),
+            ("vehicles", "mod", "listings"),
+            ("saves", "mod-loader", "listings"),
+        )
+        for folder, content_type, home in cases:
+            with self.subTest(folder=folder, type=content_type):
+                path = self.write(f"{folder}/ExampleRover.toml", document("ExampleRover", content_type))
+                self.assertEqual(
+                    self.errors(),
+                    [f"{folder}/ExampleRover.toml: type '{content_type}' belongs under {home}/<id>.toml"],
+                )
+                path.unlink()
+
+    def test_an_unknown_type_names_the_type_of_the_folder(self):
+        self.write("saves/ExampleBase.toml", document("ExampleBase", "addon"))
+        self.assertEqual(self.errors(), ["saves/ExampleBase.toml: type 'addon' is not one of save"])
+
+    def test_a_vehicle_in_a_pack_folder(self):
+        self.write("packs/ExampleRover/1.0.0.toml", document("ExampleRover", "vehicle") + 'version = "1.0.0"\n')
+        self.assertEqual(
+            self.errors(),
+            ["packs/ExampleRover/1.0.0.toml: type 'vehicle' belongs under vehicles/<id>.toml"],
+        )
+
+    def test_a_pack_in_the_vehicle_folder(self):
+        self.write("vehicles/ExamplePack.toml", document("ExamplePack", "modpack"))
+        self.assertEqual(
+            self.errors(),
+            ["vehicles/ExamplePack.toml: type 'modpack' belongs under packs/<id>/<version>.toml"],
+        )
+
+    def test_a_subfolder_is_rejected(self):
+        for folder, content_type in (("vehicles", "vehicle"), ("saves", "save")):
+            with self.subTest(folder=folder):
+                path = self.write(f"{folder}/deep/ExampleRover.toml", document("ExampleRover", content_type))
+                self.assertEqual(
+                    self.errors(),
+                    [f"{folder}/deep/ExampleRover.toml: {folder}/ holds no subfolders, one document per {content_type}"],
+                )
+                self.assertEqual(check_layout.counted(self.listings, self.packs), 0)
+                path.unlink()
+
+    def test_the_file_name_is_the_id(self):
+        self.write("saves/OldBase.toml", document("ExampleBase", "save"))
+        self.assertEqual(
+            self.errors(),
+            ["saves/OldBase.toml: declares id 'ExampleBase', so the file name must be 'ExampleBase.toml'"],
+        )
+
+    def test_an_uppercase_suffix_is_rejected(self):
+        self.write("vehicles/ExampleRover.TOML", document("ExampleRover", "vehicle"))
+        self.assertTrue(any("lowercase" in error for error in self.errors()))
+
+
+class SnapshotDispatch(unittest.TestCase):
+    """A merged document in any folder has to rebuild the snapshot."""
+
+    def test_every_document_folder_rebuilds_the_snapshot(self):
+        workflow = check_layout.ROOT / ".github" / "workflows" / "snapshot-dispatch.yml"
+        text = workflow.read_text(encoding="utf-8")
+        for folder in (*check_layout.FOLDERS, "packs"):
+            with self.subTest(folder=folder):
+                self.assertIn(f"      - {folder}/**\n", text)
 
 
 if __name__ == "__main__":

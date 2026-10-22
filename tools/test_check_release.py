@@ -3,11 +3,13 @@
 """Tests for the archive inspection.
 """
 
+import io
 import json
 import os
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -125,8 +127,9 @@ class Vacuous(unittest.TestCase):
         self.assertIn("no release yet", outcome.messages[0])
 
     def test_an_unknown_content_type_is_not_inspected(self):
-        outcome = inspect({"id": "V", "type": "vehicle", "releases": {"github": "a/b"}})
+        outcome = inspect({"id": "A", "type": "addon", "releases": {"github": "a/b"}})
         self.assertEqual(outcome.outcome, check_release.PASS)
+        self.assertEqual(outcome.messages, [])
 
 
 class Passing(unittest.TestCase):
@@ -329,6 +332,322 @@ class TagPrefixWithTheRealHosts(unittest.TestCase):
             outcome = self.inspect(section, [])
             self.assertEqual(outcome.outcome, check_release.REJECT, section)
             self.assertIn(words, outcome.messages[0])
+
+
+class FolderStamper(FakeStamper):
+    """A stamper that knows vehicles and saves (RFC 0085), reduced to what the inspection calls."""
+
+    def __init__(self, error=None, holders=None, note=None):
+        super().__init__(error)
+        self.holders = holders or {}
+        self.note = note
+        self.checked = []
+
+    def stamp(self, document, facts, archive, game_versions, notes=None):
+        self.calls.append((document, facts, archive, game_versions))
+        if self.error:
+            raise self.error
+        if self.note:
+            notes.append(self.note)
+        return {"id": document["id"], "type": document["type"], "install": {"folder": "Example Rover"}}
+
+    def check_folder(self, stamped, holders):
+        self.checked.append((stamped, dict(holders)))
+        if holders.get("example rover"):
+            raise StampError("`OtherRover` installs into the folder `Example Rover`")
+
+
+VEHICLE = {"id": "OtherRover", "type": "vehicle", "releases": {"github": "owner/repo"}}
+
+
+class Vehicles(unittest.TestCase):
+    """A vehicle or a save is stamped with the notes, and its install folder is compared."""
+
+    def run_inspect(self, document=VEHICLE, stamper=None, folders=None):
+        self.host = FakeHost([FakeRelease("v1.0.0", "1.0.0", "2026-08-01T00:00:00Z")])
+        self.read = []
+
+        def read(content_type):
+            self.read.append(content_type)
+            if isinstance(folders, Exception):
+                raise folders
+            return folders or {}
+
+        return check_release.inspect(
+            document, stamper or FolderStamper(), FakeHosts(self.host), [], None, read
+        )
+
+    def test_a_vehicle_that_stamps_cleanly_passes_with_the_notes(self):
+        stamper = FolderStamper(note="the vehicle folder holds files besides meta.toml and vehicle.xml")
+        outcome = self.run_inspect(stamper=stamper)
+        self.assertEqual(outcome.outcome, check_release.PASS)
+        self.assertEqual(
+            outcome.messages,
+            [
+                "the latest release 1.0.0 stamps cleanly",
+                "the vehicle folder holds files besides meta.toml and vehicle.xml",
+            ],
+        )
+        self.assertEqual(self.read, ["vehicle"])
+        stamped = {"id": "OtherRover", "type": "vehicle", "install": {"folder": "Example Rover"}}
+        self.assertEqual(stamper.checked, [(stamped, {})])
+
+    def test_a_save_reads_the_folders_of_saves(self):
+        outcome = self.run_inspect(document=dict(VEHICLE, type="save"))
+        self.assertEqual(outcome.outcome, check_release.PASS)
+        self.assertEqual(self.read, ["save"])
+
+    def test_a_folder_another_listing_holds_is_rejected(self):
+        outcome = self.run_inspect(folders={"example rover": ["ExampleRover"]})
+        self.assertEqual(outcome.outcome, check_release.REJECT)
+        self.assertEqual(
+            outcome.messages,
+            ["the latest release v1.0.0 cannot be stamped: `OtherRover` installs into the folder `Example Rover`"],
+        )
+
+    def test_folders_that_cannot_be_read_are_no_verdict_and_nothing_is_downloaded(self):
+        outcome = self.run_inspect(folders=StampError("releases/X/1.0.0.json is not readable JSON"))
+        self.assertEqual(outcome.outcome, check_release.COULD_NOT_EVALUATE)
+        self.assertEqual(
+            outcome.messages,
+            [
+                "the install folders of the other vehicle listings could not be read: "
+                "releases/X/1.0.0.json is not readable JSON"
+            ],
+        )
+        self.assertEqual(self.host.downloaded, [])
+
+    def test_a_stamper_without_the_folder_check_is_no_verdict(self):
+        outcome = self.run_inspect(stamper=FakeStamper())
+        self.assertEqual(outcome.outcome, check_release.COULD_NOT_EVALUATE)
+        self.assertIn("cannot stamp a vehicle yet", outcome.messages[0])
+
+    def test_a_vehicle_without_a_host_reads_no_folders(self):
+        outcome = self.run_inspect(document={"id": "OtherRover", "type": "vehicle"})
+        self.assertEqual(outcome.outcome, check_release.PASS)
+        self.assertEqual(self.read, [])
+
+    def test_a_mod_is_stamped_as_before_and_reads_no_folders(self):
+        # FakeStamper.stamp takes no notes, so a mod still works with any stamper.
+        stamper = FakeStamper()
+        outcome = self.run_inspect(document=MOD, stamper=stamper)
+        self.assertEqual(outcome.outcome, check_release.PASS)
+        self.assertEqual(outcome.messages, ["the latest release 1.0.0 stamps cleanly"])
+        self.assertEqual(self.read, [])
+
+    def test_a_clean_stamp_holds_its_folder_for_the_rest_of_the_run(self):
+        holders = {}
+        stamper = FolderStamper()
+        outcomes = [
+            check_release.inspect(
+                dict(VEHICLE, id=listing), stamper,
+                FakeHosts(FakeHost([FakeRelease("v1.0.0", "1.0.0", "2026-08-01T00:00:00Z")])),
+                [], None, lambda content_type: holders,
+            )
+            for listing in ("OtherRover", "ThirdRover")
+        ]
+        self.assertEqual([outcome.outcome for outcome in outcomes], [check_release.PASS, check_release.REJECT])
+        self.assertEqual(holders, {"example rover": ["OtherRover"]})
+
+    def test_the_folders_are_read_once_per_type_and_run(self):
+        calls = []
+
+        class Stamper:
+            @staticmethod
+            def folder_holders(folder, content_type):
+                calls.append((folder.name, content_type))
+                return {}
+
+        folders = check_release._stamped_folders(Stamper(), "elsewhere")
+        for content_type in ("vehicle", "vehicle", "save", "vehicle"):
+            folders(content_type)
+        self.assertEqual(calls, [("releases", "vehicle"), ("releases", "save")])
+
+
+def zipped(files):
+    data = io.BytesIO()
+    with zipfile.ZipFile(data, "w") as handle:
+        for name, text in files.items():
+            handle.writestr(name, text)
+    return data.getvalue()
+
+
+class ZipHost(FakeHost):
+    def __init__(self, releases, archive):
+        super().__init__(releases)
+        self.archive = archive
+
+    def download(self, release):
+        self.downloaded.append(release)
+        return self.archive, "application/zip"
+
+
+# As the game writes them, see UncompressedVehicleSave.Write and SaveMetaData.
+META = 'name = "Example Rover"\ncreated = 2026-09-22T14:22:28.6152545\nversion = "v2026.9.22.5482"\n'
+VEHICLE_XML = '<?xml version="1.0" encoding="utf-8"?>\n<VehicleSaveData><Parts /></VehicleSaveData>\n'
+UNIVERSE_XML = '<?xml version="1.0" encoding="utf-8"?>\n<UniverseData />\n'
+ROVER = {"Example Rover/meta.toml": META, "Example Rover/vehicle.xml": VEHICLE_XML}
+
+AUTHORED_VEHICLE = {
+    "spec_version": 1,
+    "id": "ExampleRover",
+    "type": "vehicle",
+    "name": "Example Rover",
+    "authors": ["Maxi"],
+    "abstract": "A rover for the Moon.",
+    "license": "CC-BY-4.0",
+    "releases": {"github": "owner/repo"},
+}
+
+
+class VehiclesWithTheRealStamper(unittest.TestCase):
+    """The archive rules of RFC 0085, as the stamper of content-index-releases applies them."""
+
+    @classmethod
+    def setUpClass(cls):
+        root = Path(os.environ.get("CONTENT_INDEX_RELEASES") or check_release.DEFAULT_RELEASES)
+        if not (root / "tools" / "stamp_release.py").is_file():
+            raise unittest.SkipTest("content-index-releases is not checked out next to this repository")
+        cls.stamp_release, cls.hosts = check_release.load_stamper(root)
+        if not hasattr(cls.stamp_release, "check_folder"):
+            raise unittest.SkipTest("the checkout of content-index-releases cannot stamp a vehicle yet")
+        cls.game_versions = check_release.load_game_versions(root)
+
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.releases = Path(folder.name) / "releases"
+        self.releases.mkdir()
+
+    def hold(self, listing, folder, content_type="vehicle"):
+        """A stamped release of `listing` that installs into `folder`."""
+        (self.releases / listing).mkdir()
+        document = {"id": listing, "type": content_type, "install": {"folder": folder}}
+        (self.releases / listing / "1.0.0.json").write_text(json.dumps(document), encoding="utf-8")
+
+    def inspect(self, files, document=AUTHORED_VEHICLE):
+        host = ZipHost([FakeRelease("v1.0.0", "1.0.0", "2026-10-01T00:00:00Z")], zipped(files))
+
+        def folders(content_type):
+            return self.stamp_release.folder_holders(self.releases, content_type)
+
+        return check_release.inspect(
+            document, self.stamp_release, FakeHosts(host), self.game_versions, None, folders
+        )
+
+    def assert_rejected(self, outcome, *words):
+        self.assertEqual(outcome.outcome, check_release.REJECT, outcome.messages)
+        self.assertTrue(outcome.messages[0].startswith("the latest release v1.0.0 cannot be stamped: "))
+        for word in words:
+            self.assertIn(word, outcome.messages[0])
+
+    def test_a_vehicle_as_the_game_wrote_it_passes(self):
+        outcome = self.inspect(ROVER)
+        self.assertEqual(outcome.outcome, check_release.PASS, outcome.messages)
+        self.assertEqual(outcome.messages, ["the latest release 1.0.0 stamps cleanly"])
+
+    def test_a_save_as_the_game_wrote_it_passes(self):
+        files = {"Example Rover/meta.toml": META, "Example Rover/universe.xml": UNIVERSE_XML}
+        outcome = self.inspect(files, dict(AUTHORED_VEHICLE, type="save"))
+        self.assertEqual(outcome.outcome, check_release.PASS, outcome.messages)
+
+    def test_other_files_in_a_vehicle_pass_with_a_note(self):
+        outcome = self.inspect({**ROVER, "Example Rover/thumbnail.png": "x"})
+        self.assertEqual(outcome.outcome, check_release.PASS, outcome.messages)
+        self.assertEqual(len(outcome.messages), 2)
+        self.assertIn("besides meta.toml and vehicle.xml", outcome.messages[1])
+        self.assertIn('"thumbnail.png"', outcome.messages[1])
+
+    def test_a_meta_toml_that_does_not_parse_is_rejected(self):
+        outcome = self.inspect({**ROVER, "Example Rover/meta.toml": "name = Example Rover\n"})
+        self.assert_rejected(outcome, "Example Rover/meta.toml is not valid TOML")
+
+    def test_a_name_the_game_would_change_is_rejected(self):
+        meta = META.replace("Example Rover", "Rover.v2")
+        outcome = self.inspect({"Rover.v2/meta.toml": meta, "Rover.v2/vehicle.xml": VEHICLE_XML})
+        self.assert_rejected(outcome, "`name` in the archive's Rover.v2/meta.toml is 'Rover.v2'", "(RFC 0085)")
+
+    def test_a_root_folder_that_is_not_the_name_is_rejected(self):
+        files = {"Rover/meta.toml": META, "Rover/vehicle.xml": VEHICLE_XML}
+        self.assert_rejected(self.inspect(files), "the archive's folder is 'Rover'", "`name` 'Example Rover'")
+
+    def test_a_vehicle_without_its_game_file_is_rejected(self):
+        outcome = self.inspect({"Example Rover/meta.toml": META})
+        self.assert_rejected(outcome, "has no Example Rover/vehicle.xml, so the game does not see the vehicle")
+
+    def test_a_folder_another_vehicle_holds_is_rejected(self):
+        self.hold("ExampleRover", "example rover")
+        outcome = self.inspect(ROVER, dict(AUTHORED_VEHICLE, id="OtherRover"))
+        self.assert_rejected(
+            outcome, "`OtherRover` installs into the folder `Example Rover`", "vehicle listing `ExampleRover`"
+        )
+
+    def test_two_vehicles_of_one_run_with_the_same_folder(self):
+        # The folders are cached once per run, as inspect_paths reads them.
+        folders = check_release._stamped_folders(self.stamp_release, self.releases.parent)
+        outcomes = []
+        for listing in ("ExampleRover", "OtherRover"):
+            host = ZipHost([FakeRelease("v1.0.0", "1.0.0", "2026-10-01T00:00:00Z")], zipped(ROVER))
+            outcomes.append(check_release.inspect(
+                dict(AUTHORED_VEHICLE, id=listing), self.stamp_release, FakeHosts(host),
+                self.game_versions, None, folders,
+            ))
+        self.assertEqual(outcomes[0].outcome, check_release.PASS, outcomes[0].messages)
+        self.assert_rejected(
+            outcomes[1], "`OtherRover` installs into the folder `Example Rover`", "vehicle listing `ExampleRover`"
+        )
+
+    def test_its_own_older_release_and_a_save_with_the_folder_are_no_collision(self):
+        self.hold("ExampleRover", "Example Rover")
+        self.hold("ExampleBase", "Example Rover", "save")
+        outcome = self.inspect(ROVER)
+        self.assertEqual(outcome.outcome, check_release.PASS, outcome.messages)
+
+    def test_a_tag_prefix_takes_the_release_of_this_vehicle_from_a_shared_repository(self):
+        listed = [
+            ("OtherShip-v2.0.0", "2026-10-02T00:00:00Z", "OtherShip.zip"),
+            ("ExampleRover-v1.0.0", "2026-10-01T00:00:00Z", "ExampleRover.zip"),
+            ("ExampleBase-v3.0.0", "2026-10-03T00:00:00Z", "ExampleBase.zip"),
+        ]
+        body = json.dumps([
+            {
+                "tag_name": tag,
+                "published_at": date,
+                "assets": [{
+                    "name": name,
+                    "state": "uploaded",
+                    "content_type": "application/zip",
+                    "size": 100,
+                    "browser_download_url": f"https://example.invalid/{name}",
+                }],
+            }
+            for tag, date, name in listed
+        ]).encode()
+        archive = zipped(ROVER)
+        hosts = self.hosts
+
+        class Http:
+            fetched = []
+
+            def get(self, url, **_):
+                return hosts.Response(200, {}, body)
+
+            def archive(self, url, **_):
+                self.fetched.append(url)
+                return archive, {"Content-Type": "application/zip"}
+
+            def log(self, message):
+                pass
+
+        http = Http()
+        document = dict(AUTHORED_VEHICLE, releases={"github": "owner/shares", "tag_prefix": "ExampleRover-v"})
+        outcome = check_release.inspect(
+            document, self.stamp_release, self.hosts, self.game_versions, http,
+            lambda content_type: self.stamp_release.folder_holders(self.releases, content_type),
+        )
+        self.assertEqual(outcome.outcome, check_release.PASS, outcome.messages)
+        self.assertEqual(outcome.messages, ["the latest release 1.0.0 stamps cleanly"])
+        self.assertEqual(http.fetched, ["https://example.invalid/ExampleRover.zip"])
 
 
 class CouldNotEvaluate(unittest.TestCase):

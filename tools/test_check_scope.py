@@ -82,6 +82,27 @@ class Kinds(unittest.TestCase):
     def test_a_change_without_a_document_reports_nothing(self):
         self.assertEqual(self.kinds("tools/decide.py", "README.md"), [])
 
+    def test_a_vehicle_and_a_save_name_their_kinds(self):
+        self.assertEqual(check_scope.kind_of("vehicles/ExampleRover.toml"), check_scope.VEHICLE_KIND)
+        self.assertEqual(check_scope.kind_of("saves/ExampleBase.TOML"), check_scope.SAVE_KIND)
+
+    def test_only_a_toml_file_directly_in_the_folder_is_a_vehicle_or_a_save(self):
+        for path in (
+            "vehicles/nested/ExampleRover.toml",
+            "saves/ExampleBase.json",
+            "vehicles/README.md",
+            "Vehicles/ExampleRover.toml",
+            "saves/ExampleBase.toml\nx",
+        ):
+            with self.subTest(path=path):
+                self.assertIsNone(check_scope.kind_of(path))
+
+    def test_every_kind_comes_in_the_order_KINDS_names(self):
+        self.assertEqual(
+            self.kinds("saves/B.toml", "vehicles/R.toml", "packs/Pack/1.0.0.toml", "listings/Mod.toml"),
+            ["listing", "pack", "vehicle", "save"],
+        )
+
 
 class Evaluate(unittest.TestCase):
     def evaluate(self, paths, status="added"):
@@ -123,6 +144,21 @@ class Evaluate(unittest.TestCase):
         self.assertEqual(len(documents), check_scope.MAX_DOCUMENTS + 1)
         self.assertIn(f"{check_scope.MAX_DOCUMENTS + 1} documents", reason)
         self.assertIn(str(check_scope.MAX_DOCUMENTS), reason)
+
+    def test_a_vehicle_and_a_save_merge_themselves(self):
+        paths = ["vehicles/ExampleRover.toml", "saves/ExampleBase.toml"]
+        candidate, documents, reason = self.evaluate(paths)
+        self.assertTrue(candidate)
+        self.assertEqual(documents, paths)
+        self.assertEqual(reason, "")
+
+    def test_vehicles_and_saves_count_toward_the_limit(self):
+        paths = [f"listings/Mod{index}.toml" for index in range(check_scope.MAX_DOCUMENTS - 1)]
+        paths += ["vehicles/ExampleRover.toml", "saves/ExampleBase.toml"]
+        candidate, documents, reason = self.evaluate(paths)
+        self.assertFalse(candidate)
+        self.assertEqual(len(documents), check_scope.MAX_DOCUMENTS + 1)
+        self.assertIn(f"{check_scope.MAX_DOCUMENTS + 1} documents", reason)
 
     def test_the_limit_itself_still_merges_itself(self):
         paths = [f"listings/Mod{index}.toml" for index in range(check_scope.MAX_DOCUMENTS)]

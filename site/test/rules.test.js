@@ -238,6 +238,23 @@ test("a schema message is placed at the field it names", () => {
   assert.equal(missing.field, "links.forums");
 });
 
+const saveGated = (JSON.parse(read("../../schemas/authored.schema.json")).properties.type.not?.enum || []).includes("save");
+
+test("the rollout gate refuses a save with its title, as check_schema.explain words it", { skip: !saveGated && "the gate no longer holds saves" }, () => {
+  const save = { spec_version: 1, id: "ExampleSave", type: "save", name: "Example Save", authors: ["Example Author"], abstract: "A save.", license: "CC-BY-4.0" };
+  assert.deepEqual(texts(checker.offline(save), ERROR), [
+    "type: 'save' is a type that the index does not accept yet, because no release host for it exists (RFC 0085 Rollout)",
+  ]);
+});
+
+test("the tags of a vehicle or a save are free-form and give no note", () => {
+  for (const type of ["vehicle", "save"]) {
+    for (const tags of [[], ["rover"], ["parts", "rover"]]) {
+      assert.deepEqual(texts(checker.offline(mod({ type, tags })), NOTE), [], `${type} ${tags}`);
+    }
+  }
+});
+
 function addAll(entries, tags = []) {
   for (const entry of entries) {
     const added = addTag(tags, entry, checker.tagPattern);

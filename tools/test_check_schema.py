@@ -14,9 +14,12 @@ just a word that appears somewhere in it. A fragment of "id" alone is satisfied
 by any message containing "valid", which pins nothing.
 """
 
+import copy
 import sys
 import tomllib
 from pathlib import Path
+
+from jsonschema import Draft202012Validator
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -68,6 +71,18 @@ version = "0.7.0"
 
 MOD = MOD_KEYS + MOD_TABLES
 PACK = PACK_KEYS + PACK_TABLES
+
+VEHICLE = """\
+spec_version = 1
+id = "TestRover"
+type = "vehicle"
+name = "Test Rover"
+authors = ["Nobody"]
+abstract = "A vehicle that exists only in this test file."
+license = "CC-BY-4.0"
+"""
+
+GATE = "is a type that the index does not accept yet, because no release host for it exists (RFC 0085 Rollout)"
 
 PACK_MEMBER = '[[mods]]\nid = "AdvancedFlightComputer"\nversion = "0.7.0"\n'
 
@@ -122,7 +137,7 @@ REJECTED = [
     # The shared authored core
     ("unknown top-level key", mod(keys='abstrct = "typo"\n'), "the document: Additional properties are not allowed ('abstrct'"),
     ("unknown spec version", mod(replace=("spec_version = 1", "spec_version = 2")), "spec_version: 1 was expected"),
-    ("unknown content type", mod(replace=('type = "mod"', 'type = "vehicle"')), "type: 'vehicle' is not one of"),
+    ("unknown content type", mod(replace=('type = "mod"', 'type = "addon"')), "type: 'addon' is not one of"),
     ("empty name", mod(replace=('name = "Test Mod"', 'name = ""')), "name: '' should be non-empty"),
     ("empty abstract", mod(replace=('abstract = "A mod that exists only in this test file."', 'abstract = ""')), "abstract: '' should be non-empty"),
     ("no authors", mod(replace=('authors = ["Nobody"]', "authors = []")), "authors: [] should be non-empty"),
@@ -347,6 +362,39 @@ REJECTED = [
     ("a pack without a released_at", pack(replace=('released_at = "2026-08-05T12:00:00Z"\n', "")), "'released_at' is a required property"),
     ("a pack timestamp without a zone", pack(replace=("T12:00:00Z", "T12:00:00")), "released_at: '2026-08-05T12:00:00' is not a UTC date and time such as 2026-08-05T12:00:00Z"),
     ("a pack timestamp on no calendar", pack(replace=("2026-08-05T12:00:00Z", "2026-13-45T12:00:00Z")), "released_at: '2026-13-45T12:00:00Z' is not a real date"),
+
+    # Vehicles and saves (RFC 0085), refused by the rollout gate and by their own rules
+    ("a document without a type still needs links", MOD_KEYS.replace('type = "mod"\n', ""), "the document: 'links' is a required property"),
+    ("a document without a type still needs compatibility", MOD_KEYS.replace('type = "mod"\n', ""), "the document: 'compatibility' is a required property"),
+    ("a mod without links", MOD_KEYS + "\n[compatibility]\n" + GAME_MIN + "\n", "the document: 'links' is a required property"),
+    ("a mod without compatibility", MOD_KEYS + "\n[links]\n" + FORUMS + "\n", "the document: 'compatibility' is a required property"),
+    ("a mod without game_min", mod(replace=(GAME_MIN, 'game_max = "2026.9"')), "compatibility: 'game_min' is a required property"),
+    ("a pack without links", PACK_KEYS + PACK_MEMBER + "\n[compatibility]\n" + GAME_MIN + "\n", "the document: 'links' is a required property"),
+    ("a vehicle with a loader", VEHICLE + '\n[loader]\nid = "StarMap"\nmin = "0.4"\n', "loader: this key is not allowed here"),
+    ("a vehicle that provides something", VEHICLE + '\n[provides]\nlaunch = "x.exe"\n', "provides: this key is not allowed here"),
+    ("a vehicle with a version", VEHICLE + 'version = "1.0.0"\n', "version: this key is not allowed here"),
+    ("a vehicle with a release timestamp", VEHICLE + 'released_at = "2026-08-05T12:00:00Z"\n', "released_at: this key is not allowed here"),
+    ("a vehicle with a changelog", VEHICLE + 'changelog = "x"\n', "changelog: this key is not allowed here"),
+    ("a vehicle pinning mods", VEHICLE + PACK_MEMBER, "mods: this key is not allowed here"),
+    ("a vehicle pinning vehicles", VEHICLE + '\n[[vehicles]]\nid = "A"\nversion = "1.0.0"\n', "vehicles: this key is not allowed here"),
+    ("a vehicle pinning saves", VEHICLE + '\n[[saves]]\nid = "A"\nversion = "1.0.0"\n', "saves: this key is not allowed here"),
+    ("a vehicle with an install target", VEHICLE + '\n[install]\ntarget = "user-data"\n', "install.target: this key is not allowed here"),
+    ("a vehicle with an install path", VEHICLE + '\n[install]\npath = "Vehicles"\n', "install.path: this key is not allowed here"),
+    ("a vehicle with install manages", VEHICLE + '\n[install]\nmanages = ["vehicle.xml"]\n', "install.manages: this key is not allowed here"),
+    ("a vehicle with an install folder", VEHICLE + '\n[install]\nfolder = "Test Rover"\n', "install: Additional properties are not allowed ('folder' was unexpected)"),
+    ("a save with a loader", VEHICLE.replace('type = "vehicle"', 'type = "save"') + '\n[loader]\nid = "StarMap"\nmin = "0.4"\n', "loader: this key is not allowed here"),
+]
+
+# Vehicles and saves that their own rules accept. While the rollout gate holds
+# their type, the gate line is their only error, and without the gate they pass.
+GATED_ACCEPTED = [
+    ("a minimal vehicle", VEHICLE),
+    ("a minimal save", VEHICLE.replace('type = "vehicle"', 'type = "save"')),
+    ("a vehicle with a forums link and a dependency", VEHICLE + "\n[links]\n" + FORUMS + '\n\n[[dependencies]]\nid = "TestMod"\nkind = "required"\nmin = "1.4"\n'),
+    ("a vehicle with links but no forums thread", VEHICLE + '\n[links]\nrepository = "https://github.com/a/b"\n'),
+    ("a vehicle with only game_max", VEHICLE + '\n[compatibility]\ngame_max = "2026.7.5.4892"\n'),
+    ("a vehicle with the install keys it may have", VEHICLE + '\n[install]\nroot = "Test Rover"\nsteps = ["Open the vehicle in the editor."]\nuninstall = []\n'),
+    ("a vehicle with a host, tags, an icon and every dependency kind", VEHICLE + 'tags = ["rover"]\nstatus = "deprecated"\nsuperseded_by = "TestRover2"\n\n[releases]\ngithub = "a/b"\ntag_prefix = "TestRover-v"\n\n[[dependencies]]\nkind = "recommends"\nany_of = [{ id = "A" }, { id = "B" }]\n' + ICON),
 ]
 
 # Small positive variations that would be wasteful as their own file.
@@ -451,6 +499,22 @@ def main():
         errors = failures_for(text, checker)
         if errors:
             failures.append(f"'{name}' should be accepted, but: " + "; ".join(errors))
+
+    schema = copy.deepcopy(checker.schema)
+    gate = schema["properties"]["type"].pop("not", None)
+    ungated = Draft202012Validator(schema)
+    for name, text in GATED_ACCEPTED:
+        checked += 1
+        content_type = tomllib.loads(text)["type"]
+        errors = failures_for(text, checker)
+        if gate and content_type in gate["enum"]:
+            if errors != [f"<case>: type: '{content_type}' {GATE}"]:
+                failures.append(f"'{name}' should be refused by the gate alone, but: " + "; ".join(errors))
+        elif errors:
+            failures.append(f"'{name}' should be accepted, but: " + "; ".join(errors))
+        errors = failures_for(text, ungated)
+        if errors:
+            failures.append(f"'{name}' should be accepted without the gate, but: " + "; ".join(errors))
 
     seen = set()
     for name, text, expected in REJECTED:

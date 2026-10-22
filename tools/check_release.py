@@ -6,7 +6,9 @@ The stamper's own error split gives the outcomes: StampError is the release
 being wrong, so reject; HostError is the host being unreachable this run, so
 could-not-evaluate. A pack, a listing with no release host, and a host with no
 release yet all pass. A `tag_prefix` that no release of the repository starts
-with is rejected, because the watcher would never stamp a release.
+with is rejected, because the watcher would never stamp a release. For a
+vehicle or a save, a release whose install folder another listing of that type
+already holds is rejected too (RFC 0085).
 """
 
 import argparse
@@ -25,7 +27,11 @@ PASS = "pass"
 REJECT = "reject"
 COULD_NOT_EVALUATE = "could-not-evaluate"
 
-WATCHED_TYPES = ("mod", "mod-loader")
+WATCHED_TYPES = ("mod", "mod-loader", "vehicle", "save")
+
+# RFC 0085: a release of these types installs one game folder, and no two
+# listings of one type may install into the same folder.
+FOLDER_TYPES = ("vehicle", "save")
 
 
 class Unavailable(Exception):
@@ -96,8 +102,13 @@ def latest(releases):
     return max(stampable, key=lambda release: (release.release_date or "", release.tag))
 
 
-def inspect(document, stamp_release, hosts, game_versions, http):
-    """Inspect one authored document's latest release."""
+def inspect(document, stamp_release, hosts, game_versions, http, folders=None):
+    """Inspect one authored document's latest release.
+
+    For a vehicle or a save, `folders(content_type)` gives the install folders
+    that the stamped releases of that type hold, as `folder_holders` of the
+    stamper reads them. Without it they are read from the generated repository.
+    """
     content_type = document.get("type")
     if content_type not in WATCHED_TYPES:
         return Outcome(
@@ -147,6 +158,22 @@ def inspect(document, stamp_release, hosts, game_versions, http):
             ],
         )
 
+    holders, notes, more = None, [], {}
+    if content_type in FOLDER_TYPES:
+        if not hasattr(stamp_release, "check_folder"):
+            return Outcome(
+                COULD_NOT_EVALUATE,
+                [f"the stamper of content-index-releases cannot stamp a {content_type} yet"],
+            )
+        try:
+            holders = (folders or _stamped_folders(stamp_release))(content_type)
+        except stamp_release.StampError as error:
+            return Outcome(
+                COULD_NOT_EVALUATE,
+                [f"the install folders of the other {content_type} listings could not be read: {error}"],
+            )
+        more = {"notes": notes}
+
     # The explanation reads the asset names from the tag without its prefix.
     prefix = getattr(release, "tag_prefix", "")
     named = f"{release.tag} (tag_prefix `{prefix}`)" if prefix else release.tag
@@ -154,13 +181,36 @@ def inspect(document, stamp_release, hosts, game_versions, http):
         archive, content = authority.download(release)
         facts = release.facts()
         facts["content_type"] = content
-        stamp_release.stamp(document, facts, archive, game_versions)
+        stamped = stamp_release.stamp(document, facts, archive, game_versions, **more)
+        if holders is not None:
+            stamp_release.check_folder(stamped, holders)
     except stamp_release.StampError as error:
         return Outcome(REJECT, [f"the latest release {named} cannot be stamped: {error}"])
     except (hosts.HostError, urllib.error.HTTPError, OSError) as error:
         return Outcome(COULD_NOT_EVALUATE, [f"the latest release {named} could not be read: {error}"])
 
-    return Outcome(PASS, [f"the latest release {release.version} stamps cleanly"])
+    folder = (stamped.get("install") or {}).get("folder") if holders is not None else None
+    if isinstance(folder, str):
+        # As the watcher does after a stamp, so another document of this run
+        # cannot take the same folder.
+        holding = holders.setdefault(folder.lower(), [])
+        if stamped.get("id") not in holding:
+            holding.append(stamped.get("id"))
+
+    return Outcome(PASS, [f"the latest release {release.version} stamps cleanly", *notes])
+
+
+def _stamped_folders(stamp_release, releases=None):
+    """The install folders by type, read once per type from the generated repository."""
+    folder = releases_root(releases) / "releases"
+    read = {}
+
+    def folders(content_type):
+        if content_type not in read:
+            read[content_type] = stamp_release.folder_holders(folder, content_type)
+        return read[content_type]
+
+    return folders
 
 
 def unmatched(host):
@@ -176,6 +226,7 @@ def inspect_paths(paths, releases=None, token=None):
     stamp_release, hosts = load_stamper(releases)
     game_versions = load_game_versions(releases)
     http = hosts.Http(token=token or os.environ.get("GITHUB_TOKEN"))
+    folders = _stamped_folders(stamp_release, releases)
 
     results = {}
     for path in paths:
@@ -193,7 +244,7 @@ def inspect_paths(paths, releases=None, token=None):
             continue
 
         try:
-            results[str(path)] = inspect(document, stamp_release, hosts, game_versions, http)
+            results[str(path)] = inspect(document, stamp_release, hosts, game_versions, http, folders)
         except Exception as error:
             results[str(path)] = Outcome(
                 COULD_NOT_EVALUATE, [f"the stamper behaved unexpectedly: {error!r}"]
