@@ -103,7 +103,7 @@ A mention subscribes the owner to that one pull request, and they can unsubscrib
 
 ## Content on a share host
 
-A share host lets a player publish a vehicle or a save without a GitHub repository of their own, per [RFC 0094](https://github.com/KSAModding/content-manager-design/pull/94).
+A share host lets a player publish a vehicle or a save without a GitHub repository of their own, per [RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md).
 The stewards register each share host in [`hosts.toml`](hosts.toml), and its operator agrees at registration to transfer its storage repository to a successor the stewards name when it stops operating.
 
 For content on a share host, its operator handles takedowns, abuse reports and the privacy of its accounts, under the policy that its table in `hosts.toml` links:

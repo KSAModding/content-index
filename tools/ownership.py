@@ -79,8 +79,8 @@ NOT_HOSTS = ("authority", "since", "tag_prefix")
 FIXED_HOSTS = ("github", "spacedock")
 SHARE_KIND = "share"
 
-# Where a share host keeps what the proofs read. RFC 0094 is not accepted yet,
-# so these names stay here, in one place.
+# Where a share host keeps what the proofs read, by RFC 0094; these names stay
+# here, in one place.
 HOSTS_FILE = Path(__file__).resolve().parent.parent / "hosts.toml"
 OWNER_RECORD = "owners/{type}/{id}.json"
 ATTESTATION = "attestations/{digest}.json"
