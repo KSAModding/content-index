@@ -15,6 +15,11 @@ and the rest is padded standard base64 of exactly 64 bytes. The URL-safe
 alphabet, a missing pad, a line break inside the text and bits that a
 canonical encoder leaves zero are all refused.
 
+A key whose point has a small order is refused too, because one fixed
+signature is valid for every body under such a key, and anyone could sign for
+the host. small_order_key reads this from the text alone, so check_hosts.py
+refuses such a key with no package installed.
+
 The cryptography package is imported inside the functions only. ownership.py
 imports this module only for a host with `data`, so every other check and the
 releases tools that import ownership.py still run on a runner that installs
@@ -28,6 +33,26 @@ import binascii
 MAX_SIGNATURE = 1024
 KEY_BYTES = 44
 SIGNATURE_BYTES = 64
+# The 12 bytes before the point in an Ed25519 SubjectPublicKeyInfo.
+KEY_PREFIX = bytes.fromhex("302a300506032b6570032100")
+
+# The point encodings of small order that libsodium refuses. These are the
+# identity, the points of order 2, 4 and 8, and the forms of 0 and 1 with y
+# not reduced below p. Each is listed with the sign bit clear and set.
+_SMALL_ORDER_BASES = (
+    "0100000000000000000000000000000000000000000000000000000000000000",
+    "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+    "0000000000000000000000000000000000000000000000000000000000000000",
+    "c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a",
+    "26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+    "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+    "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+)
+SMALL_ORDER = frozenset(
+    bytes.fromhex(base[:-2]) + bytes([int(base[-2:], 16) | sign])
+    for base in _SMALL_ORDER_BASES
+    for sign in (0x00, 0x80)
+)
 
 
 def _decode(text):
@@ -38,6 +63,16 @@ def _decode(text):
     if binascii.b2a_base64(raw, newline=False) != text:
         raise ValueError("not canonical base64")
     return raw
+
+
+def small_order_key(text):
+    """Return True when the base64 SubjectPublicKeyInfo `text` holds an
+    Ed25519 point of small order. Any other text gives False."""
+    try:
+        raw = binascii.a2b_base64(text.encode("ascii"), strict_mode=True)
+    except (UnicodeEncodeError, binascii.Error):
+        return False
+    return len(raw) == KEY_BYTES and raw[:12] == KEY_PREFIX and raw[12:] in SMALL_ORDER
 
 
 def load_key(text):
@@ -53,6 +88,8 @@ def load_key(text):
         raise ValueError(f"the key is not base64: {error}") from None
     if len(raw) != KEY_BYTES:
         raise ValueError(f"the key has {len(raw)} bytes, not {KEY_BYTES}")
+    if raw[:12] == KEY_PREFIX and raw[12:] in SMALL_ORDER:
+        raise ValueError("the key is a small-order point")
     try:
         key = load_der_public_key(raw)
     except (ValueError, UnsupportedAlgorithm):

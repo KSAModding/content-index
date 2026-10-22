@@ -35,6 +35,8 @@ policy = "https://ksamods.gg/policy"
 # form is read here, so they are fixed bytes and not the keys of a signer.
 KEY = "MCowBQYDK2VwAyEAAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
 OLD_KEY = "MCowBQYDK2VwAyEAICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8="
+# The identity point, a key of small order that the schema pattern still takes.
+IDENTITY_KEY = "MCowBQYDK2VwAyEAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
 # The same host without GitHub storage, by RFC 0104.
 DATA_HOST = f"""[ksamods]
@@ -158,6 +160,14 @@ class Load(unittest.TestCase):
                     f"ksamods.key: {value!r} is not an Ed25519 public key as standard base64 of its "
                     "SubjectPublicKeyInfo",
                 )
+
+    def test_a_small_order_key_is_refused(self):
+        self.assert_refused(
+            host(replace=f'key = "{IDENTITY_KEY}"', text=DATA_HOST),
+            "ksamods.key: the key is a small-order point, so it protects nothing",
+        )
+        retired = DATA_HOST.replace("bot = ", f'retired_keys = ["{IDENTITY_KEY}"]\nbot = ')
+        self.assert_refused(retired, "ksamods.retired_keys[0]: the key is a small-order point, so it protects nothing")
 
     def test_a_download_prefix_is_an_https_url(self):
         self.assert_refused(

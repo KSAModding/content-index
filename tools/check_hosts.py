@@ -7,8 +7,9 @@ The schema in schemas/hosts.schema.json says what a table may contain. This
 check runs it, and adds the rules the schema cannot express: every type a host
 takes has a size limit, `pages` is the GitHub Pages address of the `storage`
 repository, and a host with `data` does not list its current `key` among its
-`retired_keys`. No signature is checked here, because a key is only read as
-text.
+`retired_keys`. A key that is a point of small order is refused, because under
+such a key one signature fits every file. No signature is checked here, and a
+key is only read as text, so this check needs no crypto package.
 
 Only the documents a change touches are checked against the tables, so a
 steward who removes a host does not stop every later pull request. Its
@@ -25,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import check_schema
 import ownership
+import signature
 
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import best_match
@@ -64,6 +66,12 @@ def check_table(where, key, table, errors):
     retired = table.get("retired_keys")
     if isinstance(current, str) and isinstance(retired, list) and current in retired:
         errors.append(f"{where}: {key}.retired_keys: the host lists its current key as retired too")
+    keys = [("key", current)]
+    if isinstance(retired, list):
+        keys += [(f"retired_keys[{index}]", value) for index, value in enumerate(retired)]
+    for name, value in keys:
+        if isinstance(value, str) and signature.small_order_key(value):
+            errors.append(f"{where}: {key}.{name}: the key is a small-order point, so it protects nothing")
 
     storage = table.get("storage")
     pages = table.get("pages")
