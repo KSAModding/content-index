@@ -1266,7 +1266,7 @@ class DecideArguments(unittest.TestCase):
 
     def test_every_argument_the_script_needs_is_passed(self):
         text = self.step()
-        for flag in ("--event", "--head-repository", "--head-branch", "--head-sha"):
+        for flag in ("--event", "--head-repository", "--head-branch", "--head-sha", "--record-url"):
             self.assertIn(flag, text, f"ownership.yml does not pass {flag}")
 
     def test_nothing_is_interpolated_into_a_shell_here(self):
@@ -1292,7 +1292,7 @@ class Act(unittest.TestCase):
         patch.start()
         self.addCleanup(patch.stop)
 
-    def act(self, document=None, write=True, event="pull_request"):
+    def act(self, document=None, write=True, event="pull_request", record_url=""):
         path = self.root / "verdict.json"
         if write:
             path.write_text(json.dumps(document if document is not None else verdict()),
@@ -1305,6 +1305,7 @@ class Act(unittest.TestCase):
             head_sha="abc",
             repository=self.api.repository,
             run_url="",
+            record_url=record_url,
             dry_run=False,
         )
         return decide.act(self.api, arguments)
@@ -2037,6 +2038,125 @@ class ShareHostPullRequests(unittest.TestCase):
         self.api.files = {(path, "main"): share_vehicle("MunRover"), (path, "abc"): share_vehicle("MunRover")}
         notes = decide.owner_notes(self.api, pull_request(), [check_scope.Change(path, "modified")], "abc")
         self.assertEqual(notes, [])
+
+
+DATA_KEY = "MCowBQYDK2VwAyEA" + "A" * 43 + "="
+DATA_TABLE = {
+    "kind": "share",
+    "data": "https://data.example.net/",
+    "downloads": ["https://files.example.net/"],
+    "key": DATA_KEY,
+    "bot": SHARE_BOT,
+    "types": ["vehicle"],
+}
+RECORD_URL = "https://github.com/KSAModding/content-index/actions/runs/42"
+
+
+def fenced_blocks(text):
+    """The text of every code block in Markdown, read the way CommonMark closes a fence."""
+    blocks, lines, fence = [], [], None
+    for line in text.split("\n"):
+        if fence is None:
+            opened = re.match(r"(`{3,})", line)
+            if opened:
+                fence, lines = opened.group(1), []
+        elif re.fullmatch(f"{fence}`*", line):
+            blocks.append("\n".join(lines) + "\n")
+            fence = None
+        else:
+            lines.append(line)
+    return blocks
+
+
+class DataHostRecord(unittest.TestCase):
+    """A verified proof from a host with `data` leaves its attestation on the
+    pull request (RFC 0104, rule 30).
+    """
+
+    act = Act.act
+    statuses = Act.statuses
+
+    def setUp(self):
+        Act.setUp(self)
+        patch = mock.patch.object(ownership, "share_hosts", lambda *a, **k: {"ksadata": DATA_TABLE})
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.summary = self.root / "summary.md"
+        patch = mock.patch.dict("os.environ", {"GITHUB_STEP_SUMMARY": str(self.summary)})
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def test_a_verified_data_host_proof_is_recorded_in_the_comment_and_the_summary(self):
+        self.api.pulls = [dict(pull_request(), user={"login": "ksadata-bot", "id": SHARE_BOT})]
+        identifiers = ["Zephyr", "MunRover"]
+        paths = [f"vehicles/{identifier}.toml" for identifier in identifiers]
+        changes = [
+            check_scope.Change(path, "added", None, f"{index + 1:040x}") for index, path in enumerate(paths)
+        ]
+        for path, identifier in zip(paths, identifiers):
+            self.api.files[(path, "abc")] = share_vehicle(identifier).replace("ksamods", "ksadata")
+        attestation = ownership.ATTESTATION.format(digest=ownership.change_digest(changes))
+        text = json.dumps({"host": "ksadata", "accounts": {f"vehicle/{i}": f"u_{i}" for i in identifiers}})
+        files = {attestation: ownership.SignedFile(text, "c2lnbmF0dXJl\n", DATA_KEY)}
+        for identifier in identifiers:
+            record = json.dumps({"id": identifier, "type": "vehicle", "account": f"u_{identifier}"})
+            files[f"owners/vehicle/{identifier}.json"] = ownership.SignedFile(record, "b3duZXI=\n", DATA_KEY)
+        read = []
+
+        def share_file_signed(table, path, user_agent=None):
+            read.append(path)
+            return files.get(path)
+
+        checks = [validate.Check("schema", validate.PASS, []).as_dict()]
+        with mock.patch.object(decide, "changed_paths", lambda api, number: changes), mock.patch.object(
+            ownership, "share_file_signed", share_file_signed
+        ):
+            self.assertEqual(self.act(verdict(checks=checks, documents=paths), record_url=RECORD_URL), 0)
+
+        self.assertEqual(sorted(read), sorted(files))
+        self.assertEqual([status["state"] for status in self.statuses()], ["pending", "success"])
+        comment = [p for _, where, p, _ in self.api.sent if where == "/issues/5/comments"][0]["body"]
+        entry = self.summary.read_text(encoding="utf-8")
+        for body in (comment, entry):
+            self.assertIn(f"[The ownership run]({RECORD_URL})", body)
+            self.assertIn(f"`{attestation}` of the share host `ksadata`", body)
+            self.assertIn(DATA_KEY, body)
+            self.assertEqual(fenced_blocks(body)[-2:], [text + "\n", "c2lnbmF0dXJl\n"])
+        self.assertIn(entry.strip(), comment)
+
+    def test_an_attestation_that_holds_a_fence_stays_inside_its_block(self):
+        text = json.dumps({"host": "ksadata", "accounts": {}, "note": "``` ```` end"}) + "\n"
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        paragraph = decide.evidence_paragraph(5, result, RECORD_URL)
+        self.assertIn("\n`````json\n", paragraph)
+        self.assertEqual(fenced_blocks(paragraph), [text, "c2ln\n"])
+
+    def test_a_large_attestation_is_only_linked_from_the_comment(self):
+        text = json.dumps({"host": "ksadata", "accounts": {}, "note": "x" * decide.EVIDENCE_LIMIT})
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        paragraph = decide.evidence_paragraph(5, result, RECORD_URL)
+        self.assertIn(f"[The ownership run]({RECORD_URL})", paragraph)
+        self.assertNotIn(text, paragraph)
+        self.assertIn(text, decide.evidence_paragraph(5, result, RECORD_URL, limit=None))
+
+    def test_two_data_hosts_with_the_same_path_read_their_own_file(self):
+        other = dict(DATA_TABLE, data="https://data.example.org/")
+        path = "attestations/a.json"
+        read = []
+
+        def share_file_signed(table, path, user_agent=None):
+            read.append((table["data"], path))
+            return ownership.SignedFile(table["data"], "c2ln\n", DATA_KEY)
+
+        lookups = decide.OwnershipApi(RecordingApi())
+        with mock.patch.object(ownership, "share_file_signed", share_file_signed):
+            first = [lookups.share_file_signed(table, path) for table in (DATA_TABLE, other, DATA_TABLE, other)]
+            self.assertEqual(lookups.share_file(other, path), "https://data.example.org/")
+
+        self.assertEqual([found.text for found in first], [DATA_TABLE["data"], other["data"]] * 2)
+        self.assertEqual(read, [(DATA_TABLE["data"], path), (other["data"], path)])
 
 
 if __name__ == "__main__":

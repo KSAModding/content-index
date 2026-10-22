@@ -97,6 +97,10 @@ FIX_OR_RUN_AGAIN = (
 )
 PROOF_AGAIN = "When the proof is in place, comment here, so a steward runs the checks again."
 
+# The largest attestation and signature, together in bytes, that the comment
+# holds. A larger pair is only in the job summary of the ownership run.
+EVIDENCE_LIMIT = 16 * 1024
+
 
 def _findings(verdict):
     """The (rejected, unchecked, notes) of the verdict, each a list of (check name, message).
@@ -193,6 +197,53 @@ def _ownership_paragraphs(result):
     if explained:
         paragraphs.append(PROOF_AGAIN)
     return paragraphs
+
+
+def _fenced(text, info=""):
+    """`text` in a code block whose fence is one backtick longer than the
+    longest run of backticks in it, so that no line of the text can close it.
+    """
+    runs = re.findall(r"`+", text)
+    fence = "`" * max(3, 1 + max(map(len, runs), default=0))
+    ending = "" if text.endswith("\n") else "\n"
+    return f"{fence}{info}\n{text}{ending}{fence}"
+
+
+def evidence_paragraph(number, result, record_url, limit=EVIDENCE_LIMIT):
+    """The record of the attestation that a verified proof rests on (RFC 0104,
+    rule 30), so that a merged proof outlives the host.
+
+    It names the pull request, the host, the key that verified the signature
+    and the path, and holds the attestation and its signature verbatim. When
+    the two together are larger than `limit` bytes, they are left out and the
+    entry says that the linked run holds them, because a comment has a size
+    limit. A `limit` of None always keeps them.
+    """
+    evidence = result.evidence
+    try:
+        host = json.loads(evidence.text).get("host")
+    except (ValueError, AttributeError):
+        host = None
+    lines = [
+        f"Ownership record of pull request #{number}: the attestation `{evidence.path}` "
+        f"of the share host `{host}` has a valid signature by the key `{evidence.key}`."
+    ]
+    if record_url:
+        lines.append(f"[The ownership run]({record_url})")
+    size = len(evidence.text.encode("utf-8")) + len(evidence.signature.encode("utf-8"))
+    if limit is not None and size > limit:
+        lines.append(
+            "The attestation and its signature are too large for this comment, so only the "
+            "linked ownership run holds them."
+        )
+        return "\n\n".join(lines)
+    lines += [
+        "The attestation:",
+        _fenced(evidence.text, "json"),
+        f"Its signature, `{evidence.path}{ownership.SIGNATURE}`:",
+        _fenced(evidence.signature),
+    ]
+    return "\n\n".join(lines)
 
 
 def decide(verdict, candidate, ownership_result, run_url="", advice=()):
@@ -416,8 +467,10 @@ class OwnershipApi:
     """`ownership.verify` talks to the target repository through this.
 
     `changes` are the changed files of the pull request, which the share host
-    proof hashes. The files of a storage repository are read once per run, so a
-    grouped pull request reads its attestation once.
+    proof hashes. The files of a share host are read once per run, so a grouped
+    pull request reads its attestation once. They are cached by the storage
+    repository or the data URL of the host and the path, so two hosts never
+    share a file.
     """
 
     def __init__(self, api, changes=None, share_files=None):
@@ -437,11 +490,24 @@ class OwnershipApi:
     def spacedock_mod(self, mod_id):
         return self.api.spacedock_mod(mod_id)
 
-    def share_file(self, table, path):
-        key = (table.get("storage"), path)
+    def _cached(self, table, path, read):
+        key = (table.get("storage") or table.get("data"), path)
         if key not in self.share_files:
-            self.share_files[key] = ownership.share_file(table, path, USER_AGENT)
+            self.share_files[key] = read(table, path, USER_AGENT)
         return self.share_files[key]
+
+    def share_file(self, table, path):
+        """The text of a share host file, or None. A file of a host with `data`
+        goes through the signed cache, so one path is never cached twice.
+        """
+        if isinstance(table.get("data"), str):
+            found = self.share_file_signed(table, path)
+            return found.text if isinstance(found, ownership.SignedFile) else None
+        return self._cached(table, path, ownership.share_file)
+
+    def share_file_signed(self, table, path):
+        """A file of a host with `data` as a SignedFile, None, or ownership.UNSIGNED."""
+        return self._cached(table, path, ownership.share_file_signed)
 
     def change(self):
         if self.changes is None:
@@ -656,7 +722,10 @@ def ownership_for_all(api, pull, paths, head_sha, changes=None):
         proof = pack_ownership.PROOF if all(
             result.proof == pack_ownership.PROOF for _, result in results
         ) else None
-        return ownership.Result(ownership.VERIFIED, worst.reason, proof)
+        # The documents of a grouped pull request rest on one attestation, so
+        # the first record is the record of all of them.
+        evidence = next((result.evidence for _, result in results if result.evidence), None)
+        return ownership.Result(ownership.VERIFIED, worst.reason, proof, evidence=evidence)
 
     if len(results) == 1:
         return worst
@@ -946,6 +1015,7 @@ def parse_arguments(argv):
     parser.add_argument("--head-branch", required=True, help="from the workflow_run event")
     parser.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY"))
     parser.add_argument("--run-url", default="")
+    parser.add_argument("--record-url", default="", help="this ownership run, which holds the record")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
@@ -974,6 +1044,18 @@ def main(argv=None):
         except Exception as second:
             print(f"and the status could not be posted: {second!r}", file=sys.stderr)
         return 1
+
+
+def record_evidence(number, result, record_url):
+    """Print the full record of the attestation, and add it to the job summary
+    of this run when GitHub names one, so that the run holds it at any size.
+    """
+    entry = evidence_paragraph(number, result, record_url, limit=None)
+    print(entry)
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        with open(summary, "a", encoding="utf-8") as handle:
+            handle.write(entry + "\n\n")
 
 
 def act(api, arguments):
@@ -1023,6 +1105,9 @@ def act(api, arguments):
         *owner_advice(pull, pack_ownership.missing_records(api, pull, changes)),
         *owner_notes(api, pull, changes, arguments.head_sha),
     ]
+    if result.evidence is not None:
+        record_evidence(number, result, arguments.record_url)
+        advice.append(evidence_paragraph(number, result, arguments.record_url))
     decision = decide(
         {**verdict, "scope_reason": reason}, candidate, result, arguments.run_url, advice
     )
