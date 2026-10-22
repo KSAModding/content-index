@@ -42,6 +42,15 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
 
+      # The packages come from the requirements of the default branch, which this
+      # job checked out, never from the head of the pull request. A cache could
+      # carry packages from another run into a job that holds the App key.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - run: |
+          python -m pip install --only-binary=:all: -r tools/requirements.txt
+
       # GITHUB_TOKEN would arm a merge that starts no snapshot dispatch.
       - uses: actions/create-github-app-token@v3
         id: app-token
@@ -62,13 +71,15 @@ jobs:
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           REPOSITORY: ${{ github.repository }}
           RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RECORD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           set -euo pipefail
-          python3 tools/decide.py \
+          python tools/decide.py \
             --verdict verdict.json \
             --event "$EVENT" \
             --head-repository "$HEAD_REPOSITORY" \
             --head-branch "$HEAD_BRANCH" \
             --head-sha "$HEAD_SHA" \
             --repository "$REPOSITORY" \
-            --run-url "$RUN_URL"
+            --run-url "$RUN_URL" \
+            --record-url "$RECORD_URL"
