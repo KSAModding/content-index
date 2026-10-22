@@ -7,6 +7,7 @@ The privileged half of RFC 0033's listing flow.
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
@@ -97,9 +98,19 @@ FIX_OR_RUN_AGAIN = (
 )
 PROOF_AGAIN = "When the proof is in place, comment here, so a steward runs the checks again."
 
-# The largest attestation and signature, together in bytes, that the comment
-# holds. A larger pair is only in the job summary of the ownership run.
-EVIDENCE_LIMIT = 16 * 1024
+# GitHub keeps at most 65536 characters in one comment. A comment of the
+# ownership record stays within this many UTF-8 bytes, which are never fewer
+# than the characters GitHub counts, so a record of any size fits in parts.
+COMMENT_LIMIT = 65536
+# Starts each comment of an ownership record. The record id and the part make
+# a second run of the check find the parts it posted before. A record holds
+# nothing of the run that posts it, so every run makes the same parts.
+EVIDENCE_MARKER = "<!-- content-index:ownership-record {record} part {part}/{parts} -->"
+# What the upserted comment says about the record, which is not in it.
+EVIDENCE_POSTED = (
+    "The attestation and its signature are recorded in their own comments, which no later run "
+    "of this check edits."
+)
 
 
 def _findings(verdict):
@@ -209,41 +220,73 @@ def _fenced(text, info=""):
     return f"{fence}{info}\n{text}{ending}{fence}"
 
 
-def evidence_paragraph(number, result, record_url, limit=EVIDENCE_LIMIT):
+def evidence_comments(number, result, limit=COMMENT_LIMIT):
     """The record of the attestation that a verified proof rests on (RFC 0104,
-    rule 30), so that a merged proof outlives the host.
+    rule 30), so that a merged proof outlives the host, as comment bodies.
 
-    It names the pull request, the host, the key that verified the signature
-    and the path, and holds the attestation and its signature verbatim. When
-    the two together are larger than `limit` bytes, they are left out and the
-    entry says that the linked run holds them, because a comment has a size
-    limit. A `limit` of None always keeps them.
+    The record names the pull request, the host, the key that verified the
+    signature, the path and the SHA-256 of the attestation, and holds the
+    signature and the attestation verbatim. When it is larger than `limit`
+    bytes, the attestation continues in more comments, and the SHA-256
+    confirms a copy that joins the parts again. A `limit` of None keeps the
+    record in one part.
     """
     evidence = result.evidence
     try:
         host = json.loads(evidence.text).get("host")
     except (ValueError, AttributeError):
         host = None
-    lines = [
-        f"Ownership record of pull request #{number}: the attestation `{evidence.path}` "
-        f"of the share host `{host}` has a valid signature by the key `{evidence.key}`."
+    attestation = evidence.text.encode("utf-8")
+    record = hashlib.sha256(attestation + b"\0" + evidence.signature.encode("utf-8")).hexdigest()
+    first = "\n\n".join(
+        [
+            f"Ownership record of pull request #{number}: the attestation `{evidence.path}` "
+            f"of the share host `{host}` has a valid signature by the key `{evidence.key}`. "
+            f"The SHA-256 of the attestation is `{hashlib.sha256(attestation).hexdigest()}`.",
+            f"Its signature, `{evidence.path}{ownership.SIGNATURE}`:",
+            _fenced(evidence.signature),
+            "The attestation:",
+        ]
+    )
+    later = f"Ownership record of pull request #{number}, the attestation continues:"
+    heads, chunks, rest = [], [], evidence.text
+    while not chunks or rest:
+        head = later if chunks else first
+        size = len(rest) if limit is None else _longest_fit(head, rest, limit)
+        heads.append(head)
+        chunks.append(rest[:size])
+        rest = rest[size:]
+    return [
+        _evidence_marker(record, index + 1, len(chunks)) + "\n" + head + "\n\n" + _fenced(chunk, "json")
+        for index, (head, chunk) in enumerate(zip(heads, chunks))
     ]
-    if record_url:
-        lines.append(f"[The ownership run]({record_url})")
-    size = len(evidence.text.encode("utf-8")) + len(evidence.signature.encode("utf-8"))
-    if limit is not None and size > limit:
-        lines.append(
-            "The attestation and its signature are too large for this comment, so only the "
-            "linked ownership run holds them."
-        )
-        return "\n\n".join(lines)
-    lines += [
-        "The attestation:",
-        _fenced(evidence.text, "json"),
-        f"Its signature, `{evidence.path}{ownership.SIGNATURE}`:",
-        _fenced(evidence.signature),
-    ]
-    return "\n\n".join(lines)
+
+
+def _longest_fit(head, text, limit):
+    """How many characters of `text` fit after `head` in a comment of at most
+    `limit` UTF-8 bytes, found by halving. The size only grows with the
+    length, because a longer text never needs a shorter fence, and one
+    character always fits.
+    """
+    low, high = 1, len(text)
+    while low < high:
+        middle = (low + high + 1) // 2
+        if _part_size(head, text[:middle]) <= limit:
+            low = middle
+        else:
+            high = middle - 1
+    return low
+
+
+def _evidence_marker(record, part, parts):
+    return EVIDENCE_MARKER.format(record=record, part=part, parts=parts)
+
+
+def _part_size(head, chunk):
+    """The UTF-8 size of a comment with this head and chunk, with a marker of
+    the longest form."""
+    marker = _evidence_marker("0" * 64, 99, 99)
+    return len(f"{marker}\n{head}\n\n{_fenced(chunk, 'json')}".encode("utf-8"))
 
 
 def decide(verdict, candidate, ownership_result, run_url="", advice=()):
@@ -560,6 +603,29 @@ def upsert_comment(api, number, body):
         api.send("POST", f"/issues/{number}/comments", payload)
     elif (existing.get("body") or "") != payload["body"]:
         api.send("PATCH", f"/issues/comments/{existing['id']}", payload)
+
+
+def post_evidence(api, number, comments):
+    """Post each comment of an ownership record that the pull request does not
+    hold yet, and never edit or delete one, so that no later run of the check
+    can erase the record.
+
+    The marker of each part says whether an earlier run posted it, so a run
+    again posts only what is missing. Only a comment by a bot counts, because
+    the author of the pull request can post the same marker and later edit
+    that comment. Only the first 100 comments are looked at, so on a longer
+    pull request a part can be posted twice, which loses nothing.
+    """
+    existing = api.get(f"/issues/{number}/comments", per_page=100) or []
+    posted = [
+        comment.get("body") or ""
+        for comment in existing
+        if (comment.get("user") or {}).get("type") == "Bot"
+    ]
+    for body in comments:
+        marker = body.split("\n", 1)[0]
+        if not any(text.startswith(marker) for text in posted):
+            api.send("POST", f"/issues/{number}/comments", {"body": body})
 
 
 def _labels(api, number):
@@ -1046,11 +1112,11 @@ def main(argv=None):
         return 1
 
 
-def record_evidence(number, result, record_url):
+def record_evidence(number, result):
     """Print the full record of the attestation, and add it to the job summary
-    of this run when GitHub names one, so that the run holds it at any size.
+    of this run when GitHub names one, so that the run holds it in one piece.
     """
-    entry = evidence_paragraph(number, result, record_url, limit=None)
+    entry = evidence_comments(number, result, limit=None)[0]
     print(entry)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
@@ -1106,8 +1172,12 @@ def act(api, arguments):
         *owner_notes(api, pull, changes, arguments.head_sha),
     ]
     if result.evidence is not None:
-        record_evidence(number, result, arguments.record_url)
-        advice.append(evidence_paragraph(number, result, arguments.record_url))
+        # Before auto-merge is armed, so that no proof merges without its record.
+        record_evidence(number, result)
+        post_evidence(api, number, evidence_comments(number, result))
+        advice.append(EVIDENCE_POSTED)
+        if arguments.record_url:
+            advice.append(f"[The ownership run]({arguments.record_url})")
     decision = decide(
         {**verdict, "scope_reason": reason}, candidate, result, arguments.run_url, advice
     )

@@ -3,6 +3,7 @@
 """Tests for what the privileged half does about a verdict. No token, no network."""
 
 import copy
+import hashlib
 import json
 import re
 import sys
@@ -2130,31 +2131,59 @@ class DataHostRecord(unittest.TestCase):
 
         self.assertEqual(sorted(read), sorted(files))
         self.assertEqual([status["state"] for status in self.statuses()], ["pending", "success"])
-        comment = [p for _, where, p, _ in self.api.sent if where == "/issues/5/comments"][0]["body"]
+        posted = [p["body"] for _, where, p, _ in self.api.sent if where == "/issues/5/comments"]
+        self.assertEqual(len(posted), 2)
+        record, comment = posted
+        self.assertTrue(record.startswith("<!-- content-index:ownership-record "))
+        self.assertIn(decide.EVIDENCE_POSTED, comment)
+        self.assertIn(f"[The ownership run]({RECORD_URL})", comment)
+        self.assertNotIn(text, comment)
         entry = self.summary.read_text(encoding="utf-8")
-        for body in (comment, entry):
-            self.assertIn(f"[The ownership run]({RECORD_URL})", body)
+        for body in (record, entry):
             self.assertIn(f"`{attestation}` of the share host `ksadata`", body)
             self.assertIn(DATA_KEY, body)
-            self.assertEqual(fenced_blocks(body)[-2:], [text + "\n", "c2lnbmF0dXJl\n"])
-        self.assertIn(entry.strip(), comment)
+            self.assertEqual(fenced_blocks(body)[-2:], ["c2lnbmF0dXJl\n", text + "\n"])
+        self.assertEqual(entry.strip(), record)
 
     def test_an_attestation_that_holds_a_fence_stays_inside_its_block(self):
         text = json.dumps({"host": "ksadata", "accounts": {}, "note": "``` ```` end"}) + "\n"
         evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
         result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
-        paragraph = decide.evidence_paragraph(5, result, RECORD_URL)
-        self.assertIn("\n`````json\n", paragraph)
-        self.assertEqual(fenced_blocks(paragraph), [text, "c2ln\n"])
+        [record] = decide.evidence_comments(5, result)
+        self.assertIn("\n`````json\n", record)
+        self.assertEqual(fenced_blocks(record), ["c2ln\n", text])
 
-    def test_a_large_attestation_is_only_linked_from_the_comment(self):
-        text = json.dumps({"host": "ksadata", "accounts": {}, "note": "x" * decide.EVIDENCE_LIMIT})
+    def test_an_attestation_of_the_largest_size_is_split_over_two_comments(self):
+        start, end, unit = '{"host": "ksadata", "accounts": {}, "note": "', '"}', "x" * 500 + "```` \u00fc "
+        room = ownership.MAX_SHARE_FILE - len(start) - len(end)
+        note = unit * (room // len(unit.encode("utf-8")))
+        text = start + note + "x" * (room - len(note.encode("utf-8"))) + end
+        self.assertEqual(len(text.encode("utf-8")), ownership.MAX_SHARE_FILE)
         evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
         result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
-        paragraph = decide.evidence_paragraph(5, result, RECORD_URL)
-        self.assertIn(f"[The ownership run]({RECORD_URL})", paragraph)
-        self.assertNotIn(text, paragraph)
-        self.assertIn(text, decide.evidence_paragraph(5, result, RECORD_URL, limit=None))
+        parts = decide.evidence_comments(5, result)
+        self.assertEqual(len(parts), 2)
+        for part in parts:
+            self.assertLessEqual(len(part.encode("utf-8")), decide.COMMENT_LIMIT)
+        # The text has no line break, so each block only adds the one that closes it.
+        joined = "".join(fenced_blocks(part)[-1][:-1] for part in parts)
+        self.assertEqual(joined, text)
+        self.assertIn(hashlib.sha256(text.encode("utf-8")).hexdigest(), parts[0])
+
+    def test_a_second_run_posts_only_what_is_missing_and_edits_nothing(self):
+        text = json.dumps({"host": "ksadata", "accounts": {}, "note": "x" * decide.COMMENT_LIMIT})
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        parts = decide.evidence_comments(5, result)
+        # A part that the author of the pull request posted is not the record.
+        api = RecordingApi(
+            comments=[
+                {"id": 1, "body": parts[0], "user": {"type": "Bot"}},
+                {"id": 2, "body": parts[1], "user": {"type": "User"}},
+            ]
+        )
+        decide.post_evidence(api, 5, parts)
+        self.assertEqual(api.sent, [("POST", "/issues/5/comments", {"body": parts[1]}, None)])
 
     def test_two_data_hosts_with_the_same_path_read_their_own_file(self):
         other = dict(DATA_TABLE, data="https://data.example.org/")

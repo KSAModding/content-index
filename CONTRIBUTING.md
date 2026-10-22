@@ -221,7 +221,7 @@ A listing on a share host, a host that [`hosts.toml`](hosts.toml) registers per 
 The host proves the owner in one of two ways.
 It opens the pull request from its own account and publishes an attestation of the exact change, in its storage repository or, for a host without GitHub storage, under its `data` URL with the signature in a `.sig` file beside it.
 Or you link your GitHub account to your account on the host and open the pull request yourself.
-For a host with `data`, the ownership check accepts the attestation only when the signature is valid for the `key` of the host, and copies the attestation and its signature into its comment on the pull request, so the proof stays readable after the host is gone.
+For a host with `data`, the ownership check accepts the attestation only when the signature is valid for the `key` of the host, and copies the attestation and its signature into comments of their own on the pull request, which no later run edits, so the proof stays readable after the host is gone.
 A pull request that changes one byte after the host attested it does not verify.
 An edit is verified against the host that the listing already names, as for every other host.
 
