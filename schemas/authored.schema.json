@@ -21,7 +21,7 @@
       "enum": ["mod", "mod-loader", "modpack", "vehicle", "save"],
       "not": {
         "title": "a type that the index does not accept yet, because no release host for it exists (RFC 0085 Rollout)",
-        "enum": ["vehicle", "save"]
+        "enum": ["save"]
       }
     },
     "name": {
