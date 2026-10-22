@@ -215,7 +215,13 @@ The table name is the key a listing names the host with under `[releases]`: 2 to
 That is `HOST_KEY` of `tools/authored.py` in content-index-releases, which the watcher, the download counts and the snapshot read, so a change of the form is a change there too.
 A `storage` repository of the KSAModding organization is refused, because the index never hosts files.
 
-`tools/check_hosts.py` runs the schema and adds the rules it cannot express: every type in `types` has a size in `max_bytes`, a host with `data` and no `storage` is refused while the watcher and the ownership check read only a storage repository, and `pages` is the GitHub Pages address of `storage`.
+A host names `storage`, with an optional `pages`, or it keeps its archives outside GitHub by [RFC 0104](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0104-share-host-conformance.md) and names `data`, `downloads` and `key`, with an optional `retired_keys`, and never keys of both forms.
+`data` and every prefix in `downloads` are https URLs that end with `/`.
+`key` is the Ed25519 public key that signs the data files, as padded standard base64 of its 44-byte SubjectPublicKeyInfo, so it starts with `MCowBQYDK2VwAyEA`.
+`retired_keys` holds the earlier values of `key` in the same form, and they only check signatures that a check run recorded before. A data file that is read now must carry a signature by `key`.
+
+`tools/check_hosts.py` runs the schema and adds the rules it cannot express: every type in `types` has a size in `max_bytes`, `pages` is the GitHub Pages address of `storage`, and `retired_keys` does not list the current `key`.
+It reads a key only as text and checks no signature.
 
 `authored.schema.json` cannot read `hosts.toml`, so under `[releases]` it takes any key of the host key form with a listing id as its value, and `authority` takes such a key too.
 `tools/check_hosts.py` then refuses, for the documents a pull request changes, a key that `hosts.toml` does not register, a host whose `types` does not hold the type of the document, a value that is not the id of the document, a share host next to another host without `authority`, and an `authority` that names no host of the section.

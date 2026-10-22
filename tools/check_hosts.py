@@ -5,9 +5,10 @@ share host keys of the documents a change touches.
 
 The schema in schemas/hosts.schema.json says what a table may contain. This
 check runs it, and adds the rules the schema cannot express: every type a host
-takes has a size limit, a host names a storage repository, which is all the
-watcher and the ownership check read yet, and `pages` is the GitHub Pages
-address of that repository.
+takes has a size limit, `pages` is the GitHub Pages address of the `storage`
+repository, and a host with `data` does not list its current `key` among its
+`retired_keys`. No signature is checked here, because a key is only read as
+text.
 
 Only the documents a change touches are checked against the tables, so a
 steward who removes a host does not stop every later pull request. Its
@@ -59,13 +60,12 @@ def check_table(where, key, table, errors):
                     "a type the host takes"
                 )
 
-    storage = table.get("storage")
-    if "data" in table and "storage" not in table:
-        errors.append(
-            f"{where}: {key}: the host names data and no storage, and the watcher and the "
-            "ownership check read only a storage repository yet"
-        )
+    current = table.get("key")
+    retired = table.get("retired_keys")
+    if isinstance(current, str) and isinstance(retired, list) and current in retired:
+        errors.append(f"{where}: {key}.retired_keys: the host lists its current key as retired too")
 
+    storage = table.get("storage")
     pages = table.get("pages")
     if isinstance(pages, str) and isinstance(storage, str):
         wanted = pages_of(storage)
@@ -101,7 +101,7 @@ def load(path=HOSTS, schema=SCHEMA):
             # A table name has no place of its own in the document.
             place = f"[{deepest.instance}]"
         elif deepest.validator == "oneOf":
-            message = "a host names either storage or data, and not both"
+            message = "a host names storage, or data with downloads and key, and not keys of both"
         errors.append(f"{where}: {place}: {message}")
     for key, table in document.items():
         if isinstance(table, dict):
