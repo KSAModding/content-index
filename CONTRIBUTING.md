@@ -218,7 +218,10 @@ When SpaceDock does not answer, the check reaches no verdict, and the pull reque
 Release and amendment pull requests in content-index-releases use the same proof.
 
 A listing on a share host, a host that [`hosts.toml`](hosts.toml) registers per [RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md), needs no proof that you set up.
-The host proves the owner in one of two ways: it opens the pull request from its own account and places an attestation of the exact change in its storage repository, or you link your GitHub account to your account on the host and open the pull request yourself.
+The host proves the owner in one of two ways.
+It opens the pull request from its own account and publishes an attestation of the exact change, in its storage repository or, for a host without GitHub storage, under its `data` URL with the signature in a `.sig` file beside it.
+Or you link your GitHub account to your account on the host and open the pull request yourself.
+For a host with `data`, the ownership check accepts the attestation only when the signature is valid for the `key` of the host, and copies the attestation and its signature into comments of their own on the pull request, which no later run edits, so the proof stays readable after the host is gone.
 A pull request that changes one byte after the host attested it does not verify.
 An edit is verified against the host that the listing already names, as for every other host.
 

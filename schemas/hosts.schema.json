@@ -18,13 +18,24 @@
       "type": "string",
       "pattern": "^https://[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::[0-9]{1,5})?/(?:[^\\s\\u0000-\\u001f?#]*/)?(?![\\s\\S])"
     },
+    "ed25519Key": {
+      "title": "an Ed25519 public key as standard base64 of its SubjectPublicKeyInfo, which starts with MCowBQYDK2VwAyEA and ends with =",
+      "type": "string",
+      "pattern": "^MCowBQYDK2VwAyEA[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=(?![\\s\\S])"
+    },
     "host": {
       "type": "object",
       "additionalProperties": false,
       "required": ["kind", "name", "bot", "api", "types", "max_bytes", "new_listings_per_day", "policy"],
       "oneOf": [
-        { "required": ["storage"] },
-        { "required": ["data"] }
+        {
+          "required": ["storage"],
+          "not": { "anyOf": [{ "required": ["data"] }, { "required": ["downloads"] }, { "required": ["key"] }, { "required": ["retired_keys"] }] }
+        },
+        {
+          "required": ["data", "downloads", "key"],
+          "not": { "anyOf": [{ "required": ["storage"] }, { "required": ["pages"] }] }
+        }
       ],
       "properties": {
         "kind": {
@@ -47,8 +58,25 @@
           }
         },
         "data": {
-          "description": "The base URL that serves the data files, for a host that keeps its archives outside GitHub instead of in storage.",
+          "description": "The base URL that serves the data files and their .sig signatures, for a host that keeps its archives outside GitHub instead of in storage.",
           "$ref": "#/$defs/baseUrl"
+        },
+        "downloads": {
+          "description": "The URL prefixes that the archives of a host with data are served under. A url of a release list entry, and every redirect of it, stays under one of them.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/baseUrl" }
+        },
+        "key": {
+          "description": "The Ed25519 public key that signs the data files of a host with data.",
+          "$ref": "#/$defs/ed25519Key"
+        },
+        "retired_keys": {
+          "description": "Earlier values of key. They only check signatures that a check run recorded before, and never a data file that is read now.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/ed25519Key" }
         },
         "bot": {
           "description": "The numeric id of the GitHub account the host opens pull requests as.",
