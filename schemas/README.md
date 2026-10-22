@@ -220,7 +220,7 @@ A host names `storage`, with an optional `pages`, or it keeps its archives outsi
 `key` is the Ed25519 public key that signs the data files, as padded standard base64 of its 44-byte SubjectPublicKeyInfo, so it starts with `MCowBQYDK2VwAyEA`.
 `retired_keys` holds the earlier values of `key` in the same form, and they only check signatures that a check run recorded before. A data file that is read now must carry a signature by `key`.
 
-`tools/check_hosts.py` runs the schema and adds the rules it cannot express: every type in `types` has a size in `max_bytes`, `pages` is the GitHub Pages address of `storage`, and `retired_keys` does not list the current `key`.
+`tools/check_hosts.py` runs the schema and adds the rules it cannot express: every type in `types` has a size in `max_bytes`, `pages` is the GitHub Pages address of `storage`, `retired_keys` does not list the current `key`, and no key is a point of small order, because under such a key one signature fits every file.
 It reads a key only as text and checks no signature.
 
 `authored.schema.json` cannot read `hosts.toml`, so under `[releases]` it takes any key of the host key form with a listing id as its value, and `authority` takes such a key too.

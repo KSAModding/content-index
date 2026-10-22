@@ -69,6 +69,14 @@ class Signature(unittest.TestCase):
         with self.assertRaises(ValueError):
             signature.load_key(spki(SIGNER)[:20] + "\n" + spki(SIGNER)[20:])
 
+    def test_a_small_order_key_is_refused(self):
+        # Under the identity point, R = identity and S = 0 verify every body.
+        identity = "MCowBQYDK2VwAyEAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        self.assertTrue(signature.small_order_key(identity))
+        self.assertFalse(signature.small_order_key(spki(SIGNER)))
+        with self.assertRaisesRegex(ValueError, "small-order"):
+            signature.load_key(identity)
+
     def test_an_x25519_key_is_refused(self):
         with self.assertRaises(ValueError):
             signature.load_key(spki(X25519PrivateKey.from_private_bytes(seed("x25519"))))
