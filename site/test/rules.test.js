@@ -300,6 +300,21 @@ test("hosts.toml gives its tables", () => {
   assert.deepEqual(shareHosts("# no host yet\n"), {});
 });
 
+// A host without GitHub storage by RFC 0104, with the fixed keys of DATA_HOST in tools/test_check_hosts.py.
+test("a host with data, downloads and key is offered like a host with storage", () => {
+  const hosts = shareHosts(
+    '[ksamods]\nkind = "share"\ndata = "https://data.ksamods.gg/share/"\ndownloads = ["https://files.ksamods.gg/"]\n' +
+      'key = "MCowBQYDK2VwAyEAAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="\n' +
+      'retired_keys = ["MCowBQYDK2VwAyEAICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8="]\ntypes = ["vehicle"]\n',
+  );
+  assert.deepEqual(hosts.ksamods.downloads, ["https://files.ksamods.gg/"]);
+  assert.equal(hosts.ksamods.retired_keys.length, 1);
+  assert.deepEqual(hostLines(vehicle({ ksamods: "ExampleRover" }), hosts), []);
+  assert.deepEqual(hostLines({ id: "ExampleRover", type: "save", releases: { ksamods: "ExampleRover" } }, hosts), [
+    "releases.ksamods: the share host 'ksamods' takes vehicle, and this document is a save",
+  ]);
+});
+
 test("a vehicle on a registered share host passes", () => {
   assert.deepEqual(hostLines(vehicle({ ksamods: "ExampleRover" })), []);
 });
