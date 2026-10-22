@@ -1,6 +1,41 @@
 import { semverCompare, threadOf } from "./rules.js";
 
-export const SNAPSHOT_URL = "https://ksamodding.github.io/content-index-releases/v1/index.json";
+const SNAPSHOT_FOLDER = "https://ksamodding.github.io/content-index-releases/v1/";
+
+export const SNAPSHOT_URL = `${SNAPSHOT_FOLDER}index.json`;
+
+// The files that hold vehicles and saves next to the main document, each with
+// one array named after its key, as spec/snapshot.md "Fetching it" of the design
+// repository proposes. This is the only place that names them. When the main
+// document carries the two arrays itself, the map is empty and nothing else changes.
+export const TYPE_FILES = {
+  vehicles: `${SNAPSHOT_FOLDER}snapshot-vehicles.json`,
+  saves: `${SNAPSHOT_FOLDER}snapshot-saves.json`,
+};
+
+// The snapshot arrays of RFC 0085 and the type of their entries.
+const SHARE_ARRAYS = { vehicles: "vehicle", saves: "save" };
+
+// The entries of one type file. The index publishes no file before the first
+// listing of its type, so a 404 is an empty list. Any other failure throws,
+// because an id is not free while the page cannot read who holds it.
+export async function readTypeFile(response, key) {
+  if (response.status === 404) return [];
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const document = await response.json();
+  return document && Array.isArray(document[key]) ? document[key] : [];
+}
+
+// The main document with the arrays of the type files added after its own, in
+// the shape indexFacts reads. The page then reads both a main document that
+// carries the arrays and one that does not.
+export function withTypeFiles(snapshot, parts) {
+  const merged = { ...snapshot };
+  for (const [key, entries] of Object.entries(parts)) {
+    merged[key] = [...(Array.isArray(snapshot[key]) ? snapshot[key] : []), ...entries];
+  }
+  return merged;
+}
 
 function forumsOf(authored) {
   return authored && authored.links && typeof authored.links === "object" ? authored.links.forums : undefined;
@@ -122,6 +157,12 @@ function listedFacts(listing, authored) {
   };
 }
 
+// A listing that a pack can pin, a mod, a vehicle or a save, with the releases the picker offers.
+function memberFacts(listing, type) {
+  const name = typeof listing.authored.name === "string" ? listing.authored.name : "";
+  return { id: listing.id, type, name, releases: pinnableReleases(listing.releases), statuses: releaseStatuses(listing.releases), gone: goneReleases(listing.releases) };
+}
+
 // Every version of a pack, retracted ones included, highest first.
 function packVersions(versions) {
   const kept = versions
@@ -161,10 +202,7 @@ export function indexFacts(snapshot, threadPattern) {
     const state = listing.index_status && typeof listing.index_status.state === "string" ? listing.index_status.state : null;
     const delisted = state === "delisted";
     if (!listed.has(folded)) listed.set(folded, { id: listing.id, type, state, stamped: stampedReleases(listing.releases) });
-    if (type === "mod" && !delisted) {
-      const name = typeof authored.name === "string" ? authored.name : "";
-      members.push({ id: listing.id, name, releases: pinnableReleases(listing.releases), statuses: releaseStatuses(listing.releases), gone: goneReleases(listing.releases) });
-    }
+    if (type === "mod" && !delisted) members.push(memberFacts(listing, type));
     if ((type === "mod" || type === "mod-loader") && !delisted && !forum.has(folded)) forum.set(folded, forumFacts(listing, authored));
     if ((type === "mod" || type === "mod-loader") && !delisted) searchable.push(listedFacts(listing, authored));
   }
@@ -184,6 +222,22 @@ export function indexFacts(snapshot, threadPattern) {
       if (thread !== null) threads.push({ holder: folded, where, thread });
     }
     if (!packs.has(folded)) packs.set(folded, { id: pack.id, status: pack.index_status || null, versions: packVersions(versions) });
+  }
+  // A tombstone has no authored document, so its type is the one of its array.
+  for (const [key, shareType] of Object.entries(SHARE_ARRAYS)) {
+    for (const entry of Array.isArray(snapshot[key]) ? snapshot[key] : []) {
+      if (!entry || typeof entry.id !== "string") continue;
+      const folded = entry.id.toLowerCase();
+      const authored = entry.authored;
+      const type = authored && typeof authored.type === "string" ? authored.type : shareType;
+      const where = `${key}/${entry.id}.toml`;
+      if (!holders.has(folded)) holders.set(folded, { id: entry.id, type, where });
+      const thread = threadOf(threadPattern, forumsOf(authored));
+      if (thread !== null) threads.push({ holder: folded, where, thread });
+      const state = entry.index_status && typeof entry.index_status.state === "string" ? entry.index_status.state : null;
+      if (!listed.has(folded)) listed.set(folded, { id: entry.id, type, state, stamped: stampedReleases(entry.releases) });
+      if (authored && type === shareType && state !== "delisted") members.push(memberFacts(entry, type));
+    }
   }
   const gameVersions = snapshot.game_versions && Array.isArray(snapshot.game_versions.versions)
     ? snapshot.game_versions.versions.filter((version) => typeof version === "string")

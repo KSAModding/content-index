@@ -2,8 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { parseDocument, writeDocument } from "../js/toml.js";
-import { emptyForm, formFromDocument, documentFromForm } from "../js/model.js";
-import { newFileUrl, editUrl, pullRequestLink, copyAndOpen, prefillFromRepository, repositoryApiUrl, listingPath, packPath, documentPath, URL_LIMIT, PASTE_NEW, PASTE_EDIT } from "../js/github.js";
+import { emptyForm, formFromDocument, documentFromForm, typeChoices, sectionsOf, nounOf } from "../js/model.js";
+import { newFileUrl, editUrl, pullRequestLink, copyAndOpen, prefillFromRepository, repositoryApiUrl, listingPath, packPath, documentPath, folderOf, rawListingUrl, URL_LIMIT, PASTE_NEW, PASTE_EDIT } from "../js/github.js";
 
 const LISTINGS = new URL("../../listings/", import.meta.url);
 
@@ -158,6 +158,84 @@ test("a changed listing opens the edit page and says to replace the whole file",
     url: "https://github.com/KSAModding/content-index/edit/main/listings/MyMod.toml",
     step: PASTE_EDIT,
   });
+});
+
+function vehicleForm() {
+  const form = emptyForm();
+  Object.assign(form, {
+    id: "ExampleRover",
+    type: "vehicle",
+    github: "Maxi/KSA-Rovers",
+    tagPrefix: "ExampleRover-",
+    name: "Example Rover",
+    authors: "Maxi",
+    abstract: "A six-wheel rover for the Moon.",
+    license: "CC-BY-4.0",
+    tags: ["rover"],
+  });
+  form.dependencies.push({ id: "ExamplePartsMod", kind: "required", min: "1.4.0", max: "" });
+  return form;
+}
+
+const schema = JSON.parse(fs.readFileSync(new URL("../../schemas/authored.schema.json", import.meta.url), "utf8"));
+const ungated = structuredClone(schema);
+delete ungated.properties.type.not;
+
+test("a vehicle form writes the file at vehicles/<id>.toml that tools/test_vectors.py checks", () => {
+  const document = documentFromForm(vehicleForm(), null);
+  assert.equal(documentPath(document), "vehicles/ExampleRover.toml");
+  const text = fs.readFileSync(new URL(`fixtures/${documentPath(document)}`, import.meta.url), "utf8");
+  assert.equal(writeDocument(document), text);
+  assert.deepEqual(documentFromForm(formFromDocument(parseDocument(text)), null), document);
+  assert.equal(formFromDocument(document).type, "vehicle");
+});
+
+test("switching a vehicle form to mod and back keeps every field", () => {
+  const form = vehicleForm();
+  const vehicle = documentFromForm(form, null);
+  form.type = "mod";
+  form.loaderId = "StarMap";
+  const mod = documentFromForm(form, null);
+  assert.deepEqual(mod.loader, { id: "StarMap" });
+  assert.deepEqual(mod.dependencies, vehicle.dependencies);
+  form.type = "vehicle";
+  assert.deepEqual(documentFromForm(form, null), vehicle);
+});
+
+test("the page offers a type only when the deployed schema accepts it", () => {
+  const gated = schema.properties.type.not ? schema.properties.type.not.enum : [];
+  assert.deepEqual(typeChoices(schema).filter((type) => sectionsOf(type).share), ["vehicle", "save"].filter((type) => !gated.includes(type)));
+  assert.deepEqual(typeChoices(ungated), ["mod", "mod-loader", "modpack", "vehicle", "save"]);
+  assert.deepEqual(typeChoices({ properties: { type: { enum: ["mod", "plugin"] } } }), ["mod"]);
+  assert.deepEqual(typeChoices({}), []);
+});
+
+test("a vehicle or a save shows releases and dependencies, and hides the loader, the launch and the pack", () => {
+  for (const type of ["vehicle", "save"]) {
+    assert.deepEqual(sectionsOf(type), { releases: true, loader: false, launch: false, dependencies: true, pack: false, members: false, share: true }, type);
+    assert.equal(nounOf(type), type);
+  }
+  assert.equal(sectionsOf("mod").share, false);
+});
+
+test("a vehicle and a save live in their own folders, and a loaded one is edited there", () => {
+  assert.equal(documentPath({ id: "ExampleRover", type: "vehicle" }), "vehicles/ExampleRover.toml");
+  assert.equal(documentPath({ id: "MoonBase", type: "save" }), "saves/MoonBase.toml");
+  assert.equal(listingPath("A b", "constructor"), "listings/A b.toml");
+  assert.deepEqual(pullRequestLink(listingPath("ExampleRover", "vehicle"), "id = \"ExampleRover\"\n", { id: "ExampleRover", type: "vehicle" }), {
+    url: "https://github.com/KSAModding/content-index/edit/main/vehicles/ExampleRover.toml",
+    step: PASTE_EDIT,
+  });
+  assert.equal(editUrl("Moon Base", "save"), "https://github.com/KSAModding/content-index/edit/main/saves/Moon%20Base.toml");
+  assert.equal(rawListingUrl("ExampleRover", "vehicle"), "https://raw.githubusercontent.com/KSAModding/content-index/main/vehicles/ExampleRover.toml");
+  assert.deepEqual(["mod", "mod-loader", "modpack", "vehicle", "save"].map(folderOf), ["listings", "listings", "packs", "vehicles", "saves"]);
+});
+
+test("a loaded document offers only the types of its folder", () => {
+  const app = fs.readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
+  assert.match(app, /option\.disabled = Boolean\(base\) && folderOf\(option\.value\) !== folderOf\(base\.type\);/);
+  assert.match(app, /const type = holder \? holder\.type : "mod";\n[^\n]*\n  const answer = await fetchListing\(id, type\);/);
+  assert.match(app, /const answer = await fetchListing\(base\.id, base\.type\);/);
 });
 
 test("the button copies the file before it opens GitHub", async () => {
