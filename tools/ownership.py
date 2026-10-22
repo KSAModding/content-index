@@ -88,6 +88,19 @@ RAW_FILE = "https://raw.githubusercontent.com/{storage}/HEAD/{path}"
 SHARE_FOLDERS = {"vehicles": "vehicle", "saves": "save"}
 MAX_SHARE_FILE = 64 * 1024
 
+# A host with `data` serves the signature of each data file at the file's path
+# with this appended (RFC 0104). A data file read from there is a SignedFile,
+# with the text of the .sig and the key in hosts.toml that it was verified by.
+# UNSIGNED stands for a file that has no valid signature by `key`, which
+# counts as no file at all.
+SIGNATURE = ".sig"
+SignedFile = namedtuple("SignedFile", "text signature key")
+UNSIGNED = object()
+
+# The exact data file a verified proof rests on, so that the pull request can
+# keep a copy of it (RFC 0104, rule 30).
+Evidence = namedtuple("Evidence", "path text signature key")
+
 # A listing bound to a share host: the key of the host, the value under
 # [releases], and the table of hosts.toml.
 Share = namedtuple("Share", "key id table")
@@ -138,14 +151,18 @@ class Unavailable(Exception):
 
 
 class Result:
-    def __init__(self, state, reason, proof=None, instructions=None):
+    def __init__(self, state, reason, proof=None, instructions=None, evidence=None):
         self.state = state
         self.reason = reason
         self.proof = proof
         self.instructions = instructions
+        self.evidence = evidence
 
     def as_dict(self):
-        return {"state": self.state, "reason": self.reason, "proof": self.proof}
+        value = {"state": self.state, "reason": self.reason, "proof": self.proof}
+        if self.evidence is not None:
+            value["evidence"] = self.evidence._asdict()
+        return value
 
 
 def github_repository(url):
@@ -293,7 +310,13 @@ def share_file(table, path, user_agent=USER_AGENT):
     The GitHub Pages address of the repository is asked first, when the host
     names one, and raw.githubusercontent.com after a 404 there. Both can answer
     from a cache for some minutes. Raises Unavailable.
+
+    A host with `data` keeps no storage repository, so its file is read with
+    share_file_signed, and a file without a valid signature is None here too.
     """
+    if isinstance(table.get("data"), str):
+        signed = share_file_signed(table, path, user_agent)
+        return signed.text if isinstance(signed, SignedFile) else None
     quoted = urllib.parse.quote(path)
     urls = [RAW_FILE.format(storage=table.get("storage"), path=quoted)]
     if isinstance(table.get("pages"), str):
@@ -319,6 +342,68 @@ def share_file(table, path, user_agent=USER_AGENT):
     return None
 
 
+def _data_body(url, limit, user_agent):
+    """The body at `url` of a host with `data`, cut after `limit` + 1 bytes, or
+    None on a 404. A request to such a host never carries a GitHub token, and
+    an answer that ends at a URL other than HTTPS is refused. Raises Unavailable.
+    """
+    request = urllib.request.Request(url, headers={"User-Agent": user_agent})
+    try:
+        with urllib.request.urlopen(request, timeout=30) as answer:
+            final = answer.url
+            body = answer.read(limit + 1)
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return None
+        raise Unavailable(f"HTTP {error.code} asking for {url}")
+    except OSError as error:
+        detail = error.reason if isinstance(error, urllib.error.URLError) else error
+        raise Unavailable(f"{url} did not answer: {detail}") from error
+    if urllib.parse.urlsplit(str(final)).scheme != "https":
+        raise Unavailable(f"{url} answered from {final}, which is not HTTPS")
+    return body
+
+
+def share_file_signed(table, path, user_agent=USER_AGENT):
+    """A data file of a host with `data`, as a SignedFile, None when it is not
+    there, or UNSIGNED when its .sig is missing or is not a valid signature by
+    `key` (RFC 0104, rule 22). `retired_keys` never verify a live read.
+
+    The signature is checked over the exact bytes before they are read as
+    text. Raises Unavailable, also when the cryptography package is not
+    installed, so that a missing package never becomes a verdict.
+    """
+    # signature.py imports only binascii, and imports cryptography inside its
+    # functions, so a check that reads no host with `data` needs no package.
+    import signature
+
+    host_key = table.get("key")
+    if not isinstance(host_key, str):
+        raise Unavailable(f"the host at {table.get('data')} names no key in hosts.toml")
+    try:
+        loaded = signature.load_key(host_key)
+    except ImportError as error:
+        raise Unavailable(
+            f"the cryptography package is not installed, so no signature can be checked: {error}"
+        ) from error
+    except ValueError as error:
+        raise Unavailable(f"the key of the host at {table.get('data')} does not load: {error}") from error
+
+    url = table["data"] + urllib.parse.quote(path)
+    body = _data_body(url, MAX_SHARE_FILE, user_agent)
+    if body is None:
+        return None
+    if len(body) > MAX_SHARE_FILE:
+        raise Unavailable(f"{url} is larger than {MAX_SHARE_FILE // 1024} KiB")
+    sig = _data_body(url + SIGNATURE, signature.MAX_SIGNATURE, user_agent)
+    if sig is None or not signature.verify(loaded, body, sig):
+        return UNSIGNED
+    try:
+        return SignedFile(body.decode("utf-8"), sig.decode("ascii"), host_key)
+    except UnicodeDecodeError as error:
+        raise Unavailable(f"{url} is not UTF-8 text") from error
+
+
 def _json_object(text):
     try:
         value = json.loads(text)
@@ -342,29 +427,35 @@ def _verify_share(share, content_type, listing_id, author_id, api):
     """The two proofs of a share host (RFC 0094): the owner record links the
     GitHub account of the pull request author, or the host's bot opened the pull
     request and the host attested the exact change in its storage repository.
+    A host with `data` serves both files signed, and an unsigned one counts for
+    nothing (RFC 0104).
     """
     key, table = share.key, share.table
-    storage = table.get("storage")
-    if not isinstance(storage, str):
+    # The release flow of content-index-releases imports this module with
+    # lookups of its own that may have no reader for a share host.
+    if isinstance(table.get("data"), str):
+        place = table["data"]
+        read = getattr(api, "share_file_signed", None) or share_file_signed
+    elif isinstance(table.get("storage"), str):
+        place = table["storage"]
+        read = getattr(api, "share_file", None) or share_file
+    else:
         return Result(
-            UNVERIFIED, f"the share host `{key}` names no storage repository, so no owner record can be read"
+            UNVERIFIED,
+            f"the share host `{key}` names no storage repository and no data URL, so no owner record can be read",
         )
     if share.id != listing_id:
         return Result(
             UNVERIFIED, f"`{key}` under [releases] names `{share.id}`, and not the id of the listing"
         )
 
-    # The release flow of content-index-releases imports this module with
-    # lookups of its own that may have no reader for a share host.
-    read = getattr(api, "share_file", None) or share_file
     path = OWNER_RECORD.format(type=content_type, id=listing_id)
-    try:
-        record = read(table, path)
-    except Unavailable as error:
-        return Result(COULD_NOT_EVALUATE, str(error))
+    record, failure = _read_share(read, share, path, place)
+    if failure is not None:
+        return failure
     if record is None:
-        return Result(UNVERIFIED, f"the share host `{key}` has no owner record {path} in {storage}")
-    record = _json_object(record)
+        return Result(UNVERIFIED, f"the share host `{key}` has no owner record {path} in {place}")
+    record = _json_object(record.text if isinstance(record, SignedFile) else record)
     account = (record or {}).get("account")
     if (
         record is None
@@ -372,7 +463,7 @@ def _verify_share(share, content_type, listing_id, author_id, api):
         or not isinstance(account, str)
         or not account
     ):
-        return Result(UNVERIFIED, f"{path} in {storage} is not the owner record of this {content_type}")
+        return Result(UNVERIFIED, f"{path} in {place} is not the owner record of this {content_type}")
 
     linked = record.get("github_id")
     if author_id is not None and type(linked) is int and linked == author_id:
@@ -386,12 +477,31 @@ def _verify_share(share, content_type, listing_id, author_id, api):
             f"author, and the pull request is not from the account of `{key}`",
             instructions=SHARE_HOST_ADVICE,
         )
-    return _verify_attestation(share, f"{content_type}/{listing_id}", account, read, api)
+    return _verify_attestation(share, f"{content_type}/{listing_id}", account, read, place, api)
 
 
-def _verify_attestation(share, name, account, read, api):
+def _read_share(read, share, path, place):
+    """A data file through `read`, as (file, None), or (None, the Result the
+    proof ends with when the host does not answer or the file is unsigned).
+    The file is text from a storage repository,
+    a SignedFile from `data`, or None when the host has no such file.
+    """
+    try:
+        found = read(share.table, path)
+    except Unavailable as error:
+        return None, Result(COULD_NOT_EVALUATE, str(error))
+    if found is UNSIGNED:
+        return None, Result(
+            UNVERIFIED,
+            f"{path} in {place} has no valid signature by key, the signing key that hosts.toml "
+            f"names for `{share.key}`",
+        )
+    return found, None
+
+
+def _verify_attestation(share, name, account, read, place, api):
     """The attestation of the change of a pull request the host's bot opened."""
-    key, storage = share.key, share.table.get("storage")
+    key = share.key
     change = getattr(api, "change", None)
     if change is None:
         return Result(
@@ -408,20 +518,23 @@ def _verify_attestation(share, name, account, read, api):
         return Result(UNVERIFIED, f"the change of the pull request cannot be attested: {error}")
 
     path = ATTESTATION.format(digest=digest)
-    try:
-        attestation = read(share.table, path)
-    except Unavailable as error:
-        return Result(COULD_NOT_EVALUATE, str(error))
-    if attestation is None:
+    found, failure = _read_share(read, share, path, place)
+    if failure is not None:
+        return failure
+    if found is None:
         return Result(
             UNVERIFIED,
-            f"`{key}` attested no change with the digest {digest}: {storage} has no {path}, so the "
+            f"`{key}` attested no change with the digest {digest}: {place} has no {path}, so the "
             "pull request differs from what the host attested, or the attestation is not published yet",
         )
-    attestation = _json_object(attestation)
+    evidence = None
+    if isinstance(found, SignedFile):
+        evidence = Evidence(path, found.text, found.signature, found.key)
+        found = found.text
+    attestation = _json_object(found)
     accounts = (attestation or {}).get("accounts")
     if attestation is None or attestation.get("host") != key or not isinstance(accounts, dict):
-        return Result(UNVERIFIED, f"{path} in {storage} is not an attestation of `{key}`")
+        return Result(UNVERIFIED, f"{path} in {place} is not an attestation of `{key}`")
 
     missing = sorted(listing for listing in touched_listings(changes) if not isinstance(accounts.get(listing), str))
     if missing:
@@ -435,7 +548,7 @@ def _verify_attestation(share, name, account, read, api):
             UNVERIFIED,
             f"the attestation {path} of `{key}` names another account for {name} than its owner record",
         )
-    return Result(VERIFIED, "", "attestation")
+    return Result(VERIFIED, "", "attestation", evidence=evidence)
 
 
 def _verify_spacedock(mod_id, listing_id, login, author_id, api):
@@ -679,7 +792,7 @@ def _about(result, where):
     """Say which authority a verdict is about. A pass needs no explanation."""
     if result.state == VERIFIED:
         return result
-    return Result(result.state, f"{where}: {result.reason}", result.proof, result.instructions)
+    return Result(result.state, f"{where}: {result.reason}", result.proof, result.instructions, result.evidence)
 
 
 def verify_change(base, submitted, login, author_id, api, registry=None):
@@ -712,4 +825,9 @@ def verify_change(base, submitted, login, author_id, api, registry=None):
     if moved.state != VERIFIED:
         return _about(moved, NEW_HOST)
 
-    return Result(VERIFIED, "", f"{current.proof}, then {moved.proof}")
+    # An attestation passes only for a pull request from the host's own bot, so
+    # at most one of the two passes by an attestation while no two hosts share
+    # a bot (spec/share-host.md, rule 4).
+    return Result(
+        VERIFIED, "", f"{current.proof}, then {moved.proof}", evidence=current.evidence or moved.evidence
+    )
