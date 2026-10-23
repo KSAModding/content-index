@@ -1,0 +1,45 @@
+spec_version = 1
+id = "KsaChinese"
+type = "mod"
+name = "KSA Chinese / 简体中文"
+authors = ["kuxiaowo", "KsaUiLanguages contributors"]
+abstract = "Partial Simplified Chinese UI, part names and tooltips for KSA build 5638, with English fallback."
+description = '''
+Simplified Chinese display-layer localization for **KSA 2026.10.19.5638 on Windows x64**.
+
+- Translates supported UI, part and substance captions, tooltips and selected version history.
+- Includes a renamed Noto Sans SC font subset and an English / 简体中文 menu.
+- Language preferences are saved per game profile, outside the mod files, so Borea instances remain independent.
+- Preserves technical identifiers, part/model numbers, units, placeholders and player names.
+- Refuses uninspected game/dependency hashes; untranslated text falls back to the original.
+
+This is **partial localization**, not an official translation or a claim of complete coverage. Older version-history text, native library/error text, texture lettering and complete UI/visual coverage remain unfinished. Compatibility with other localization mods has not been established.
+
+Requires .NET 10 x64 Runtime and StarMap 0.4.8. Install through Borea, or extract the standard ZIP into the selected profile's `mods` folder and enable `KsaChinese`. Launch through StarMap/Borea.
+
+When migrating from the portable package, first back up its Profile and move the old `<game>/Content/KsaChinese` out of Content. Do not keep two copies with the same mod id. The standard mod ZIP does not bundle a loader or launcher.
+
+Code and translations: MIT, including portions derived from LiX-Works/KsaUiLanguages at b504774158cc03b582a0e75bfe94330cb841f11d. Font: Noto Sans SC subset, OFL-1.1. Original credits and license texts are included.
+'''
+license = "MIT AND OFL-1.1"
+tags = ["user-interface"]
+
+[releases]
+github = "kuxiaowo/KSA-CHINESE"
+since = "0.1.6"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/ksa-chinese-0-1-6-simplified-chinese-ui-for-ksa-5638.1440/"
+repository = "https://github.com/kuxiaowo/KSA-CHINESE"
+bugtracker = "https://github.com/kuxiaowo/KSA-CHINESE/issues"
+documentation = "https://github.com/kuxiaowo/KSA-CHINESE/blob/main/README-%E7%94%9F%E6%80%81%E5%AE%89%E8%A3%85.md"
+
+[compatibility]
+game_min = "2026.10.19.5638"
+game_max = "2026.10.19.5638"
+os = ["windows"]
+
+[loader]
+id = "StarMap"
+min = "0.4.8"
+max = "0.4.8"
