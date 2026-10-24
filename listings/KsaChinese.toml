@@ -7,6 +7,8 @@ name = "KSA Chinese / 简体中文"
 authors = ["kuxiaowo", "KsaUiLanguages contributors"]
 abstract = "KSA 5638 简体中文界面、部件名称与提示，支持中英切换。Partial Simplified Chinese UI, part names and tooltips for KSA 5638, with an English / 简体中文 switch."
 description = '''
+作者 / Author: [kuxiaowo](https://github.com/kuxiaowo)
+
 ## 中文
 
 为 **Windows x64 上的 KSA 2026.10.19.5638** 提供简体中文本地化，支持在 **English / 简体中文** 之间切换。
@@ -46,13 +48,14 @@ license = "MIT AND OFL-1.1"
 tags = ["user-interface"]
 
 [images.icon]
-url = "https://raw.githubusercontent.com/kuxiaowo/KSA-CHINESE/main/ecosystem/media/ksa-chinese-icon-v1.jpg"
-sha256 = "4f86da34eaee37104abb3040e4820003a9a3b47ca5267d16998ed035b171ba2a"
+url = "https://raw.githubusercontent.com/kuxiaowo/KSA-CHINESE/main/ecosystem/media/ksa-chinese-hud-v2.jpg"
+sha256 = "223b33ad3439705518fbfec37fb55cac53d85abfed8e5766a32876baf8106c02"
 width = 512
 height = 512
-size = 54695
-license = "MIT"
-attribution = "KSA-CHINESE contributors; AI-assisted artwork."
+size = 71827
+license = "LicenseRef-KSA-Screenshot"
+attribution = "Screenshot: kuxiaowo. Game: Kitten Space Agency / RocketWerkz."
+source = "https://github.com/kuxiaowo/KSA-CHINESE/blob/main/ecosystem/media/ksa-chinese-hud-v2.jpg"
 
 [releases]
 github = "kuxiaowo/KSA-CHINESE"
