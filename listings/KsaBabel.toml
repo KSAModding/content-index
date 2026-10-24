@@ -7,6 +7,8 @@ name = "KSA Babel / 喵语塔"
 authors = ["kuxiaowo", "KsaUiLanguages contributors"]
 abstract = "Nine-language UI preview for KSA build 5638; native-speaker review pending."
 description = '''
+![KSA Babel nine-language cover](ksa-image:cover)
+
 Multilingual display-layer localization for **KSA 2026.10.19.5638 on Windows x64**.
 
 **Translation review:** The maintainer has personally confirmed only the Simplified Chinese translation. Japanese, Russian, German, French, Italian, Spanish and Brazilian Portuguese were translated/reviewed by GPT for KSA using KSP aerospace terminology as reference; they have no independent native-speaker sign-off. Some initial Japanese translations came from the credited MIT-licensed KsaUiLanguages project. English mode displays KSA's original English text and retains the mod's added Language menu. The 11 dynamic templates support multilingual composition and original-English fallback; they are not 11 rewritten game texts.
@@ -56,3 +58,24 @@ max = "0.4.8"
 [[dependencies]]
 id = "KsaChinese"
 kind = "conflict"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/kuxiaowo/KSA-Babel/2ea22506f5c5f29ae60878485875032ce62fe448/docs/branding/ksa-babel-icon-v3.png"
+sha256 = "8d3fac4b6de930089a2f312650b543ec4c5b97496a7c65e81291a6ac53657a68"
+width = 320
+height = 320
+size = 223409
+license = "LicenseRef-KSA-Babel-Cover"
+attribution = "Cover: kuxiaowo / KSA Babel, AI-assisted community artwork using Kitten Space Agency gameplay as reference. Game artwork: its respective rights holders."
+source = "https://github.com/kuxiaowo/KSA-Babel/blob/2ea22506f5c5f29ae60878485875032ce62fe448/docs/branding/ARTWORK-NOTICE.md"
+
+[[images.description]]
+id = "cover"
+url = "https://raw.githubusercontent.com/kuxiaowo/KSA-Babel/2ea22506f5c5f29ae60878485875032ce62fe448/docs/branding/ksa-babel-cover-preview-v3.png"
+sha256 = "0cf68594ca818776e1e7fe874a1c731ca2c6f3531c5d74f862b90d38fe0ccc42"
+width = 640
+height = 640
+size = 842887
+license = "LicenseRef-KSA-Babel-Cover"
+attribution = "Cover: kuxiaowo / KSA Babel, AI-assisted community artwork using Kitten Space Agency gameplay as reference. Game artwork: its respective rights holders."
+source = "https://github.com/kuxiaowo/KSA-Babel/blob/2ea22506f5c5f29ae60878485875032ce62fe448/docs/branding/ARTWORK-NOTICE.md"
