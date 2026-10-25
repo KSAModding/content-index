@@ -343,12 +343,12 @@
       "items": { "$ref": "#/$defs/packEntry" }
     },
     "vehicles": {
-      "description": "Pinned vehicles. Defined now even though the vehicle type is not, because the entry shape is shared.",
+      "description": "Pinned vehicles. Each id names a listed vehicle (RFC 0085), and the mods it requires are pinned under mods.",
       "type": "array",
       "items": { "$ref": "#/$defs/packEntry" }
     },
     "saves": {
-      "description": "Pinned saves. Defined now even though the save type is not, because the entry shape is shared.",
+      "description": "Pinned saves. Each id names a listed save (RFC 0085), and the mods it requires are pinned under mods.",
       "type": "array",
       "items": { "$ref": "#/$defs/packEntry" }
     }

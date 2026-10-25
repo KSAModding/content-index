@@ -1,5 +1,5 @@
 # Only the steward-owned paths are code-owned.
-# Listing and pack documents are deliberately not code-owned, so the checks
+# Listing, vehicle, save and pack documents are deliberately not code-owned, so the checks
 # alone gate them and a validated document can merge itself without a human.
 # That includes a pack owner record, because the checks let a pull request add
 # one only with the first version of its pack, and any other change to one

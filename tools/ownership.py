@@ -33,6 +33,19 @@ ADVICE = (
     "the proof on that repository."
 )
 
+# RFC 0085: a vehicle or a save needs no repository of its own, so a document of
+# these types with no host is told every path it has.
+SHARE_TYPES = ("vehicle", "save")
+SHARE_ADVICE = (
+    "A vehicle or a save can name a GitHub repository of your own under "
+    "`[releases] github`, with a `tag_prefix` when the repository holds more than "
+    "one share, and you put the proof on it as on any release repository: the topic "
+    f"`{TOPIC.format(login='<your-github-username>')}`, or `{MARKER_PATH}` naming your "
+    "username, which then covers every share in that repository. Or it can name a "
+    "share host, once the index registers one. Without either, a steward decides, "
+    "and each release enters by a release pull request in content-index-releases."
+)
+
 GITHUB_NAME = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$")
 LOGIN = re.compile(r"^(?!.*--)[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$")
 
@@ -172,6 +185,8 @@ def verify(document, login, author_id, api):
         return _verify_repository(target, listing_id, login, author_id, api)
     if kind == "spacedock":
         return _verify_spacedock(target, listing_id, login, author_id, api)
+    if kind is None and document.get("type") in SHARE_TYPES:
+        return Result(UNVERIFIED, reason, instructions=SHARE_ADVICE)
     return Result(UNVERIFIED, reason)
 
 

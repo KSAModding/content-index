@@ -1,0 +1,17 @@
+spec_version = 1
+id = "ExampleRover"
+type = "vehicle"
+name = "Example Rover"
+authors = ["Maxi"]
+abstract = "A six-wheel rover for the Moon."
+license = "CC-BY-4.0"
+tags = ["rover"]
+
+[releases]
+github = "Maxi/KSA-Rovers"
+tag_prefix = "ExampleRover-"
+
+[[dependencies]]
+id = "ExamplePartsMod"
+kind = "required"
+min = "1.4.0"

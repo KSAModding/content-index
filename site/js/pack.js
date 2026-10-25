@@ -8,6 +8,8 @@ const SEMVER = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[^+]+)?(\+.*
 const STABILITY = ["stable", "testing", "dev"];
 const PINNED_SECTIONS = ["mods", "vehicles", "saves"];
 const MEMBER_SECTION = "mods";
+// The type each section pins, as SECTION_TYPES in tools/check_index.py.
+const SECTION_TYPES = { mods: "mod", vehicles: "vehicle", saves: "save" };
 
 // The semver pattern of the schema, which tools/check_index.py uses to decide
 // that a pin names a release file at all.
@@ -21,16 +23,24 @@ function fold(id) {
   return typeof id === "string" ? id.toLowerCase() : null;
 }
 
-function memberOf(index, id) {
+// A listing the picker offers, of any type, or only of `type`. A dependency is always a mod.
+function memberOf(index, id, type = null) {
   if (!index || typeof id !== "string" || !id) return null;
   const folded = id.toLowerCase();
-  return index.members.find((member) => member.id.toLowerCase() === folded) || null;
+  return index.members.find((member) => member.id.toLowerCase() === folded && (!type || member.type === type)) || null;
 }
 
-// The stamped release a pin names, when it is a listed mod that is not delisted.
-function stampedOf(index, id, version) {
+// The pack section the chosen member goes into. An id the index does not offer stays a mod.
+export function memberSection(index, id) {
+  const member = memberOf(index, id);
+  return (member && Object.keys(SECTION_TYPES).find((section) => SECTION_TYPES[section] === member.type)) || MEMBER_SECTION;
+}
+
+// The stamped release a pin names, when it is a listed mod, or a listing of the
+// type of the pin's section, that is not delisted.
+function stampedOf(index, id, version, type = "mod") {
   const listing = index.listed.get(fold(id));
-  if (!listing || listing.type !== "mod" || listing.state === "delisted") return undefined;
+  if (!listing || listing.type !== type || listing.state === "delisted") return undefined;
   return listing.stamped.get(version);
 }
 
@@ -43,7 +53,7 @@ function requiredOf(release) {
 }
 
 function anyListed(index, options) {
-  return options.some((option) => memberOf(index, option.id));
+  return options.some((option) => memberOf(index, option.id, "mod"));
 }
 
 // The required dependencies of a release where no choice is a listed mod, so no
@@ -66,10 +76,16 @@ function cannotBePinned(needs) {
 }
 
 // A pin the snapshot does not offer stays a choice, so loading a document never drops it.
+// A vehicle or a save says its type, because one list offers every type.
 export function memberChoices(index, current = "") {
   const choices = (index ? index.members : [])
     .filter((member) => member.releases.length)
-    .map((member) => [member.id, member.name && member.name !== member.id ? `${member.name} (${member.id})` : member.id]);
+    .map((member) => {
+      const named = Boolean(member.name) && member.name !== member.id;
+      const facts = [named ? member.id : null, member.type === "mod" ? null : member.type].filter(Boolean);
+      const head = named ? member.name : member.id;
+      return [member.id, facts.length ? `${head} (${facts.join(", ")})` : head];
+    });
   if (current && !choices.some(([id]) => id === current)) choices.push([current, `${current} (not offered by the index)`]);
   return choices;
 }
@@ -78,7 +94,7 @@ export function versionChoices(index, id, current = "") {
   const member = memberOf(index, id);
   const choices = (member ? member.releases : []).map((release) => {
     const marks = release.status ? [release.status] : [];
-    const needs = unlistedNeeds(index, stampedOf(index, member.id, release.version));
+    const needs = unlistedNeeds(index, stampedOf(index, member.id, release.version, member.type));
     if (needs.length) marks.push(cannotBePinned(needs));
     return [release.version, marks.length ? `${release.version} (${marks.join(", ")})` : release.version];
   });
@@ -98,7 +114,7 @@ function dateOf(time) {
 export function defaultVersion(index, id) {
   const member = memberOf(index, id);
   if (!member || !member.releases.length) return "";
-  const pinnable = member.releases.filter((release) => !unlistedNeeds(index, stampedOf(index, member.id, release.version)).length);
+  const pinnable = member.releases.filter((release) => !unlistedNeeds(index, stampedOf(index, member.id, release.version, member.type)).length);
   const choices = pinnable.length ? pinnable : member.releases;
   const stable = choices.find((release) => release.status === "stable");
   return (stable || choices[0]).version;
@@ -144,13 +160,14 @@ function pinnedInstead(options, pinned) {
 function pinProblem(section, pin, index) {
   const { id, version } = pin;
   if (typeof id !== "string" || typeof version !== "string") return [null, null];
-  if (section !== MEMBER_SECTION) return [`'${id}' cannot be pinned, because no content type for ${section} is defined yet`, null];
+  const wanted = SECTION_TYPES[section];
+  const pinner = section === MEMBER_SECTION ? "a pack" : `[[${section}]]`;
   const target = index.holders.get(id.toLowerCase());
-  if (!target) return [`'${id}' is not a listed mod, and a pack pins only listed mods`, null];
+  if (!target) return [`'${id}' is not a listed ${wanted}, and ${pinner} pins only listed ${wanted}s`, null];
   if (target.type === "modpack") return [null, null];
   const listing = index.listed.get(id.toLowerCase());
-  if (listing.state === "delisted") return [`'${id}' is delisted, and a pack pins only listed mods`, null];
-  if (target.type !== "mod") return [`'${id}' is listed as a ${target.type}, and a pack pins only mods`, null];
+  if (listing.state === "delisted") return [`'${id}' is delisted, and ${pinner} pins only listed ${wanted}s`, null];
+  if (target.type !== wanted) return [`'${id}' is listed as a ${target.type}, and ${pinner} pins only ${wanted}s`, null];
   if (!PIN_VERSION.test(version)) return [null, null];
   const release = listing.stamped.get(version);
   if (!release) return [`'${id}' has no stamped release ${version}`, null];
@@ -234,8 +251,8 @@ export function memberMessages(document, index) {
     for (const text of incomplete(pin, release, pinned)) found.push({ level: ERROR, path: where, text });
   }
   for (const { section, pin, where } of pins) {
-    const listing = section === MEMBER_SECTION ? index.listed.get(fold(pin.id)) : null;
-    if (listing && listing.type === "mod" && listing.state === "disputed") {
+    const listing = index.listed.get(fold(pin.id));
+    if (listing && listing.type === SECTION_TYPES[section] && listing.state === "disputed") {
       found.push({ level: NOTE, path: where, text: `'${pin.id}' is disputed, and a client warns about it` });
     }
   }
@@ -245,18 +262,21 @@ export function memberMessages(document, index) {
 // The pins "Add the missing dependencies" adds: each required dependency that
 // no member pins, at the newest stable release inside the bounds of every pinned
 // release that requires it. Each added release can require more. What it cannot
-// add, such as an any_of, stays a note for the author.
+// add, such as an any_of, stays a note for the author. A pinned vehicle or save
+// needs mods too, and those go into [[mods]] as well.
 export function missingDependencies(document, index) {
   if (!index || document.type !== "modpack") return { pins: [], notes: [] };
   const authored = (Array.isArray(document.mods) ? document.mods : []).filter(isObject);
+  const shared = pinsOf(document).filter(({ section }) => section !== MEMBER_SECTION)
+    .map(({ section, pin }) => ({ pin, type: SECTION_TYPES[section] }));
   // A pin whose release is not chosen yet still names its mod, so nothing adds a second pin of it.
   const written = new Set(authored.map((pin) => fold(pin.id)));
   let added = [];
   const requirements = () => {
     const found = [];
-    for (const pin of [...authored, ...added]) {
+    for (const { pin, type } of [...authored, ...added].map((pin) => ({ pin, type: "mod" })).concat(shared)) {
       if (typeof pin.id !== "string" || typeof pin.version !== "string") continue;
-      for (const dependency of requiredOf(stampedOf(index, pin.id, pin.version))) {
+      for (const dependency of requiredOf(stampedOf(index, pin.id, pin.version, type))) {
         const options = optionsOf(dependency);
         if (options.length) found.push({ pin, options });
       }
@@ -273,13 +293,13 @@ export function missingDependencies(document, index) {
     const needed = new Map();
     for (const { options } of requirements()) {
       const key = options.length === 1 ? fold(options[0].id) : null;
-      if (!key || written.has(key) || !memberOf(index, key)) continue;
+      if (!key || written.has(key) || !memberOf(index, key, "mod")) continue;
       if (!needed.has(key)) needed.set(key, []);
       needed.get(key).push(options[0]);
     }
     const next = [];
     for (const [key, needs] of needed) {
-      const member = memberOf(index, key);
+      const member = memberOf(index, key, "mod");
       const release = choose(member, needs);
       if (release) next.push({ id: member.id, version: release.version });
     }
@@ -300,12 +320,12 @@ export function missingDependencies(document, index) {
 
 function pinnedReleases(document, index) {
   const found = [];
-  (Array.isArray(document.mods) ? document.mods : []).forEach((pin, number) => {
-    if (!isObject(pin) || typeof pin.id !== "string") return;
-    const member = memberOf(index, pin.id);
+  for (const { section, pin, where } of pinsOf(document)) {
+    if (typeof pin.id !== "string") continue;
+    const member = memberOf(index, pin.id, SECTION_TYPES[section]);
     const release = member ? member.releases.find((entry) => entry.version === pin.version) : undefined;
-    found.push({ pin, number, member, release });
-  });
+    found.push({ pin, where, member, release });
+  }
   return found;
 }
 
@@ -313,11 +333,11 @@ function pinnedReleases(document, index) {
 export function pinNotes(document, index) {
   if (!index || document.type !== "modpack") return [];
   const found = [];
-  for (const { pin, number, member } of pinnedReleases(document, index)) {
+  for (const { pin, where, member } of pinnedReleases(document, index)) {
     if (!member || !member.gone.has(pin.version)) continue;
     found.push({
       level: NOTE,
-      path: `mods[${number}]`,
+      path: where,
       text: `'${pin.id}' ${pin.version} is no longer downloadable since ${dateOf(member.gone.get(pin.version).since)}, so the page does not offer it; the pin stays as it is`,
     });
   }
@@ -412,7 +432,7 @@ function stability(status) {
 // A pin on a yanked release keeps the stability of that release. A pin whose
 // release the snapshot does not have at all is held to stable, the strictest level.
 export function newerRelease(index, pin) {
-  const member = isObject(pin) ? memberOf(index, pin.id) : null;
+  const member = isObject(pin) ? memberOf(index, pin.id, "mod") : null;
   if (!member) return null;
   const least = stability(member.statuses.has(pin.version) ? member.statuses.get(pin.version) : "stable");
   return member.releases.find((release) =>

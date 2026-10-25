@@ -130,13 +130,29 @@ class Vectors(unittest.TestCase):
                     self.assertTrue(any(vector["says"] in line for line in errors + notes), errors + notes)
 
 
-class PagePack(unittest.TestCase):
-    """site/test/pack.test.js writes this file from a pack form."""
+class PageDocuments(unittest.TestCase):
+    """site/test/pack.test.js and model.test.js write these files from a form."""
+
+    def test_the_layout_accepts_what_the_page_writes(self):
+        packs = SITE_FIXTURES / "packs"
+        self.assertEqual(check_layout.check(SITE_FIXTURES / "listings", packs), [])
+        self.assertEqual(check_layout.counted(SITE_FIXTURES / "listings", packs), 2)
+
+    def test_the_schema_without_the_gate_accepts_the_vehicle_the_page_writes(self):
+        path = SITE_FIXTURES / "vehicles" / "ExampleRover.toml"
+        where = "vehicles/ExampleRover.toml"
+        document = check_schema.normalise(tomllib.loads(path.read_text(encoding="utf-8")))
+        errors = []
+        check_schema.check_parsed(where, document, Draft202012Validator(without_gate(check_schema.validator().schema)), errors)
+        self.assertEqual(errors, [])
+        errors = []
+        check_schema.check_parsed(where, document, check_schema.validator(), errors)
+        self.assertLessEqual(len(errors), 1)
+        for error in errors:
+            self.assertIn("type that the index does not accept yet", error)
 
     def test_the_checks_accept_the_pack_the_page_writes(self):
         packs = SITE_FIXTURES / "packs"
-        self.assertEqual(check_layout.check(SITE_FIXTURES / "listings", packs), [])
-        self.assertEqual(check_layout.counted(SITE_FIXTURES / "listings", packs), 1)
         path = packs / "ExamplePack" / "1.0.0.toml"
         document = check_schema.normalise(tomllib.loads(path.read_text(encoding="utf-8")))
         errors = []

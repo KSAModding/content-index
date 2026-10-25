@@ -176,7 +176,7 @@ The pinned set must also be complete:
 The checks read the dependencies from the stamped release files, so a dependency the stamper derived counts like one the mod author wrote.
 A mod's loader is not a dependency, and a pack does not pin it.
 The checks refuse every other entry and name it, and they name each missing or conflicting mod together with the pinned release that needs it.
-They also refuse `[[vehicles]]` and `[[saves]]` until those content types exist.
+An entry in `[[vehicles]]` names a listed vehicle, and an entry in `[[saves]]` a listed save, with the same rules, and the mods that a pinned vehicle or save requires are pinned in `[[mods]]` ([RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md)).
 A pinned mod that is `disputed` passes with a warning, and a client warns about it too.
 When a pinned release is yanked or a pinned mod is delisted later, the accepted pack version stays as it is, and a client warns and installs what it can.
 

@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import { createChecker, ERROR, NOTE } from "../js/rules.js";
+import { indexFacts, readTypeFile, withTypeFiles, SNAPSHOT_URL, TYPE_FILES } from "../js/snapshot.js";
+import { typeChoices } from "../js/model.js";
+
+const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const app = fs.readFileSync(new URL("../js/app.js", import.meta.url), "utf8");
@@ -52,6 +57,34 @@ test("a text that a pack shows names what is listed through the word the type se
   const render = /function renderTypeSections\(\) \{([\s\S]*?)\n\}/.exec(app)[1];
   assert.match(render, /querySelectorAll\("\.noun"\)\) word\.textContent = nounOf\(state\.form\.type\)/);
   assert.match(render, /querySelectorAll\("\.not-pack"\)\) part\.hidden = shown\.pack/);
+});
+
+test("the type select offers what the deployed schema accepts, so lifting the gate needs no page change", () => {
+  const schema = JSON.parse(read("../../schemas/authored.schema.json"));
+  const ungated = structuredClone(schema);
+  delete ungated.properties.type.not;
+  const gated = new Set(schema.properties.type.not ? schema.properties.type.not.enum : []);
+  for (const type of ["vehicle", "save"]) {
+    assert.equal(typeChoices(schema).includes(type), !gated.has(type), type);
+    assert.ok(typeChoices(ungated).includes(type), type);
+  }
+  assert.match(app, /checker = createChecker\(\{ schema, tagsText \}\);\n    types = typeChoices\(schema\);/);
+  assert.match(body("function renderMode()"), /renderTypeOptions\(\);/);
+  assert.match(body("function renderTypeOptions()"), /\$\("type"\)\.replaceChildren\(\.\.\.offered\.map/);
+});
+
+test("a vehicle or a save shows its own texts in place of the mod ones", () => {
+  const render = body("function renderTypeSections()");
+  assert.match(render, /querySelectorAll\("\.share-only"\)\) part\.hidden = !shown\.share/);
+  assert.match(render, /querySelectorAll\("\.not-share"\)\) part\.hidden = shown\.share/);
+  for (const id of ["hint-forums", "hint-game-min", "hint-id"]) {
+    const hint = new RegExp(`<p id="${id}"[^>]*>([\\s\\S]*?)</p>`).exec(html)[1];
+    assert.match(hint, /<span class="not-share">/, id);
+    assert.match(hint, /<span class="share-only" hidden>/, id);
+  }
+  assert.match(html, /Optional for a vehicle or a save, because the forum may have no place for them\./);
+  assert.match(html, /the watcher takes it from <code>version<\/code> in the <code>meta\.toml<\/code> in the zip/);
+  assert.match(html, /The page does not read the part ids in <code>vehicle\.xml<\/code> or <code>universe\.xml<\/code>/);
 });
 
 test("the game_max hint says that clients block above it", () => {
@@ -114,6 +147,15 @@ test("the member rules run on every refresh, and the missing dependencies are on
   assert.match(html, /<button type="button" id="add-missing"[^>]*hidden>Add the missing dependencies<\/button>/);
 });
 
+test("a member row knows its pack section, and a message on vehicles[n] or saves[n] finds its row", () => {
+  assert.match(app, /const PIN_PATH = \/\^\(mods\|vehicles\|saves\)\\\[\(\\d\+\)\\\]\$\/;/);
+  assert.match(body("function renderMembers()"), /entry\.section = memberSection\(index, value\);/);
+  assert.match(body("function place("), /const number = memberRows\(member\[1\]\)\[Number\(member\[2\]\)\];/);
+  assert.match(body("function movePin("), /PIN_PATH\.exec\(path\)/);
+  assert.match(body("function memberRows("), /\(state\.form\.members\[number\]\.section \|\| "mods"\) === section/);
+  assert.match(body("function addMissing()"), /section: "mods"/);
+});
+
 test("Pin <newer> shows only for a newer release that the other pins accept", () => {
   assert.match(body("function renderMessages()"), /if \(entry\.newer && entry\.fits\) target\.append\(element\("button", \{ type: "button", text: `Pin \$\{entry\.newer\}`/);
 });
@@ -130,6 +172,15 @@ test("the dependency help has the order of the Borea card", () => {
   assert.match(row, /versions,\n\s+kindLine,\n\s+messages,/);
 });
 
+test("the archive of a vehicle or a save is checked with the files the page read from it", () => {
+  assert.equal(app.match(/inspectArchive\(archiveFile\.names, current\.document, archiveFile\.files\)/g).length, 2);
+  const render = body("function renderArchiveResult()");
+  assert.match(render, /if \(result\.folder\) lines\.push\(line\(null, `It installs as the folder '\$\{result\.folder\}', the name in its meta\.toml\.`\)\);/);
+  assert.match(render, /for \(const note of result\.notes\) lines\.push\(line\(NOTE, note\)\);/);
+  const hint = /<p id="hint-archive"[^>]*>([\s\S]*?)<\/p>/.exec(html)[1];
+  assert.match(hint, /<span class="share-only" hidden>The page reads the file names, the <code>meta\.toml<\/code> and the <code>vehicle\.xml<\/code> or <code>universe\.xml<\/code> in it/);
+});
+
 test("a new or a loaded form forgets the selected zip and what it declared", () => {
   for (const start of ['$("reset").addEventListener', "function useBase("]) {
     assert.match(body(start), /forgetArchive\(\);/, `${start} keeps the archive of the earlier form`);
@@ -139,4 +190,74 @@ test("a new or a loaded form forgets the selected zip and what it declared", () 
   assert.match(render, /renderDeclared\(\);/);
   assert.match(render, /renderDependencyMatches\(\);/);
   assert.match(render, /dependencyNotes\(current\.document, index, checker\.validId\)/);
+});
+
+const checker = createChecker({ schema: JSON.parse(read("../../schemas/authored.schema.json")), tagsText: read("../../tags.toml") });
+const main = JSON.parse(read("fixtures/snapshot.json"));
+const vehicleFile = JSON.parse(read("fixtures/snapshot-vehicles.json"));
+const saveFile = JSON.parse(read("fixtures/snapshot-saves.json"));
+const shared = indexFacts(withTypeFiles(main, { vehicles: vehicleFile.vehicles, saves: saveFile.saves }), checker.threadPattern);
+
+function listing(changes = {}) {
+  return {
+    spec_version: 1, id: "NewMod", type: "mod", name: "New Mod", authors: ["Maxi"], abstract: "Adds a thing.", license: "MIT",
+    links: { forums: "https://forums.ahwoo.com/threads/new-mod.2000/" }, compatibility: { game_min: "2026.10.19.5638" }, ...changes,
+  };
+}
+
+const lines = (found, level) => found.filter((entry) => entry.level === level).map((entry) => `${entry.path}: ${entry.text}`);
+
+test("an id that a vehicle, a save or a vehicle tombstone holds collides, in any case", () => {
+  const holders = { examplerover: "vehicles/ExampleRover.toml", MOONBASE: "saves/MoonBase.toml", retiredrover: "vehicles/RetiredRover.toml" };
+  for (const [id, where] of Object.entries(holders)) {
+    assert.ok(lines(checker.check(listing({ id }), { index: shared }), ERROR)
+      .includes(`id: the id '${id}' is already held by ${where}, and ids compare case-insensitively`), id);
+  }
+  assert.deepEqual(shared.holders.get("retiredrover"), { id: "RetiredRover", type: "vehicle", where: "vehicles/RetiredRover.toml" });
+  assert.equal(shared.listed.get("retiredrover").state, "delisted");
+  assert.equal(shared.listed.get("moonbase").type, "save");
+});
+
+test("the forums thread of a vehicle or a save counts as taken", () => {
+  for (const [thread, where] of [["example-rover.1000", "vehicles/ExampleRover.toml"], ["moon-base.1001", "saves/MoonBase.toml"]]) {
+    const notes = lines(checker.check(listing({ links: { forums: `https://forums.ahwoo.com/threads/${thread}/` } }), { index: shared }), NOTE);
+    assert.ok(notes.some((text) => text.startsWith("links.forums:") && text.includes(where)), notes.join("\n"));
+  }
+});
+
+test("a vehicle or a save is no mod for the dependency search", () => {
+  assert.ok(!shared.mods.includes("ExampleRover"));
+  assert.ok(!shared.searchable.some((entry) => entry.id === "ExampleRover" || entry.id === "MoonBase"));
+});
+
+test("a snapshot without vehicles and saves gives the same facts as before", () => {
+  const plain = indexFacts(main, checker.threadPattern);
+  assert.deepEqual(indexFacts(withTypeFiles(main, { vehicles: [], saves: [] }), checker.threadPattern), plain);
+  assert.deepEqual(indexFacts({ ...main, vehicles: "x", saves: null }, checker.threadPattern), plain);
+});
+
+test("a vehicle in the main document stays a holder when its type file is not there", () => {
+  const facts = indexFacts(withTypeFiles({ ...main, vehicles: vehicleFile.vehicles }, { vehicles: [], saves: [] }), checker.threadPattern);
+  assert.equal(facts.holders.get("examplerover").where, "vehicles/ExampleRover.toml");
+  assert.equal(facts.listed.get("examplerover").type, "vehicle");
+});
+
+test("a type file that is not there is empty, and any other failure is no answer", async () => {
+  assert.deepEqual(await readTypeFile(new Response("", { status: 404 }), "vehicles"), []);
+  assert.deepEqual(await readTypeFile(new Response(JSON.stringify({ snapshot_version: 1 })), "vehicles"), []);
+  assert.deepEqual(await readTypeFile(new Response(JSON.stringify(saveFile)), "saves"), saveFile.saves);
+  await assert.rejects(readTypeFile(new Response("", { status: 500 }), "vehicles"));
+});
+
+test("the type files sit next to the main document and are named in one place only", () => {
+  const folder = SNAPSHOT_URL.slice(0, SNAPSHOT_URL.lastIndexOf("/") + 1);
+  assert.deepEqual(Object.keys(TYPE_FILES), ["vehicles", "saves"]);
+  for (const url of Object.values(TYPE_FILES)) assert.equal(url.slice(0, url.lastIndexOf("/") + 1), folder);
+  const scripts = fs.readdirSync(new URL("../js/", import.meta.url)).filter((name) => name.endsWith(".js") && name !== "snapshot.js");
+  for (const name of scripts) {
+    assert.doesNotMatch(read(`../js/${name}`), /snapshot-(vehicles|saves)\.json/, name);
+  }
+  const load = body("async function loadSnapshot()");
+  assert.match(load, /Object\.keys\(TYPE_FILES\)/);
+  assert.match(load, /indexFacts\(withTypeFiles\(/);
 });
