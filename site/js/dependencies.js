@@ -1,7 +1,6 @@
-import { parse } from "../vendor/smol-toml.js";
 import { NOTE } from "./rules.js";
 import { KINDS } from "./model.js";
-import { StampError, relativePath, topLevelDirectories, entriesUnder, zipEntries, modTomlFiles } from "./archive.js";
+import { StampError, relativePath, topLevelDirectories, entriesUnder, zipEntries, modTomlFiles, gameFiles, readToml } from "./archive.js";
 
 // The help for the dependencies of a mod follows the listing editor of Borea:
 // what the mod.toml already declares, a search over the listed mods and loaders
@@ -223,17 +222,23 @@ export function modTomlDependencies(manifest) {
 // A mod.toml as read_mod_toml of the stamper reads it, which drops a UTF-8 BOM
 // and reads an integer of any size.
 export function readModToml(bytes, name) {
-  try {
-    return parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes), { integersAsBigInt: "asNeeded" });
-  } catch (error) {
-    throw new StampError(`the archive's ${name} is not valid TOML, ${error.message}`);
-  }
+  return readToml(bytes, name, { integersAsBigInt: "asNeeded" });
 }
 
-// The names and the mod.toml files of a release zip.
-export async function readArchive(file) {
+// The game file is parsed by the browser, or by the parse a test gives.
+function browserWellFormed(text) {
+  const parsed = new DOMParser().parseFromString(text, "application/xml");
+  const error = parsed.getElementsByTagName("parsererror")[0];
+  return error ? error.textContent.trim().split("\n")[0] : null;
+}
+
+// The names of a release zip, its mod.toml files, and for a vehicle or a save
+// its meta.toml files and the verdicts on its game files.
+export async function readArchive(file, { wellFormed = browserWellFormed } = {}) {
   const entries = await zipEntries(file);
-  return { names: entries.map((entry) => entry.name), files: await modTomlFiles(file, entries) };
+  const files = await modTomlFiles(file, entries);
+  for (const [name, read] of await gameFiles(file, entries, wellFormed)) files.set(name, read);
+  return { names: entries.map((entry) => entry.name), files };
 }
 
 // The root whose mod.toml the stamper reads: the authored install root, or else

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Tests for what the privileged half does about a verdict. No token, no network."""
 
+import copy
 import json
 import re
 import sys
@@ -12,6 +13,8 @@ import urllib.error
 import urllib.parse
 from pathlib import Path
 from unittest import mock
+
+from jsonschema import Draft202012Validator
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -1457,6 +1460,46 @@ class Act(unittest.TestCase):
         self.assertEqual([status["state"] for status in self.statuses()], ["failure"])
         comment = [p for _, where, p, _ in self.api.sent if where.endswith("/comments")][0]
         self.assertIn(gate, comment["body"])
+        self.assertEqual(self.labelled(), ["vehicle"])
+
+    def test_a_vehicle_that_verifies_and_passes_is_armed_once_the_gate_is_lifted(self):
+        path = "vehicles/ExampleRover.toml"
+        text = (
+            'spec_version = 1\nid = "ExampleRover"\ntype = "vehicle"\nname = "Example Rover"\n'
+            'authors = ["Maxi"]\nabstract = "A rover for the Moon."\nlicense = "CC-BY-4.0"\n'
+            '[releases]\ngithub = "Maxi/KSA-Rovers"\ntag_prefix = "ExampleRover-"\n'
+            '[[dependencies]]\nid = "ExamplePartsMod"\nkind = "required"\nmin = "1.4.0"\n'
+        )
+        document = tomllib.loads(text)
+        # While the deployed schema refuses the type, this run lifts the gate on a copy,
+        # as the lift will. Once it is lifted, the copy equals the deployed schema.
+        deployed = check_schema.validator()
+        errors = []
+        check_schema.check_parsed(path, document, deployed, errors)
+        self.assertLessEqual(len(errors), 1)
+        for error in errors:
+            self.assertIn("type that the index does not accept yet", error)
+
+        schema = copy.deepcopy(deployed.schema)
+        schema["properties"]["type"].pop("not", None)
+        errors = []
+        check_schema.check_parsed(path, document, Draft202012Validator(schema), errors)
+        self.assertEqual(errors, [])
+
+        changes = [check_scope.Change(path, "added")]
+        self.assertEqual(check_scope.evaluate(changes), (True, [path], ""))
+        checks = [validate.Check("schema", validate.PASS, []).as_dict()]
+        self.api.files = {(path, "abc"): text}
+        self.api.repositories = {"Maxi/KSA-Rovers": {
+            "full_name": "Maxi/KSA-Rovers", "fork": False,
+            "owner": {"id": 7, "login": "Maxi", "type": "User"},
+        }}
+        with mock.patch.object(decide, "changed_paths", lambda api, number: changes):
+            self.assertEqual(self.act(verdict(checks=checks, documents=[path])), 0)
+
+        self.assertEqual(self.api.repository_reads, ["Maxi/KSA-Rovers"])
+        self.assertEqual([status["state"] for status in self.statuses()], ["pending", "success"])
+        self.assertEqual(self.api.graphql_calls, [{"id": "PR_5"}])
         self.assertEqual(self.labelled(), ["vehicle"])
 
     def test_a_rejection_leaves_a_steward_label_alone(self):
