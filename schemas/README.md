@@ -208,6 +208,31 @@ A steward lifts the gate by pull request ([#210](https://github.com/KSAModding/c
 No check reads `hosts.toml` of the generated repository for it.
 A vector of `vectors.json` for a gated type carries `"gated": "vehicle"` or `"gated": "save"`. While the schema holds that type, both runners expect the gate line, and they also run each such vector against a copy of the schema without the gate and expect its `accepted`, `noted` and `says`, so a lift changes the schema alone.
 
+## Share hosts
+
+`hosts.schema.json` covers `hosts.toml`, the share hosts of [RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md), one table per host, which stewards edit.
+The table name is the key a listing names the host with under `[releases]`: 2 to 32 lowercase ASCII letters, digits or `-`, starting with a letter, and not `github`, `spacedock`, `authority` or `since`.
+That is `HOST_KEY` of `tools/authored.py` in content-index-releases, which the watcher, the download counts and the snapshot read, so a change of the form is a change there too.
+A `storage` repository of the KSAModding organization is refused, because the index never hosts files.
+
+`tools/check_hosts.py` runs the schema and adds the rules it cannot express: every type in `types` has a size in `max_bytes`, a host with `data` and no `storage` is refused while the watcher and the ownership check read only a storage repository, and `pages` is the GitHub Pages address of `storage`.
+
+`authored.schema.json` cannot read `hosts.toml`, so under `[releases]` it takes any key of the host key form with a listing id as its value, and `authority` takes such a key too.
+`tools/check_hosts.py` then refuses, for the documents a pull request changes, a key that `hosts.toml` does not register, a host whose `types` does not hold the type of the document, a value that is not the id of the document, a share host next to another host without `authority`, and an `authority` that names no host of the section.
+The listing page runs the same rules, with the same words, against the `hosts.toml` it was deployed with.
+These rules are not in `vectors.json`, because its runners have no `hosts.toml`.
+
+### Attestation vectors
+
+A share host proves the owner of a change it opens from its bot account with an attestation, `attestations/<sha256>.json` in its `storage`, named by the SHA-256 of the canonical form of the change (RFC 0094).
+The canonical form is UTF-8 text with one line per path the pull request touches, `<path> <blob>` with the lowercase git blob id of the file at the head, or `<path> deleted`.
+A rename is a `deleted` line for the old path and a line for the new path.
+The lines are sorted by the UTF-8 bytes of the path, not by UTF-16 code units or by a culture, and each line ends with one LF, the last one too.
+
+`attestation-vectors.json` is an object with one key, `vectors`, a list of cases with the keys `name` (unique in the file), `files` (the change as the pull request files API gives it, with `filename`, `status`, `sha` and `previous_filename`), `canonical` (the canonical form) and `sha256` (its lowercase hex SHA-256).
+Every character outside ASCII is a JSON `\u` escape, so the file stays ASCII.
+`tools/test_attestation_vectors.py` runs it against `ownership.canonical_change` and `ownership.change_digest`, and every share host runs it against its own copy of the form.
+
 ## Save and vehicle names
 
 The game takes the identity of a vehicle or a save from `name` in the `meta.toml` of its folder (`UncompressedVehicleSave.FromDirectory`, `UncompressedSave.FromDirectory`), and it keeps a name only when `SaveName.Sanitize` gives it back unchanged (`SaveName.IsSanitized`).
@@ -228,7 +253,7 @@ Every copy of the rule runs this file:
 - the Python copy is `stamp_release.valid_save_name` of content-index-releases ([content-index-releases#102](https://github.com/KSAModding/content-index-releases/issues/102)), which the checks here load through `check_release.load_stamper`, so this repository keeps no copy of its own,
 - the listing page has `site/js/savename.js`, which `site/test/save-names.test.js` runs,
 - Borea has `GameSaveName` ([Borea#790](https://github.com/KSAModding/Borea/issues/790)),
-- a share host ([RFC 0094](https://github.com/KSAModding/content-manager-design/pull/94)) checks the name of an upload with it too.
+- a share host ([RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md)) checks the name of an upload with it too.
 
 A change here needs the same change in each copy.
 

@@ -59,6 +59,7 @@ jobs:
       - run: python3 tools/check_packs.py
       - run: python3 tools/check_status.py
       - run: python3 tools/check_tags.py
+      - run: python3 tools/check_hosts.py
       - run: python3 tools/check_images.py
 
   page:

@@ -6,12 +6,15 @@ RFC 0033 for the marker file and the owner id, RFC 0038 for the topic, RFC 0079
 for a fork and for a SpaceDock mod.
 """
 
+import hashlib
 import json
 import re
 import tomllib
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import namedtuple
+from pathlib import Path
 
 VERIFIED = "verified"
 UNVERIFIED = "unverified"
@@ -42,8 +45,17 @@ SHARE_ADVICE = (
     "one share, and you put the proof on it as on any release repository: the topic "
     f"`{TOPIC.format(login='<your-github-username>')}`, or `{MARKER_PATH}` naming your "
     "username, which then covers every share in that repository. Or it can name a "
-    "share host, once the index registers one. Without either, a steward decides, "
-    "and each release enters by a release pull request in content-index-releases."
+    "share host that `hosts.toml` registers, and publish through the host. Without "
+    "either, a steward decides, and each release enters by a release pull request in "
+    "content-index-releases."
+)
+
+# What an unverified listing on a share host tells its author (RFC 0094).
+SHARE_HOST_ADVICE = (
+    "A listing on a share host is proved by the host. Publish and edit it through the "
+    "host, which opens the pull request from its own account with an attestation of "
+    "the change, or link your GitHub account to your account on the host and open "
+    "the pull request yourself."
 )
 
 GITHUB_NAME = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$")
@@ -61,6 +73,64 @@ RENAMED_HOST = "the repository the listing's host was renamed into"
 # The keys of [releases] that name no host. `since` (RFC 0079) and `tag_prefix`
 # (RFC 0096) only say which releases the watcher stamps, so they never count as a host.
 NOT_HOSTS = ("authority", "since", "tag_prefix")
+
+# The hosts every listing can name. Any other key of [releases] names a share
+# host of RFC 0094, a table of hosts.toml.
+FIXED_HOSTS = ("github", "spacedock")
+SHARE_KIND = "share"
+
+# Where a share host keeps what the proofs read, by RFC 0094; these names stay
+# here, in one place.
+HOSTS_FILE = Path(__file__).resolve().parent.parent / "hosts.toml"
+OWNER_RECORD = "owners/{type}/{id}.json"
+ATTESTATION = "attestations/{digest}.json"
+RAW_FILE = "https://raw.githubusercontent.com/{storage}/HEAD/{path}"
+SHARE_FOLDERS = {"vehicles": "vehicle", "saves": "save"}
+MAX_SHARE_FILE = 64 * 1024
+
+# A listing bound to a share host: the key of the host, the value under
+# [releases], and the table of hosts.toml.
+Share = namedtuple("Share", "key id table")
+
+
+def share_keys(releases):
+    """The keys of a `[releases]` section that name a share host."""
+    if not isinstance(releases, dict):
+        return []
+    return [key for key in releases if key not in FIXED_HOSTS and key not in NOT_HOSTS]
+
+
+BLOB = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
+
+
+def canonical_change(changes):
+    """The canonical form of a pull request's change, which a share host attests (RFC 0094).
+
+    One line per path the change touches, `<path> <blob>` with the git blob id
+    of the file at the head, or `<path> deleted`. A rename deletes the old path.
+    The lines are sorted by the UTF-8 bytes of the path, and each ends with LF.
+    `changes` are as `check_scope.Change` gives them, with `blob`. Raises
+    ValueError for a file that has no blob id.
+    """
+    lines = {}
+    for change in changes:
+        if change.status == "removed":
+            lines[change.path] = "deleted"
+            continue
+        if change.status == "renamed" and change.previous_path:
+            lines[change.previous_path] = "deleted"
+        blob = (change.blob or "").lower()
+        if not BLOB.fullmatch(blob):
+            raise ValueError(f"GitHub gives no blob id of {change.path}")
+        lines[change.path] = blob
+    return "".join(
+        f"{path} {lines[path]}\n" for path in sorted(lines, key=lambda path: path.encode("utf-8"))
+    )
+
+
+def change_digest(changes):
+    """The lowercase hex SHA-256 of the canonical form, which names the attestation file."""
+    return hashlib.sha256(canonical_change(changes).encode("utf-8")).hexdigest()
 
 
 class Unavailable(Exception):
@@ -130,8 +200,26 @@ def spacedock_mod(mod_id, user_agent=USER_AGENT):
     return document
 
 
-def authority(document):
-    """The release host ownership binds to, as (kind, target, reason)."""
+def share_hosts(path=HOSTS_FILE):
+    """The tables of hosts.toml by host key, or none when the file is not there or does not read.
+
+    The checks keep a wrong hosts.toml off the main branch, so a file that does
+    not read here only means that nothing verifies through a share host.
+    """
+    try:
+        with Path(path).open("rb") as handle:
+            document = tomllib.load(handle)
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}
+    return {key: table for key, table in document.items() if isinstance(table, dict)}
+
+
+def authority(document, registry=None):
+    """The release host ownership binds to, as (kind, target, reason).
+
+    A share host has the kind `share` and a Share as its target. `registry` is
+    the tables of hosts.toml, read from this checkout when it is not given.
+    """
     releases = document.get("releases")
     if isinstance(releases, dict) and releases:
         hosts = {key: value for key, value in releases.items() if key not in NOT_HOSTS}
@@ -143,9 +231,15 @@ def authority(document):
             key = releases.get("authority")
             if key not in hosts:
                 return None, None, "the [releases] section names no valid authority"
-        if key in ("github", "spacedock"):
+        if key in FIXED_HOSTS:
             return key, str(hosts[key]), ""
-        return key, str(hosts[key]), f"{key} offers no ownership proof a check can read"
+        table = (share_hosts() if registry is None else registry).get(key)
+        if isinstance(table, dict) and table.get("kind") == SHARE_KIND:
+            return SHARE_KIND, Share(key, str(hosts[key]), table), ""
+        return key, str(hosts[key]), (
+            f"{key} is not a share host that hosts.toml registers, so it offers no "
+            "ownership proof a check can read"
+        )
 
     repository = github_repository((document.get("links") or {}).get("repository"))
     if repository:
@@ -177,17 +271,171 @@ def _marker_names(text, listing_id, login):
     return claimed is not None and claimed.lower() == login.lower()
 
 
-def verify(document, login, author_id, api):
+def verify(document, login, author_id, api, registry=None):
     """The proofs on the host the document binds ownership to."""
     listing_id = document.get("id") or ""
-    kind, target, reason = authority(document)
+    kind, target, reason = authority(document, registry)
     if kind == "github":
         return _verify_repository(target, listing_id, login, author_id, api)
     if kind == "spacedock":
         return _verify_spacedock(target, listing_id, login, author_id, api)
+    if kind == SHARE_KIND:
+        return _verify_share(target, document.get("type"), listing_id, author_id, api)
     if kind is None and document.get("type") in SHARE_TYPES:
         return Result(UNVERIFIED, reason, instructions=SHARE_ADVICE)
     return Result(UNVERIFIED, reason)
+
+
+def share_file(table, path, user_agent=USER_AGENT):
+    """A data file of the storage repository of a share host, as text, or None
+    when it is not there.
+
+    The GitHub Pages address of the repository is asked first, when the host
+    names one, and raw.githubusercontent.com after a 404 there. Both can answer
+    from a cache for some minutes. Raises Unavailable.
+    """
+    quoted = urllib.parse.quote(path)
+    urls = [RAW_FILE.format(storage=table.get("storage"), path=quoted)]
+    if isinstance(table.get("pages"), str):
+        urls.insert(0, table["pages"] + quoted)
+    for url in urls:
+        request = urllib.request.Request(url, headers={"User-Agent": user_agent})
+        try:
+            with urllib.request.urlopen(request, timeout=30) as answer:
+                body = answer.read(MAX_SHARE_FILE + 1)
+        except urllib.error.HTTPError as error:
+            if error.code == 404:
+                continue
+            raise Unavailable(f"HTTP {error.code} asking for {path} of {table.get('storage')}")
+        except OSError as error:
+            detail = error.reason if isinstance(error, urllib.error.URLError) else error
+            raise Unavailable(f"{table.get('storage')} did not answer about {path}: {detail}") from error
+        if len(body) > MAX_SHARE_FILE:
+            raise Unavailable(f"{path} of {table.get('storage')} is larger than {MAX_SHARE_FILE // 1024} KiB")
+        try:
+            return body.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise Unavailable(f"{path} of {table.get('storage')} is not UTF-8 text") from error
+    return None
+
+
+def _json_object(text):
+    try:
+        value = json.loads(text)
+    except ValueError:
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def touched_listings(changes):
+    """The `<type>/<id>` of every vehicle and save a change touches, old paths of renames included."""
+    found = set()
+    for change in changes:
+        for path in (change.path, change.previous_path):
+            parts = (path or "").split("/")
+            if len(parts) == 2 and parts[0] in SHARE_FOLDERS and parts[1].lower().endswith(".toml"):
+                found.add(f"{SHARE_FOLDERS[parts[0]]}/{parts[1][:-len('.toml')]}")
+    return found
+
+
+def _verify_share(share, content_type, listing_id, author_id, api):
+    """The two proofs of a share host (RFC 0094): the owner record links the
+    GitHub account of the pull request author, or the host's bot opened the pull
+    request and the host attested the exact change in its storage repository.
+    """
+    key, table = share.key, share.table
+    storage = table.get("storage")
+    if not isinstance(storage, str):
+        return Result(
+            UNVERIFIED, f"the share host `{key}` names no storage repository, so no owner record can be read"
+        )
+    if share.id != listing_id:
+        return Result(
+            UNVERIFIED, f"`{key}` under [releases] names `{share.id}`, and not the id of the listing"
+        )
+
+    # The release flow of content-index-releases imports this module with
+    # lookups of its own that may have no reader for a share host.
+    read = getattr(api, "share_file", None) or share_file
+    path = OWNER_RECORD.format(type=content_type, id=listing_id)
+    try:
+        record = read(table, path)
+    except Unavailable as error:
+        return Result(COULD_NOT_EVALUATE, str(error))
+    if record is None:
+        return Result(UNVERIFIED, f"the share host `{key}` has no owner record {path} in {storage}")
+    record = _json_object(record)
+    account = (record or {}).get("account")
+    if (
+        record is None
+        or (record.get("id"), record.get("type")) != (listing_id, content_type)
+        or not isinstance(account, str)
+        or not account
+    ):
+        return Result(UNVERIFIED, f"{path} in {storage} is not the owner record of this {content_type}")
+
+    linked = record.get("github_id")
+    if author_id is not None and type(linked) is int and linked == author_id:
+        return Result(VERIFIED, "", "linked GitHub account")
+
+    bot = table.get("bot")
+    if author_id is None or type(bot) is not int or author_id != bot:
+        return Result(
+            UNVERIFIED,
+            f"the owner record {path} of `{key}` links no GitHub account of the pull request "
+            f"author, and the pull request is not from the account of `{key}`",
+            instructions=SHARE_HOST_ADVICE,
+        )
+    return _verify_attestation(share, f"{content_type}/{listing_id}", account, read, api)
+
+
+def _verify_attestation(share, name, account, read, api):
+    """The attestation of the change of a pull request the host's bot opened."""
+    key, storage = share.key, share.table.get("storage")
+    change = getattr(api, "change", None)
+    if change is None:
+        return Result(
+            UNVERIFIED,
+            f"the pull request is from the account of `{key}`, and this check cannot read "
+            "the change that the host would have attested",
+        )
+    try:
+        changes = change()
+        digest = change_digest(changes)
+    except Unavailable as error:
+        return Result(COULD_NOT_EVALUATE, str(error))
+    except ValueError as error:
+        return Result(UNVERIFIED, f"the change of the pull request cannot be attested: {error}")
+
+    path = ATTESTATION.format(digest=digest)
+    try:
+        attestation = read(share.table, path)
+    except Unavailable as error:
+        return Result(COULD_NOT_EVALUATE, str(error))
+    if attestation is None:
+        return Result(
+            UNVERIFIED,
+            f"`{key}` attested no change with the digest {digest}: {storage} has no {path}, so the "
+            "pull request differs from what the host attested, or the attestation is not published yet",
+        )
+    attestation = _json_object(attestation)
+    accounts = (attestation or {}).get("accounts")
+    if attestation is None or attestation.get("host") != key or not isinstance(accounts, dict):
+        return Result(UNVERIFIED, f"{path} in {storage} is not an attestation of `{key}`")
+
+    missing = sorted(listing for listing in touched_listings(changes) if not isinstance(accounts.get(listing), str))
+    if missing:
+        return Result(
+            UNVERIFIED,
+            f"the attestation {path} of `{key}` names no account for {', '.join(missing)}, "
+            "which the pull request touches",
+        )
+    if accounts.get(name) != account:
+        return Result(
+            UNVERIFIED,
+            f"the attestation {path} of `{key}` names another account for {name} than its owner record",
+        )
+    return Result(VERIFIED, "", "attestation")
 
 
 def _verify_spacedock(mod_id, listing_id, login, author_id, api):
@@ -322,7 +570,7 @@ def _verify_repository(target, listing_id, login, author_id, api, named_by="the 
     )
 
 
-def owner_logins(document, api):
+def owner_logins(document, api, registry=None):
     """The accounts the proofs above name as the owners of a document's host,
     as (logins, reason). Nothing is stored, so this asks the host every time.
 
@@ -333,8 +581,10 @@ def owner_logins(document, api):
     a host that does not answer is such a reason, never an exception.
     """
     listing_id = document.get("id") or ""
-    kind, target, reason = authority(document)
+    kind, target, reason = authority(document, registry)
     named_by = "the listing"
+    if kind == SHARE_KIND:
+        return (), f"the share host `{target.key}` names its owners by its own accounts"
     if kind == "spacedock":
         target, failure = _spacedock_repository(target, api)
         if failure is not None:
@@ -387,21 +637,23 @@ def owner_logins(document, api):
     return (), f"no `{topic}` topic and no `{MARKER_PATH}` on {target} names an owner"
 
 
-def _bound(document):
+def _bound(document, registry=None):
     """The host a document binds ownership to, folded for comparison."""
-    kind, target, _ = authority(document)
+    kind, target, _ = authority(document, registry)
+    if kind == SHARE_KIND:
+        return kind, (target.key.lower(), target.id.lower())
     return (
         kind.lower() if isinstance(kind, str) else kind,
         target.lower() if isinstance(target, str) else target,
     )
 
 
-def same_authority(left, right):
+def same_authority(left, right, registry=None):
     """Whether two documents bind ownership to the same release host.
 
     Binding to nothing counts as the same: neither moves the authority.
     """
-    return _bound(left) == _bound(right)
+    return _bound(left, registry) == _bound(right, registry)
 
 
 def renamed_into(base, submitted, api):
@@ -427,10 +679,10 @@ def _about(result, where):
     """Say which authority a verdict is about. A pass needs no explanation."""
     if result.state == VERIFIED:
         return result
-    return Result(result.state, f"{where}: {result.reason}", result.proof)
+    return Result(result.state, f"{where}: {result.reason}", result.proof, result.instructions)
 
 
-def verify_change(base, submitted, login, author_id, api):
+def verify_change(base, submitted, login, author_id, api, registry=None):
     """Ownership for one changed document.
 
     An edit is verified against the authority the base version names, because
@@ -438,11 +690,13 @@ def verify_change(base, submitted, login, author_id, api):
     the listing at a different host verifies against both. A rename is not a
     different host. A new listing has no base and declares its own.
     """
+    if registry is None:
+        registry = share_hosts()
     if base is None:
-        return verify(submitted, login, author_id, api)
+        return verify(submitted, login, author_id, api, registry)
 
-    current = verify(base, login, author_id, api)
-    if same_authority(base, submitted):
+    current = verify(base, login, author_id, api, registry)
+    if same_authority(base, submitted, registry):
         return current
 
     if current.state != VERIFIED:
@@ -451,10 +705,10 @@ def verify_change(base, submitted, login, author_id, api):
         except Unavailable as error:
             return _about(Result(COULD_NOT_EVALUATE, str(error)), CURRENT_HOST)
         if renamed:
-            return _about(verify(submitted, login, author_id, api), RENAMED_HOST)
+            return _about(verify(submitted, login, author_id, api, registry), RENAMED_HOST)
         return _about(current, CURRENT_HOST)
 
-    moved = verify(submitted, login, author_id, api)
+    moved = verify(submitted, login, author_id, api, registry)
     if moved.state != VERIFIED:
         return _about(moved, NEW_HOST)
 

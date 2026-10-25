@@ -413,10 +413,17 @@ class Api:
 
 
 class OwnershipApi:
-    """`ownership.verify` talks to the target repository through this."""
+    """`ownership.verify` talks to the target repository through this.
 
-    def __init__(self, api):
+    `changes` are the changed files of the pull request, which the share host
+    proof hashes. The files of a storage repository are read once per run, so a
+    grouped pull request reads its attestation once.
+    """
+
+    def __init__(self, api, changes=None, share_files=None):
         self.api = api
+        self.changes = changes
+        self.share_files = {} if share_files is None else share_files
 
     def repository(self, full_name):
         return self.api.repository_of(full_name)
@@ -429,6 +436,17 @@ class OwnershipApi:
 
     def spacedock_mod(self, mod_id):
         return self.api.spacedock_mod(mod_id)
+
+    def share_file(self, table, path):
+        key = (table.get("storage"), path)
+        if key not in self.share_files:
+            self.share_files[key] = ownership.share_file(table, path, USER_AGENT)
+        return self.share_files[key]
+
+    def change(self):
+        if self.changes is None:
+            raise ownership.Unavailable("the changed files of the pull request were not read")
+        return self.changes
 
 
 AUTO_MERGE = """
@@ -591,6 +609,7 @@ def changed_paths(api, number):
                     entry["filename"],
                     entry.get("status") or "modified",
                     entry.get("previous_filename"),
+                    entry.get("sha"),
                 )
             )
         if len(batch) < 100:
@@ -615,7 +634,7 @@ def authored_document(api, path, ref):
         return None, f"{path} does not parse at {ref}: {error}"
 
 
-def ownership_for_all(api, pull, paths, head_sha):
+def ownership_for_all(api, pull, paths, head_sha, changes=None):
     """One result for every document of the change.
 
     Auto-merge needs every document verified. The worst state decides, in the
@@ -624,7 +643,8 @@ def ownership_for_all(api, pull, paths, head_sha):
     steward. The reason names every document that is not verified, so an
     author fixes them all in one round and not one per push.
     """
-    results = [(path, ownership_for(api, pull, path, head_sha)) for path in paths]
+    lookups = OwnershipApi(api, changes)
+    results = [(path, ownership_for(api, pull, path, head_sha, lookups)) for path in paths]
     if not results:
         return ownership.Result(ownership.UNVERIFIED, "not checked")
 
@@ -818,6 +838,9 @@ def owner_notes(api, pull, changes, head_sha):
             document, reason = authored_document(api, name, base_ref)
             if document is None and reason is None:
                 continue
+            if document is not None and ownership.authority(document)[0] == ownership.SHARE_KIND:
+                # The host reaches the owners by its own accounts.
+                continue
             subject = f"`{name}`"
             logins = ()
             if document is not None:
@@ -847,7 +870,7 @@ def _sentence(text):
     return text if "\n" in text or text.endswith(".") else f"{text}."
 
 
-def ownership_for(api, pull, path, head_sha):
+def ownership_for(api, pull, path, head_sha, lookups=None):
     """Verify the pull request author against the document it touches.
 
     Whether the listing exists is read from the base branch, not from the
@@ -885,7 +908,7 @@ def ownership_for(api, pull, path, head_sha):
         submitted,
         (pull.get("user") or {}).get("login") or "",
         (pull.get("user") or {}).get("id"),
-        OwnershipApi(api),
+        lookups or OwnershipApi(api),
     )
 
 
@@ -994,7 +1017,7 @@ def act(api, arguments):
     packs = [path for path in documents if check_scope.kind_of(path) == check_scope.PACK_KIND]
     checked = documents if candidate else packs
     if checked and verdict.get("verdict") == PASS:
-        result = ownership_for_all(api, pull, checked, arguments.head_sha)
+        result = ownership_for_all(api, pull, checked, arguments.head_sha, changes)
 
     advice = [
         *owner_advice(pull, pack_ownership.missing_records(api, pull, changes)),

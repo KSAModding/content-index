@@ -16,6 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import check_edits
+import check_hosts
 import check_images
 import check_index
 import check_layout
@@ -163,6 +164,13 @@ def run_tags(documents=(), inspect_documents=True):
     return Check("tags", REJECT if errors else PASS, errors, notes)
 
 
+def run_hosts(documents=(), inspect_documents=True):
+    """hosts.toml, and the share host keys of the changed documents only (RFC 0094)."""
+    paths = [ROOT / path for path in documents] if inspect_documents else []
+    errors = check_hosts.check(paths)
+    return Check("share hosts", REJECT if errors else PASS, errors)
+
+
 def run_images(entries, documents=()):
     """The document rules over every document, and the warnings only for the changed ones."""
     changed = set(documents)
@@ -238,7 +246,8 @@ def run_checks(changes, skip_release=False, releases=None, token=None, base=None
     schema = run_schema()
     tags = run_tags(documents, inspect_documents=schema.outcome == PASS)
     packs = run_packs(changes)
-    gate = [layout, schema, tags, packs]
+    hosts = run_hosts(documents, inspect_documents=schema.outcome == PASS)
+    gate = [layout, schema, tags, packs, hosts]
     entries, skipped = check_index.load_documents()
     checks = gate + [run_index(entries, skipped, documents, releases)]
     # A change that touches no pack version has no pin to check, so the
