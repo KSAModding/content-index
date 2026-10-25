@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: MIT
 """Tests for what the privileged half does about a verdict. No token, no network."""
 
-import copy
 import json
 import re
 import sys
@@ -13,8 +12,6 @@ import urllib.error
 import urllib.parse
 from pathlib import Path
 from unittest import mock
-
-from jsonschema import Draft202012Validator
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -1435,38 +1432,7 @@ class Act(unittest.TestCase):
         self.assertIn("could not be armed", comment["body"])
         self.assertIn("archive checked", comment["body"])
 
-    def test_a_vehicle_is_refused_and_not_merged_while_the_gate_holds(self):
-        checker = check_schema.validator()
-        if "vehicle" not in (checker.schema["properties"]["type"].get("not") or {}).get("enum", []):
-            self.skipTest("the rollout gate no longer holds vehicles")
-        path = "vehicles/ExampleRover.toml"
-        text = (
-            'spec_version = 1\nid = "ExampleRover"\ntype = "vehicle"\nname = "Example Rover"\n'
-            'authors = ["Maxi"]\nabstract = "A rover for the Moon."\nlicense = "CC-BY-4.0"\n'
-        )
-        changes = [check_scope.Change(path, "added")]
-        self.assertEqual(check_scope.evaluate(changes), (True, [path], ""))
-
-        errors = []
-        check_schema.check_parsed(path, tomllib.loads(text), checker, errors)
-        gate = (
-            f"{path}: type: 'vehicle' is a type that the index does not accept yet, because no "
-            "release host for it exists (RFC 0085 Rollout)"
-        )
-        self.assertEqual(errors, [gate])
-        checks = [validate.Check("schema", validate.REJECT, errors).as_dict()]
-        self.api.files = {(path, "abc"): text}
-        with mock.patch.object(decide, "changed_paths", lambda api, number: changes), \
-                mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
-            self.assertEqual(self.act(verdict("reject", checks=checks, documents=[path])), 0)
-
-        self.assertEqual(self.api.graphql_calls, [])
-        self.assertEqual([status["state"] for status in self.statuses()], ["failure"])
-        comment = [p for _, where, p, _ in self.api.sent if where.endswith("/comments")][0]
-        self.assertIn(gate, comment["body"])
-        self.assertEqual(self.labelled(), ["vehicle"])
-
-    def test_a_vehicle_that_verifies_and_passes_is_armed_once_the_gate_is_lifted(self):
+    def test_a_vehicle_that_verifies_and_passes_is_armed(self):
         path = "vehicles/ExampleRover.toml"
         text = (
             'spec_version = 1\nid = "ExampleRover"\ntype = "vehicle"\nname = "Example Rover"\n'
@@ -1474,20 +1440,8 @@ class Act(unittest.TestCase):
             '[releases]\ngithub = "Maxi/KSA-Rovers"\ntag_prefix = "ExampleRover-"\n'
             '[[dependencies]]\nid = "ExamplePartsMod"\nkind = "required"\nmin = "1.4.0"\n'
         )
-        document = tomllib.loads(text)
-        # While the deployed schema refuses the type, this run lifts the gate on a copy,
-        # as the lift will. Once it is lifted, the copy equals the deployed schema.
-        deployed = check_schema.validator()
         errors = []
-        check_schema.check_parsed(path, document, deployed, errors)
-        self.assertLessEqual(len(errors), 1)
-        for error in errors:
-            self.assertIn("type that the index does not accept yet", error)
-
-        schema = copy.deepcopy(deployed.schema)
-        schema["properties"]["type"].pop("not", None)
-        errors = []
-        check_schema.check_parsed(path, document, Draft202012Validator(schema), errors)
+        check_schema.check_parsed(path, tomllib.loads(text), check_schema.validator(), errors)
         self.assertEqual(errors, [])
 
         changes = [check_scope.Change(path, "added")]
@@ -1979,13 +1933,10 @@ class ShareHostPullRequests(unittest.TestCase):
             {"filename": path, "status": "added", "sha": f"{index + 1:040x}"} for index, path in enumerate(paths)
         ]
 
-        # While the deployed schema refuses the type, this run lifts the gate on a copy.
-        schema = copy.deepcopy(check_schema.validator().schema)
-        schema["properties"]["type"].pop("not", None)
         for path, identifier in zip(paths, identifiers):
             text = share_vehicle(identifier)
             errors = []
-            check_schema.check_parsed(path, tomllib.loads(text), Draft202012Validator(schema), errors)
+            check_schema.check_parsed(path, tomllib.loads(text), check_schema.validator(), errors)
             self.assertEqual(errors, [])
             self.assertEqual(check_hosts.check_document(path, tomllib.loads(text), {"ksamods": SHARE_TABLE}), [])
             self.api.files[(path, "abc")] = text
