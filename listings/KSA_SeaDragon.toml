@@ -8,7 +8,9 @@ license = "GPL-3.0"
 tags = ["parts"]
 
 [releases]
+github = "Spaceman3d/KSA-Mods"
 spacedock = 4593
+authority = "spacedock"
 
 [links]
 forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/sea-dragon.1263/"
