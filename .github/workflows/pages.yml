@@ -1,7 +1,7 @@
 # Deploys the listing page in site/ to GitHub Pages.
 #
-# The page reads the schema and tags.toml of the commit it was deployed from,
-# so a change to either redeploys it.
+# The page reads the schema, tags.toml and hosts.toml of the commit it was
+# deployed from, so a change to any of them redeploys it.
 name: pages
 
 on:
@@ -11,6 +11,7 @@ on:
       - 'site/**'
       - 'schemas/authored.schema.json'
       - 'tags.toml'
+      - 'hosts.toml'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -37,7 +38,7 @@ jobs:
           cp -R site _site
           rm -rf _site/test _site/package.json
           mkdir _site/rules
-          cp schemas/authored.schema.json tags.toml _site/rules/
+          cp schemas/authored.schema.json tags.toml hosts.toml _site/rules/
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: _site

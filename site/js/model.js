@@ -3,9 +3,15 @@ import { RECORD_KEYS } from "./images.js";
 export const PLATFORMS = ["windows", "linux", "macos"];
 export const KINDS = ["required", "optional", "recommends", "suggests", "conflict"];
 export const ANCHORS = ["mods", "user-data", "game-root", "standalone"];
-export const TYPES = ["mod", "mod-loader", "modpack"];
-const PACK_KEYS = ["version", "released_at", "changelog", "mods"];
+export const TYPES = ["mod", "mod-loader", "modpack", "vehicle", "save"];
+const SHARE_TYPES = ["vehicle", "save"];
+// The pack sections in the order the form lists their members. A row without a
+// section is a mod.
+const PINNED_SECTIONS = ["mods", "vehicles", "saves"];
+const PACK_KEYS = ["version", "released_at", "changelog", ...PINNED_SECTIONS];
 const NOT_IN_PACK = ["releases", "loader", "dependencies", "install", "provides"];
+// The keys of [releases] the form has fields for. Any other names a share host (RFC 0094).
+const RELEASE_KEYS = ["github", "spacedock", "authority", "tag_prefix", "since"];
 const FIXED_LINKS = ["forums", "homepage", "repository", "spacedock", "bugtracker", "discussions"];
 const LINK_ORDER = FIXED_LINKS;
 
@@ -37,6 +43,7 @@ export function emptyForm() {
     authority: "",
     tagPrefix: "",
     since: "",
+    shareHosts: [],
     name: "",
     authors: "",
     abstract: "",
@@ -77,11 +84,22 @@ export function sectionsOf(type) {
     dependencies: !pack,
     pack,
     members: pack,
+    share: SHARE_TYPES.includes(type),
   };
+}
+
+// The types the deployed schema accepts, so a type behind the rollout gate of
+// RFC 0085 is offered once the index lifts the gate, with no change here.
+export function typeChoices(schema) {
+  const type = schema && schema.properties ? schema.properties.type : null;
+  const known = type && Array.isArray(type.enum) ? type.enum : [];
+  const gated = type && type.not && Array.isArray(type.not.enum) ? type.not.enum : [];
+  return TYPES.filter((name) => known.includes(name) && !gated.includes(name));
 }
 
 // The word the page uses for what is listed, so a text visible for every type fits the chosen one.
 export function nounOf(type) {
+  if (SHARE_TYPES.includes(type)) return type;
   return type === "modpack" ? "pack" : type === "mod-loader" ? "mod loader" : "mod";
 }
 
@@ -105,6 +123,9 @@ export function formFromDocument(document) {
   form.authority = text(releases.authority);
   form.tagPrefix = text(releases.tag_prefix);
   form.since = text(releases.since);
+  form.shareHosts = Object.keys(releases)
+    .filter((key) => !RELEASE_KEYS.includes(key))
+    .map((key) => ({ key, id: text(releases[key]) }));
   form.name = text(document.name);
   form.authors = Array.isArray(document.authors) ? document.authors.map(text).join(", ") : "";
   form.abstract = text(document.abstract);
@@ -146,8 +167,8 @@ export function formFromDocument(document) {
   form.version = text(document.version);
   form.releasedAt = text(document.released_at);
   form.changelog = text(document.changelog);
-  form.members = (Array.isArray(document.mods) ? document.mods : []).map((entry) =>
-    isObject(entry) ? { id: text(entry.id), version: text(entry.version) } : { kept: entry });
+  form.members = PINNED_SECTIONS.flatMap((section) => (Array.isArray(document[section]) ? document[section] : []).map((entry) =>
+    isObject(entry) ? { id: text(entry.id), version: text(entry.version), section } : { kept: entry, section }));
   return form;
 }
 
@@ -177,6 +198,15 @@ export function recordFromForm(form) {
   return record;
 }
 
+// The hosts that the written [releases] names.
+export function namedHosts(form) {
+  return [
+    ...(trimmed(form.github) ? ["github"] : []),
+    ...(trimmed(form.spacedock) ? ["spacedock"] : []),
+    ...(form.shareHosts || []).filter((share) => trimmed(share.id)).map((share) => share.key),
+  ];
+}
+
 export function documentFromForm(form, base) {
   const document = base ? structuredClone(base) : {};
   set(document, "spec_version", document.spec_version ?? 1);
@@ -193,30 +223,34 @@ export function documentFromForm(form, base) {
   const releases = {};
   set(releases, "github", trimmed(form.github));
   set(releases, "spacedock", integerOr(form.spacedock));
-  set(releases, "authority", releases.github !== undefined && releases.spacedock !== undefined ? trimmed(form.authority) : "");
+  // A share host key is edited on the host, so the page keeps it as it was read.
+  for (const share of form.shareHosts || []) set(releases, share.key, trimmed(share.id));
+  const hosts = namedHosts(form).length;
+  set(releases, "authority", hosts > 1 ? trimmed(form.authority) : "");
   // tag_prefix picks releases by their GitHub tag, so it is written only next to github.
   set(releases, "tag_prefix", releases.github !== undefined ? trimmed(form.tagPrefix) : "");
   // since picks releases of a host, so it is written only next to one.
-  set(releases, "since", releases.github !== undefined || releases.spacedock !== undefined ? trimmed(form.since) : "");
+  set(releases, "since", hosts ? trimmed(form.since) : "");
   set(document, "releases", releases);
 
   if (form.type === "modpack") {
     set(document, "version", trimmed(form.version));
     set(document, "released_at", trimmed(form.releasedAt));
     set(document, "changelog", text(form.changelog).trim() ? text(form.changelog) : "");
-    const members = [];
+    const members = Object.fromEntries(PINNED_SECTIONS.map((section) => [section, []]));
     for (const entry of form.members) {
+      const pinned = members[entry.section] || members.mods;
       if (entry.kept !== undefined) {
-        members.push(entry.kept);
+        pinned.push(entry.kept);
         continue;
       }
       if (!trimmed(entry.id)) continue;
       const member = {};
       set(member, "id", trimmed(entry.id));
       set(member, "version", trimmed(entry.version));
-      members.push(member);
+      pinned.push(member);
     }
-    set(document, "mods", members);
+    for (const section of PINNED_SECTIONS) set(document, section, members[section]);
   }
 
   const wanted = new Map(FIXED_LINKS.map((key) => [key, trimmed(form.links[key])]));

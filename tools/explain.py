@@ -725,18 +725,31 @@ RULES = [
     ),
     (
         re.compile(
-            r"^\S+: mods\[\d+\]: '(?P<id>[^']*)' is not a listed mod, and a pack pins only listed "
-            r"mods"
+            r"^\S+: (?:mods|vehicles|saves)\[\d+\]: '(?P<id>[^']*)' is not a listed "
+            r"(?:mod|vehicle|save), and (?:a pack|\[\[(?:vehicles|saves)\]\]) pins only listed "
         ),
-        "A pack can hold only mods that have a listing in the index, under the same id. Check "
+        "A pack can hold only content that has a listing in the index, under the same id. Check "
         "the spelling of {id}, or wait until its listing is in the index.",
         False,
     ),
     (
-        re.compile(r"^\S+: mods\[\d+\]: '(?P<id>[^']*)' has no stamped release (?P<version>\S+)"),
+        re.compile(
+            r"^\S+: (?:mods|vehicles|saves)\[\d+\]: '(?P<id>[^']*)' is listed as a "
+            r"(?P<type>mod|vehicle|save), and (?:a pack|\[\[(?:vehicles|saves)\]\]) pins only "
+        ),
+        "{id} is listed as a {type}, and a pack pins each kind in its own list: mods under "
+        "`[[mods]]`, vehicles under `[[vehicles]]` and saves under `[[saves]]`. Move the entry "
+        "into the list of its kind.",
+        False,
+    ),
+    (
+        re.compile(
+            r"^\S+: (?:mods|vehicles|saves)\[\d+\]: '(?P<id>[^']*)' has no stamped release "
+            r"(?P<version>\S+)"
+        ),
         "The index has no release {version} of {id}. Write a version that is in the index, "
         "with all three numbers, such as `1.2.0` for a release tagged v1.2. The versions are "
-        f"the file names in the folder of the mod in [the release files]({RELEASE_FOLDERS}).",
+        f"the file names in the folder of {{id}} in [the release files]({RELEASE_FOLDERS}).",
         False,
     ),
     (

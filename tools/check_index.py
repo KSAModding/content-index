@@ -19,9 +19,14 @@ SCHEMA = ROOT / "schemas" / "authored.schema.json"
 PACK_TYPE = "modpack"
 LOADER_TYPE = "mod-loader"
 MOD_TYPE = "mod"
+VEHICLE_TYPE = "vehicle"
+SAVE_TYPE = "save"
 
 PINNED_SECTIONS = ("mods", "vehicles", "saves")
 MEMBER_SECTION = "mods"
+# The type each pack section pins (RFC 0085). A dependency is always a mod, so
+# only the pins of MEMBER_SECTION meet the dependencies of the others.
+SECTION_TYPES = {"mods": MOD_TYPE, "vehicles": VEHICLE_TYPE, "saves": SAVE_TYPE}
 
 REQUIRED = "required"
 CONFLICT = "conflict"
@@ -267,7 +272,8 @@ def check_members(entries, documents, delisted, releases):
 
 
 def member_notes(entries, documents, disputed):
-    """A pin of a changed pack version that names a disputed mod, which passes with a warning."""
+    """A pin of a changed pack version that names a disputed listing of its section's
+    type, which passes with a warning."""
     targets = _targets(entries)
     notes = []
     for entry in entries:
@@ -276,7 +282,7 @@ def member_notes(entries, documents, disputed):
         for section, index, member in _pins(entry):
             identifier = member.get("id")
             target = targets.get(identifier.casefold()) if isinstance(identifier, str) else None
-            if section == MEMBER_SECTION and target and target.type == MOD_TYPE and target.folded in disputed:
+            if target and target.type == SECTION_TYPES[section] and target.folded in disputed:
                 notes.append(
                     f"{entry.where}: {section}[{index}]: '{identifier}' is disputed, and a client warns about it"
                 )
@@ -299,18 +305,18 @@ def _member(section, member, targets, delisted, releases, semver):
     version = member.get("version")
     if not isinstance(identifier, str) or not isinstance(version, str):
         return None, None
-    if section != MEMBER_SECTION:
-        return f"'{identifier}' cannot be pinned, because no content type for {section} is defined yet", None
+    wanted = SECTION_TYPES[section]
+    pinner = "a pack" if section == MEMBER_SECTION else f"[[{section}]]"
 
     target = targets.get(identifier.casefold())
     if target is None:
-        return f"'{identifier}' is not a listed mod, and a pack pins only listed mods", None
+        return f"'{identifier}' is not a listed {wanted}, and {pinner} pins only listed {wanted}s", None
     if target.type == PACK_TYPE:
         return None, None  # check_references reports a nested pack.
     if target.folded in delisted:
-        return f"'{identifier}' is delisted, and a pack pins only listed mods", None
-    if target.type != MOD_TYPE:
-        return f"'{identifier}' is listed as a {target.type}, and a pack pins only mods", None
+        return f"'{identifier}' is delisted, and {pinner} pins only listed {wanted}s", None
+    if target.type != wanted:
+        return f"'{identifier}' is listed as a {target.type}, and {pinner} pins only {wanted}s", None
 
     if not semver.match(version):
         return None, None  # check_schema reports it, and it must never become a path.

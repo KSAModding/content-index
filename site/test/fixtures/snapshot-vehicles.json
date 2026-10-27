@@ -1,0 +1,35 @@
+{
+  "snapshot_version": 1,
+  "sources": {
+    "authored": { "repository": "KSAModding/content-index", "commit": "9fe1c0f" },
+    "generated": { "repository": "KSAModding/content-index-releases", "commit": "3a77b21" }
+  },
+  "vehicles": [
+    {
+      "id": "ExampleRover",
+      "authored": {
+        "spec_version": 1,
+        "id": "ExampleRover",
+        "type": "vehicle",
+        "name": "Example Rover",
+        "authors": ["Maxi"],
+        "abstract": "A six-wheel rover for the Moon.",
+        "license": "CC-BY-4.0",
+        "links": { "forums": "https://forums.ahwoo.com/threads/example-rover.1000/" },
+        "releases": { "github": "Maxi/KSA-Rovers", "tag_prefix": "ExampleRover-" },
+        "dependencies": [{ "id": "ExamplePartsMod", "kind": "required", "min": "1.4.0" }]
+      },
+      "releases": [
+        {
+          "version": "1.0.0",
+          "release_status": "stable",
+          "game_min": "2026.10.19.5638",
+          "game_min_revision": 5638,
+          "install": { "root": "Example Rover", "derived": true, "folder": "Example Rover" },
+          "dependencies": [{ "id": "ExamplePartsMod", "kind": "required", "min": "1.4.0", "source": "authored" }]
+        }
+      ]
+    },
+    { "id": "RetiredRover", "index_status": { "state": "delisted" } }
+  ]
+}

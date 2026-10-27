@@ -176,7 +176,7 @@ The pinned set must also be complete:
 The checks read the dependencies from the stamped release files, so a dependency the stamper derived counts like one the mod author wrote.
 A mod's loader is not a dependency, and a pack does not pin it.
 The checks refuse every other entry and name it, and they name each missing or conflicting mod together with the pinned release that needs it.
-They also refuse `[[vehicles]]` and `[[saves]]` until those content types exist.
+An entry in `[[vehicles]]` names a listed vehicle, and an entry in `[[saves]]` a listed save, with the same rules, and the mods that a pinned vehicle or save requires are pinned in `[[mods]]` ([RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md)).
 A pinned mod that is `disputed` passes with a warning, and a client warns about it too.
 When a pinned release is yanked or a pinned mod is delisted later, the accepted pack version stays as it is, and a client warns and installs what it can.
 
@@ -216,6 +216,11 @@ When you rename or transfer it, update the link on SpaceDock, because the redire
 A SpaceDock mod with no source code link, or with a link that does not name a GitHub repository, still waits for a steward.
 When SpaceDock does not answer, the check reaches no verdict, and the pull request also waits for a steward.
 Release and amendment pull requests in content-index-releases use the same proof.
+
+A listing on a share host, a host that [`hosts.toml`](hosts.toml) registers per [RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md), needs no proof that you set up.
+The host proves the owner in one of two ways: it opens the pull request from its own account and places an attestation of the exact change in its storage repository, or you link your GitHub account to your account on the host and open the pull request yourself.
+A pull request that changes one byte after the host attested it does not verify.
+An edit is verified against the host that the listing already names, as for every other host.
 
 ## Changing a listing that already exists
 

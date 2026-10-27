@@ -35,6 +35,10 @@ MONTH_BOUND = re.compile(r"^([0-9]{4})\.([0-9]+)(?![\s\S])")
 
 PINNED_SECTIONS = ("mods", "vehicles", "saves")
 
+# A misspelt github or spacedock is read as a share host key, so its error says
+# why. The listing page adds the same words.
+SHARE_KEY_HINT = "{key} is not github or spacedock, so the index reads it as a share host, whose value is the id of the listing"
+
 
 def normalise(value):
     """Turn TOML's native date and time values into the strings the schema expects.
@@ -114,6 +118,17 @@ def explain(error):
             return f"{error.message}; for example, use {sample!r}"
         title = titled(error.schema)
         return f"{error.instance!r} is not {title}" if title else error.message
+    if error.validator == "additionalProperties" and "patternProperties" in error.schema:
+        # The raw message would show the regex of the share host keys, so it
+        # is worded as it is for a section without one.
+        extras = [
+            key
+            for key in error.instance
+            if key not in error.schema.get("properties", {})
+            and not any(re.search(pattern, key) for pattern in error.schema["patternProperties"])
+        ]
+        verb = "was" if len(extras) == 1 else "were"
+        return f"Additional properties are not allowed ({', '.join(map(repr, extras))} {verb} unexpected)"
     if error.validator != "not":
         return error.message
     if error.validator_value == {}:
@@ -125,7 +140,10 @@ def explain(error):
 def check_schema(path, document, validator, errors):
     for error in sorted(validator.iter_errors(document), key=lambda e: list(map(str, e.absolute_path))):
         deepest = best_match([error]) or error
-        errors.append(f"{path}: {pointer(deepest)}: {explain(deepest)}")
+        text = explain(deepest)
+        if "patternProperties" in deepest.absolute_schema_path:
+            text += "; " + SHARE_KEY_HINT.format(key=repr(deepest.absolute_path[-1]))
+        errors.append(f"{path}: {pointer(deepest)}: {text}")
 
 
 def semver_key(version):

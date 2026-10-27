@@ -139,7 +139,7 @@ class Run(unittest.TestCase):
         self.output = Path(self.folder.name) / "verdict.json"
         self.addCleanup(self.folder.cleanup)
 
-        for name in ("run_layout", "run_schema", "run_tags", "run_packs"):
+        for name in ("run_layout", "run_schema", "run_tags", "run_packs", "run_hosts"):
             patch = mock.patch.object(validate, name, passing(name))
             patch.start()
             self.addCleanup(patch.stop)
@@ -208,6 +208,7 @@ class Run(unittest.TestCase):
                 "run_schema",
                 "run_tags",
                 "run_packs",
+                "run_hosts",
                 "run_index",
                 "run_members",
                 "run_license",
@@ -337,6 +338,19 @@ class ShortCircuit(unittest.TestCase):
             release,
         )
         release.assert_called_once()
+
+    def test_a_share_host_key_that_is_not_registered_stops_the_archive_inspection(self):
+        release = mock.Mock()
+        refused = validate.Check("share hosts", validate.REJECT, ["not registered"])
+        with mock.patch.object(validate, "run_hosts", return_value=refused) as hosts:
+            checks = self.run_checks(
+                validate.Check("layout", validate.PASS),
+                validate.Check("schema", validate.PASS),
+                release,
+            )
+        hosts.assert_called_once_with(["listings/Mod.toml"], inspect_documents=True)
+        release.assert_not_called()
+        self.assertIn(refused, checks)
 
     def test_the_run_still_rejects(self):
         checks = self.run_checks(
@@ -543,6 +557,24 @@ class TagWiring(unittest.TestCase):
         ), mock.patch.object(validate, "run_status", passing("status")):
             validate.run_checks(check_scope.changes(["listings/Mod.toml"]), skip_release=True)
         tags.assert_called_once_with(["listings/Mod.toml"], inspect_documents=False)
+
+
+class HostWiring(unittest.TestCase):
+    def test_changed_documents_reach_the_share_host_check(self):
+        with mock.patch.object(validate.check_hosts, "check", return_value=[]) as check:
+            result = validate.run_hosts(["vehicles/Rover.toml"])
+        check.assert_called_once_with([validate.ROOT / "vehicles/Rover.toml"])
+        self.assertEqual(result.outcome, validate.PASS)
+
+    def test_a_refused_key_rejects(self):
+        with mock.patch.object(validate.check_hosts, "check", return_value=["bad"]):
+            result = validate.run_hosts(["vehicles/Rover.toml"])
+        self.assertEqual((result.name, result.outcome, result.errors), ("share hosts", validate.REJECT, ["bad"]))
+
+    def test_a_document_the_schema_refused_is_not_read(self):
+        with mock.patch.object(validate.check_hosts, "check", return_value=[]) as check:
+            validate.run_hosts(["vehicles/Rover.toml"], inspect_documents=False)
+        check.assert_called_once_with([])
 
 
 class IndexWiring(unittest.TestCase):

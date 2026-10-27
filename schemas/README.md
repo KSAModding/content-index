@@ -141,7 +141,7 @@ Some rules need more than the document, and belong to the checks around it:
 | A changed document has a `game_max` that is not the newest build of the game release list | `tools/check_index.py` warns only, against `game-versions.json` of the generated repository, and the listing page gives the same note against the snapshot. A client blocks the content above `game_max` ([RFC 0091](https://github.com/KSAModding/content-manager-design/pull/91)), and a bound at the newest build usually means "tested with". A month is not compared. The vectors of this rule carry the release list as `game_versions`. |
 | The document sits at the path its id and type say | `tools/check_layout.py` |
 | `[loader].id` references content of type `mod-loader`, a dependency id references a `mod`, and a pack member is not itself a pack | `tools/check_index.py` |
-| Each pin of a changed pack version names a listed `mod` that is not delisted, at a stamped release that is not yanked, and `[[vehicles]]` and `[[saves]]` stay empty | `tools/check_index.py`, against the release files of the generated repository, per [RFC 0080](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0080-pack-claims-and-members.md) |
+| Each pin of a changed pack version names a listing that is not delisted, at a stamped release that is not yanked: a `mod` under `[[mods]]`, a `vehicle` under `[[vehicles]]` and a `save` under `[[saves]]`. The mods that a pinned release requires are pinned under `[[mods]]` | `tools/check_index.py`, against the release files of the generated repository, per [RFC 0080](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0080-pack-claims-and-members.md) and [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md) |
 | The pins of a changed pack version are a complete set: every `required` dependency of a pinned release names another pinned mod inside its bounds, one member of an `any_of` is enough, and no `conflict` entry matches another pinned mod | `tools/check_index.py`, from the dependencies in the stamped release files, so a derived entry counts like an authored one |
 | A pin of a changed pack version names a `disputed` mod | `tools/check_index.py` warns only, because RFC 0080 lets a disputed member pass and a client warns about it |
 | A named `any_of` member carried `Optional = true` in the archive's own `mod.toml` | the stamper ([content-index-releases#13](https://github.com/KSAModding/content-index-releases/issues/13)), which is the only place the archive is read |
@@ -181,6 +181,7 @@ The mini snapshot has these keys:
 | Key | What it holds |
 |---|---|
 | `listings` | Each listing as `id`, `type` and `releases`. `releases` holds the stamped release files of the listing, with only the fields the rules read: `version`, `release_status`, and where the case needs them `yanked`, `dependencies` and `download`. A bound of a dependency is full SemVer, as the stamper writes it, so a runner can read the releases as release files without a stamping step. A case can also carry other fields of a release file, such as `yanked_reason` or the `source` of a dependency, which the rules do not read. |
+| `vehicles`, `saves` | Optional. The vehicles and saves of the case, each in the same shape as a listing. A runner writes them where the index keeps them, so `vehicles/<id>.toml` or `saves/<id>.toml`, with their release files under `releases/<id>/`. |
 | `delisted` | Optional. The ids that `index-status.toml` delists. In a real snapshot such a listing is a tombstone. |
 | `disputed` | Optional. The ids that `index-status.toml` marks disputed. In a real snapshot such a listing ships whole, with `index_status.state` set to `disputed`. |
 
@@ -207,6 +208,31 @@ A steward lifts the gate by pull request ([#210](https://github.com/KSAModding/c
 No check reads `hosts.toml` of the generated repository for it.
 A vector of `vectors.json` for a gated type carries `"gated": "vehicle"` or `"gated": "save"`. While the schema holds that type, both runners expect the gate line, and they also run each such vector against a copy of the schema without the gate and expect its `accepted`, `noted` and `says`, so a lift changes the schema alone.
 
+## Share hosts
+
+`hosts.schema.json` covers `hosts.toml`, the share hosts of [RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md), one table per host, which stewards edit.
+The table name is the key a listing names the host with under `[releases]`: 2 to 32 lowercase ASCII letters, digits or `-`, starting with a letter, and not `github`, `spacedock`, `authority` or `since`.
+That is `HOST_KEY` of `tools/authored.py` in content-index-releases, which the watcher, the download counts and the snapshot read, so a change of the form is a change there too.
+A `storage` repository of the KSAModding organization is refused, because the index never hosts files.
+
+`tools/check_hosts.py` runs the schema and adds the rules it cannot express: every type in `types` has a size in `max_bytes`, a host with `data` and no `storage` is refused while the watcher and the ownership check read only a storage repository, and `pages` is the GitHub Pages address of `storage`.
+
+`authored.schema.json` cannot read `hosts.toml`, so under `[releases]` it takes any key of the host key form with a listing id as its value, and `authority` takes such a key too.
+`tools/check_hosts.py` then refuses, for the documents a pull request changes, a key that `hosts.toml` does not register, a host whose `types` does not hold the type of the document, a value that is not the id of the document, a share host next to another host without `authority`, and an `authority` that names no host of the section.
+The listing page runs the same rules, with the same words, against the `hosts.toml` it was deployed with.
+These rules are not in `vectors.json`, because its runners have no `hosts.toml`.
+
+### Attestation vectors
+
+A share host proves the owner of a change it opens from its bot account with an attestation, `attestations/<sha256>.json` in its `storage`, named by the SHA-256 of the canonical form of the change (RFC 0094).
+The canonical form is UTF-8 text with one line per path the pull request touches, `<path> <blob>` with the lowercase git blob id of the file at the head, or `<path> deleted`.
+A rename is a `deleted` line for the old path and a line for the new path.
+The lines are sorted by the UTF-8 bytes of the path, not by UTF-16 code units or by a culture, and each line ends with one LF, the last one too.
+
+`attestation-vectors.json` is an object with one key, `vectors`, a list of cases with the keys `name` (unique in the file), `files` (the change as the pull request files API gives it, with `filename`, `status`, `sha` and `previous_filename`), `canonical` (the canonical form) and `sha256` (its lowercase hex SHA-256).
+Every character outside ASCII is a JSON `\u` escape, so the file stays ASCII.
+`tools/test_attestation_vectors.py` runs it against `ownership.canonical_change` and `ownership.change_digest`, and every share host runs it against its own copy of the form.
+
 ## Save and vehicle names
 
 The game takes the identity of a vehicle or a save from `name` in the `meta.toml` of its folder (`UncompressedVehicleSave.FromDirectory`, `UncompressedSave.FromDirectory`), and it keeps a name only when `SaveName.Sanitize` gives it back unchanged (`SaveName.IsSanitized`).
@@ -227,7 +253,7 @@ Every copy of the rule runs this file:
 - the Python copy is `stamp_release.valid_save_name` of content-index-releases ([content-index-releases#102](https://github.com/KSAModding/content-index-releases/issues/102)), which the checks here load through `check_release.load_stamper`, so this repository keeps no copy of its own,
 - the listing page has `site/js/savename.js`, which `site/test/save-names.test.js` runs,
 - Borea has `GameSaveName` ([Borea#790](https://github.com/KSAModding/Borea/issues/790)),
-- a share host ([RFC 0094](https://github.com/KSAModding/content-manager-design/pull/94)) checks the name of an upload with it too.
+- a share host ([RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md)) checks the name of an upload with it too.
 
 A change here needs the same change in each copy.
 

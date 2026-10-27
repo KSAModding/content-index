@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Tests for what the privileged half does about a verdict. No token, no network."""
 
+import copy
 import json
 import re
 import sys
@@ -13,14 +14,20 @@ import urllib.parse
 from pathlib import Path
 from unittest import mock
 
+from jsonschema import Draft202012Validator
+
 sys.path.insert(0, str(Path(__file__).parent))
 
+import check_hosts
 import check_schema
 import check_scope
 import decide
 import ownership
 import pack_ownership
 import validate
+
+# The real reader, which the Act tests stand in for.
+CHANGED_PATHS = decide.changed_paths
 
 WORKFLOWS = Path(__file__).resolve().parent.parent / ".github/workflows"
 
@@ -924,7 +931,7 @@ class OwnershipForAll(unittest.TestCase):
         self.results = {}
         self.seen = []
 
-        def one(api, pull, path, head_sha):
+        def one(api, pull, path, head_sha, lookups=None):
             self.seen.append(path)
             return self.results[path]
 
@@ -1341,7 +1348,7 @@ class Act(unittest.TestCase):
         }
         asked = []
 
-        def verify(document, login, author_id, api):
+        def verify(document, login, author_id, api, registry=None):
             asked.append(document["releases"]["github"])
             return VERIFIED if document["releases"]["github"] == "Attacker/Mod" else UNVERIFIED
 
@@ -1383,7 +1390,7 @@ class Act(unittest.TestCase):
         }
         asked = []
 
-        def verify(document, login, author_id, api):
+        def verify(document, login, author_id, api, registry=None):
             host = document["releases"]["github"]
             asked.append(host)
             return VERIFIED if host == "Attacker/Mod" else UNVERIFIED
@@ -1457,6 +1464,46 @@ class Act(unittest.TestCase):
         self.assertEqual([status["state"] for status in self.statuses()], ["failure"])
         comment = [p for _, where, p, _ in self.api.sent if where.endswith("/comments")][0]
         self.assertIn(gate, comment["body"])
+        self.assertEqual(self.labelled(), ["vehicle"])
+
+    def test_a_vehicle_that_verifies_and_passes_is_armed_once_the_gate_is_lifted(self):
+        path = "vehicles/ExampleRover.toml"
+        text = (
+            'spec_version = 1\nid = "ExampleRover"\ntype = "vehicle"\nname = "Example Rover"\n'
+            'authors = ["Maxi"]\nabstract = "A rover for the Moon."\nlicense = "CC-BY-4.0"\n'
+            '[releases]\ngithub = "Maxi/KSA-Rovers"\ntag_prefix = "ExampleRover-"\n'
+            '[[dependencies]]\nid = "ExamplePartsMod"\nkind = "required"\nmin = "1.4.0"\n'
+        )
+        document = tomllib.loads(text)
+        # While the deployed schema refuses the type, this run lifts the gate on a copy,
+        # as the lift will. Once it is lifted, the copy equals the deployed schema.
+        deployed = check_schema.validator()
+        errors = []
+        check_schema.check_parsed(path, document, deployed, errors)
+        self.assertLessEqual(len(errors), 1)
+        for error in errors:
+            self.assertIn("type that the index does not accept yet", error)
+
+        schema = copy.deepcopy(deployed.schema)
+        schema["properties"]["type"].pop("not", None)
+        errors = []
+        check_schema.check_parsed(path, document, Draft202012Validator(schema), errors)
+        self.assertEqual(errors, [])
+
+        changes = [check_scope.Change(path, "added")]
+        self.assertEqual(check_scope.evaluate(changes), (True, [path], ""))
+        checks = [validate.Check("schema", validate.PASS, []).as_dict()]
+        self.api.files = {(path, "abc"): text}
+        self.api.repositories = {"Maxi/KSA-Rovers": {
+            "full_name": "Maxi/KSA-Rovers", "fork": False,
+            "owner": {"id": 7, "login": "Maxi", "type": "User"},
+        }}
+        with mock.patch.object(decide, "changed_paths", lambda api, number: changes):
+            self.assertEqual(self.act(verdict(checks=checks, documents=[path])), 0)
+
+        self.assertEqual(self.api.repository_reads, ["Maxi/KSA-Rovers"])
+        self.assertEqual([status["state"] for status in self.statuses()], ["pending", "success"])
+        self.assertEqual(self.api.graphql_calls, [{"id": "PR_5"}])
         self.assertEqual(self.labelled(), ["vehicle"])
 
     def test_a_rejection_leaves_a_steward_label_alone(self):
@@ -1898,6 +1945,98 @@ class OwnerNotes(Act):
         self.assertEqual(self.api.reads, [])
         self.assertNotIn("My Pack", body)
         self.assertNotIn("Bad`Name", body)
+
+
+SHARE_BOT = 98765432
+SHARE_TABLE = {"kind": "share", "storage": "ksamods-content/share", "bot": SHARE_BOT, "types": ["vehicle"]}
+
+
+def share_vehicle(identifier):
+    return (
+        f'spec_version = 1\nid = "{identifier}"\ntype = "vehicle"\nname = "{identifier}"\n'
+        'authors = ["A player"]\nabstract = "A vehicle shared on a share host."\nlicense = "CC-BY-4.0"\n'
+        f'\n[releases]\nksamods = "{identifier}"\n'
+    )
+
+
+class ShareHostPullRequests(unittest.TestCase):
+    """A share host opens grouped pull requests from its bot account (RFC 0094)."""
+
+    act = Act.act
+    statuses = Act.statuses
+
+    def setUp(self):
+        Act.setUp(self)
+        patch = mock.patch.object(ownership, "share_hosts", lambda *a, **k: {"ksamods": SHARE_TABLE})
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def test_a_grouped_pull_request_with_one_attestation_is_armed(self):
+        self.api.pulls = [dict(pull_request(), user={"login": "ksamods-bot", "id": SHARE_BOT})]
+        identifiers = ["Zephyr", "Albatross", "MunRover"]
+        paths = [f"vehicles/{identifier}.toml" for identifier in identifiers]
+        entries = [
+            {"filename": path, "status": "added", "sha": f"{index + 1:040x}"} for index, path in enumerate(paths)
+        ]
+
+        # While the deployed schema refuses the type, this run lifts the gate on a copy.
+        schema = copy.deepcopy(check_schema.validator().schema)
+        schema["properties"]["type"].pop("not", None)
+        for path, identifier in zip(paths, identifiers):
+            text = share_vehicle(identifier)
+            errors = []
+            check_schema.check_parsed(path, tomllib.loads(text), Draft202012Validator(schema), errors)
+            self.assertEqual(errors, [])
+            self.assertEqual(check_hosts.check_document(path, tomllib.loads(text), {"ksamods": SHARE_TABLE}), [])
+            self.api.files[(path, "abc")] = text
+
+        changes = [check_scope.Change(e["filename"], e["status"], None, e["sha"]) for e in entries]
+        attestation = ownership.ATTESTATION.format(digest=ownership.change_digest(changes))
+        storage = {
+            attestation: json.dumps({
+                "host": "ksamods",
+                "accounts": {f"vehicle/{identifier}": f"u_{identifier}" for identifier in identifiers},
+            }),
+        }
+        for identifier in identifiers:
+            storage[f"owners/vehicle/{identifier}.json"] = json.dumps(
+                {"id": identifier, "type": "vehicle", "account": f"u_{identifier}"}
+            )
+        read = []
+
+        def share_file(table, path, user_agent=None):
+            read.append(path)
+            return storage.get(path)
+
+        listed = []
+        answer = self.api.get
+
+        def get(path, **query):
+            if path == "/pulls/5/files":
+                listed.append(query)
+                return entries
+            return answer(path, **query)
+
+        self.api.get = get
+        checks = [validate.Check("schema", validate.PASS, []).as_dict()]
+        with mock.patch.object(decide, "changed_paths", CHANGED_PATHS), mock.patch.object(
+            ownership, "share_file", share_file
+        ):
+            self.assertEqual(self.act(verdict(checks=checks, documents=paths)), 0)
+
+        self.assertEqual(len(listed), 1)
+        self.assertEqual(read.count(attestation), 1)
+        self.assertEqual(sorted(set(read)), sorted(storage))
+        self.assertEqual([status["state"] for status in self.statuses()], ["pending", "success"])
+        self.assertEqual(self.api.graphql_calls, [{"id": "PR_5"}])
+        comment = [p for _, where, p, _ in self.api.sent if where.endswith("/comments")][0]["body"]
+        self.assertNotIn("Owners of what", comment)
+
+    def test_an_edit_of_a_share_listing_names_no_owner(self):
+        path = "vehicles/MunRover.toml"
+        self.api.files = {(path, "main"): share_vehicle("MunRover"), (path, "abc"): share_vehicle("MunRover")}
+        notes = decide.owner_notes(self.api, pull_request(), [check_scope.Change(path, "modified")], "abc")
+        self.assertEqual(notes, [])
 
 
 if __name__ == "__main__":
