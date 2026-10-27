@@ -24,8 +24,7 @@ spacedock = "https://spacedock.info/mod/4647/KSAero"
 bugtracker = "https://github.com/cairn5/KSAero/issues"
 
 [compatibility]
-game_min = "2026.10.7.5541"
-game_max = "2026.10.7.5541"
+game_min = "2026.10.19.5638"
 
 [loader]
 id = "StarMap"
