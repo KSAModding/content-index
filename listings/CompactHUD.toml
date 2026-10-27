@@ -4,7 +4,8 @@ type = "mod"
 name = "KSA-CompactHUD"
 authors = ["russtm"]
 abstract = "Compacted UI for Kitten Space Agency"
-description = "CompactHUD is a Kitten Space Agency mod that condenses the information from all the UI windows into 2 small ones. This mod doesn't modify/change the existing UI only adds the two windows. Due to the nature of the game and the mod features the existing windows will lose functionality when the mod is enabled but can be disabled during the game. This mod conflicts with mods that control your vehicle but, disabling the mod in the tab on the menu bar should let them work."
+description = """
+CompactHUD is a Kitten Space Agency mod that condenses the information from all the UI windows into 2 small ones. This mod doesn't modify/change the existing UI only adds the two windows. Due to the nature of the game and the mod features the existing windows will lose functionality when the mod is enabled but can be disabled during the game. This mod conflicts with mods that control your vehicle but, disabling the mod in the tab on the menu bar should let them work."""
 license = "MIT"
 tags = ["user-interface"]
 
@@ -23,3 +24,10 @@ game_max = "2026.10.19.5638"
 [loader]
 id = "StarMap"
 min = "0.4.8"
+
+[images.icon]
+url = "https://i.imghos.co/oSbHRidK.jpg"
+sha256 = "3ff32726b9b28cf435195cf96b3ad111b7f8f421c3cac66cddb21cf54fbeda22"
+width = 270
+height = 287
+size = 15248
