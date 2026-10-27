@@ -29,7 +29,7 @@ tags = ["visual"]
 [releases]
 github = "paulo-santana/KSA-KSP-Characters"
 spacedock = 4753
-authority = "github"
+authority = "spacedock"
 
 [links]
 forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/ksp-characters.1474/"
