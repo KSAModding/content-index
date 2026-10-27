@@ -5,7 +5,7 @@ name = "KSA-CompactHUD"
 authors = ["russtm"]
 abstract = "Compacted UI for Kitten Space Agency"
 description = """
-CompactHUD is a Kitten Space Agency mod that condenses the information from all the UI windows into 2 small ones. This mod doesn't modify/change the existing UI only adds the two windows. Due to the nature of the game and the mod features the existing windows will lose functionality when the mod is enabled but can be disabled during the game. This mod conflicts with mods that control your vehicle but, disabling the mod in the tab on the menu bar should let them work."""
+CompactHUD is a Kitten Space Agency mod that condenses the information from all the UI windows into 2 small ones. This mod doesn't modify/change the existing UI only adds the two windows that automatically save their position data. Due to the nature of the game and the mod features the existing windows will lose functionality when the mod is enabled but can be disabled during the game. This mod conflicts with mods that control your vehicle but, disabling the mod in the tab on the menu bar should let them work."""
 license = "MIT"
 tags = ["user-interface"]
 
