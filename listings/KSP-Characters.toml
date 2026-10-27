@@ -29,7 +29,7 @@ tags = ["visual"]
 [releases]
 github = "paulo-santana/KSA-KSP-Characters"
 spacedock = 4753
-authority = "github"
+authority = "spacedock"
 
 [links]
 forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/ksp-characters.1474/"
@@ -39,3 +39,10 @@ bugtracker = "https://github.com/paulo-santana/KSA-KSP-Characters/issues"
 
 [compatibility]
 game_min = "2026.10.19.5638"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/paulo-santana/KSA-KSP-Characters/b2ab2525fa3660e9b628698693b907cab762c08e/listing/icon.png"
+sha256 = "71e50d75fc20b558422819ba6ba2853646854fa0411d1695ed3ffd94ec9ea182"
+width = 512
+height = 512
+size = 242747
