@@ -3,25 +3,26 @@ id = "KSP-Characters"
 type = "mod"
 name = "KSP Characters"
 authors = ["paulo-santana"]
-abstract = "Adds the Kerbal from Kerbal Space Program as a crew character, with KSP's own models, textures and animations."
+abstract = "Adds the Kerbals from Kerbal Space Program as crew characters, with KSP's own models, textures and animations."
 description = """
-Adds the Kerbal from Kerbal Space Program as a playable crew character: body, helmet, visor, the game's own jetpack, and KSP's own animations.
+Adds the Kerbals from Kerbal Space Program as playable crew characters: body, helmet, visor, the game's own jetpack, and KSP's own animations. There are four characters: a male and a female Kerbal, each in KSP's white EVA suit and in an orange one.
 
 Kerbals join the pool the game draws crew from, so new crew members are a random mix of kittens and Kerbals. Saves that already exist keep the characters they have.
 
-It is a data mod: no code and no mod loader.
+It is a data mod: no code and no mod loader. With the optional Character Manager, Kerbals get Kerbal names, and you can choose to recruit only Kerbals.
 
 ## Known limitations
 
 - The jetpack keeps one floating pose whatever the thrust, as in KSP.
 - The face has no expressions or blinking, and the eyes play KSP's own animation instead of following the camera.
 - The seated pose doesn't move.
-- Kerbals get kitten names.
+- Without Character Manager, Kerbals get kitten names.
+- The female Kerbal's hair bun clips through the helmet a little while walking.
 - The walk plays faster than in KSP, because KSA moves crew faster. It is slowed down as far as data alone allows.
 
 ## Credits and legal
 
-The Kerbal's models, textures and animations come from Kerbal Space Program and belong to its rights holders. The jetpack and its textures are Kitten Space Agency's. This is a fan port, not affiliated with or endorsed by either. Only the XML definitions and the documentation are MIT licensed; see LICENSE.
+The Kerbals' models, textures, animations and name lists come from Kerbal Space Program and belong to its rights holders. The jetpack and its textures are Kitten Space Agency's. This is a fan port, not affiliated with or endorsed by either. Only the XML definitions and the documentation are MIT licensed; see LICENSE.
 """
 license = "MIT AND LicenseRef-KSP-Assets AND LicenseRef-KSA-Assets"
 tags = ["visual"]
@@ -39,6 +40,10 @@ bugtracker = "https://github.com/paulo-santana/KSA-KSP-Characters/issues"
 
 [compatibility]
 game_min = "2026.10.19.5638"
+
+[[dependencies]]
+id = "CharacterManager"
+kind = "suggests"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/paulo-santana/KSA-KSP-Characters/b2ab2525fa3660e9b628698693b907cab762c08e/listing/icon.png"
