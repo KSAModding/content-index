@@ -3,21 +3,13 @@ id = "CharacterManager"
 type = "mod"
 name = "Character Manager"
 authors = ["paulo-santana"]
-abstract = "Choose which character mods your crew roster draws from, and give recruits the names their mod provides."
+abstract = "Choose which character mods your crew roster draws from, and give recruits the names and fixed crew their mod provides."
 description = """
-Choose which character mods your crew roster draws from, and give recruits the names their mod provides.
+Choose which character mods your crew roster draws from, and give recruits the names and fixed crew their mod provides.
 
-**It does nothing on its own.** It manages the characters that other mods add, such as KSP Characters. With only the game's own kittens installed, there is nothing to choose between.
+**It does nothing on its own.** It manages the characters that other mods add, such as KSP Characters, and works with any character mod.
 
-## Features
-
-- **Roster Character Models:** one checkbox per mod with characters, including the game's own kittens. New recruits are picked only from the mods you tick.
-- **Names:** if a character's mod comes with a name list, recruits with that character are named from it. With KSP Characters 0.3.0 or later, Kerbals get Kerbal names like "Bob Kerman".
-- **Regenerate unused recruits:** replaces the crew in your current game who have never flown, aren't seated and aren't on EVA, using your choices above.
-
-Open it in game from **View > Mods > Characters**. Your choices are saved for the whole install and apply to crew recruited from then on. Crew you already have keep their model and name. The game's starting crew, Hunter, Banjo and Polaris, are left as they are.
-
-It works with any character mod, even one that knows nothing about Character Manager. Character mod authors can add a `characters.toml` to give their characters display names and a name list; the format is in the README.
+Open it in game from **View > Mods > Characters**. The features, and the format for character mod authors, are in the [README](https://github.com/paulo-santana/KSA-Character-Manager#readme).
 """
 license = "MIT"
 tags = ["gameplay"]
