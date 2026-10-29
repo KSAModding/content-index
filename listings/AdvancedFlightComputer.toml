@@ -251,6 +251,11 @@ id = "KittenExtensionsContinued"
 kind = "recommends"
 min = "0.5.3"
 
+[[dependencies]]
+id = "ModMenu"
+kind = "suggests"
+min = "0.2.3"
+
 [images.icon]
 url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/cb965edca9f65f38008d2f3bef4b83254f9ecf2f/images/listing/icon.png"
 sha256 = "0ceea1543c0c012298a0e79ea302102db099e8d743a869ef75997f970bb0526d"
