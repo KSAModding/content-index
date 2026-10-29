@@ -112,7 +112,6 @@ A host with `data` gives the successor every data file, signature and archive, a
 
 The signing key of a host with `data` is never handed over.
 When the key changes, for a successor or for a new key of the same operator, the new key goes into `key` and the old one moves to `retired_keys` with a steward's pull request, so its signatures can still be checked, and the host signs every current data file again.
-A key that was compromised is removed and does not move to `retired_keys`, because a signature by it no longer proves anything.
 
 For content on a share host, its operator handles takedowns, abuse reports and the privacy of its accounts, under the policy that its table in `hosts.toml` links:
 
