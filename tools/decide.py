@@ -581,11 +581,18 @@ def post_status(api, sha, decision, run_url):
     )
 
 
-def upsert_comment(api, number, body):
-    """One comment per pull request, edited in place, never a second one."""
+def upsert_comment(api, number, body, app_slug):
+    """One comment per pull request, edited in place, never a second one.
+
+    Only a comment by the App of this check, named by `app_slug`, counts.
+    Anyone else can post the marker first, and the App can not edit that
+    comment. Without `app_slug` no comment counts and a new one is posted.
+    Only the first 100 comments are looked at, so on a longer pull request a
+    new comment can be posted on a later run. This loses nothing.
+    """
     existing = None
     for comment in api.get(f"/issues/{number}/comments", per_page=100) or []:
-        if COMMENT_MARKER in (comment.get("body") or ""):
+        if COMMENT_MARKER in (comment.get("body") or "") and _posted_by_app(comment, app_slug):
             existing = comment
             break
 
@@ -1222,7 +1229,7 @@ def act(api, arguments):
             )
 
     post_status(api, arguments.head_sha, decision, arguments.run_url)
-    upsert_comment(api, number, decision.comment)
+    upsert_comment(api, number, decision.comment, arguments.app_slug)
     sync_document_labels(api, number, check_scope.kinds(changes))
 
     if decision.needs_steward:
