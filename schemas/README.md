@@ -218,7 +218,8 @@ A `storage` repository of the KSAModding organization is refused, because the in
 A host names `storage`, with an optional `pages`, or it keeps its archives outside GitHub by [RFC 0104](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0104-share-host-conformance.md) and names `data`, `downloads` and `key`, with an optional `retired_keys`, and never keys of both forms.
 `data` and every prefix in `downloads` are https URLs that end with `/`.
 `key` is the Ed25519 public key that signs the data files, as padded standard base64 of its 44-byte SubjectPublicKeyInfo, so it starts with `MCowBQYDK2VwAyEA`.
-`retired_keys` holds the earlier values of `key` in the same form, and they only check signatures that a check run recorded before. A data file that is read now must carry a signature by `key`.
+`retired_keys` holds the earlier values of `key` in the same form, and they only check signatures that an ownership record on a pull request already holds (rule 30 of [spec/share-host.md](https://github.com/KSAModding/content-manager-design/blob/main/spec/share-host.md)).
+A data file that is read now must carry a signature by `key`.
 
 `tools/check_hosts.py` runs the schema and adds the rules it cannot express: every type in `types` has a size in `max_bytes`, `pages` is the GitHub Pages address of `storage`, `retired_keys` does not list the current `key`, and no key is a point of small order, because under such a key one signature fits every file.
 It reads a key only as text and checks no signature.

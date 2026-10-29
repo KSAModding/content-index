@@ -73,7 +73,7 @@
           "$ref": "#/$defs/ed25519Key"
         },
         "retired_keys": {
-          "description": "Earlier values of key. They only check signatures that a check run recorded before, and never a data file that is read now.",
+          "description": "Earlier values of key. They only check signatures that an ownership record on a pull request already holds, and never a data file that is read now.",
           "type": "array",
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/ed25519Key" }
