@@ -605,22 +605,40 @@ def upsert_comment(api, number, body):
         api.send("PATCH", f"/issues/comments/{existing['id']}", payload)
 
 
-def post_evidence(api, number, comments):
+def _posted_by_app(comment, app_slug):
+    """Whether the bot account of the App with this slug posted the comment.
+
+    The login decides, because only the installation token of the App posts
+    as `<slug>[bot]`. `performed_via_github_app` alone does not, because a
+    person who authorizes the App also posts through it under their own
+    account and can edit that comment later.
+    """
+    if not app_slug:
+        return False
+    user = comment.get("user") or {}
+    login = (user.get("login") or "").casefold()
+    return user.get("type") == "Bot" and login == f"{app_slug}[bot]".casefold()
+
+
+def post_evidence(api, number, comments, app_slug):
     """Post each comment of an ownership record that the pull request does not
     hold yet, and never edit or delete one, so that no later run of the check
     can erase the record.
 
     The marker of each part says whether an earlier run posted it, so a run
-    again posts only what is missing. Only a comment by a bot counts, because
-    the author of the pull request can post the same marker and later edit
-    that comment. Only the first 100 comments are looked at, so on a longer
-    pull request a part can be posted twice, which loses nothing.
+    again posts only what is missing. Only a comment by the App of this check,
+    named by `app_slug`, counts. Anyone else can post the same marker first
+    and edit or delete that comment after the merge, and that includes the
+    bot of a share host, which can be a GitHub App too. Without `app_slug` no
+    comment counts and every part is posted. Only the first 100 comments are
+    looked at, so on a longer pull request a part can be posted twice. Both
+    of these lose nothing.
     """
     existing = api.get(f"/issues/{number}/comments", per_page=100) or []
     posted = [
         comment.get("body") or ""
         for comment in existing
-        if (comment.get("user") or {}).get("type") == "Bot"
+        if _posted_by_app(comment, app_slug)
     ]
     for body in comments:
         marker = body.split("\n", 1)[0]
@@ -1082,6 +1100,9 @@ def parse_arguments(argv):
     parser.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY"))
     parser.add_argument("--run-url", default="")
     parser.add_argument("--record-url", default="", help="this ownership run, which holds the record")
+    parser.add_argument(
+        "--app-slug", default="", help="the App whose token posts the record, from create-github-app-token"
+    )
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
@@ -1174,7 +1195,7 @@ def act(api, arguments):
     if result.evidence is not None:
         # Before auto-merge is armed, so that no proof merges without its record.
         record_evidence(number, result)
-        post_evidence(api, number, evidence_comments(number, result))
+        post_evidence(api, number, evidence_comments(number, result), arguments.app_slug)
         advice.append(EVIDENCE_POSTED)
         if arguments.record_url:
             advice.append(f"[The ownership run]({arguments.record_url})")

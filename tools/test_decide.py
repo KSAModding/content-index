@@ -1267,8 +1267,13 @@ class DecideArguments(unittest.TestCase):
 
     def test_every_argument_the_script_needs_is_passed(self):
         text = self.step()
-        for flag in ("--event", "--head-repository", "--head-branch", "--head-sha", "--record-url"):
+        flags = ("--event", "--head-repository", "--head-branch", "--head-sha", "--record-url", "--app-slug")
+        for flag in flags:
             self.assertIn(flag, text, f"ownership.yml does not pass {flag}")
+
+    def test_the_app_slug_comes_from_the_token_that_posts_the_record(self):
+        self.assertIn("APP_SLUG: ${{ steps.app-token.outputs.app-slug }}", self.step())
+        self.assertIn('--app-slug "$APP_SLUG"', self.step())
 
     def test_nothing_is_interpolated_into_a_shell_here(self):
         """A fork picks its own branch name, and this job holds the App token."""
@@ -1322,6 +1327,7 @@ class Act(unittest.TestCase):
             repository=self.api.repository,
             run_url="",
             record_url=record_url,
+            app_slug=INDEX_APP,
             dry_run=False,
         )
         return decide.act(self.api, arguments)
@@ -2066,6 +2072,8 @@ DATA_TABLE = {
     "types": ["vehicle"],
 }
 RECORD_URL = "https://github.com/KSAModding/content-index/actions/runs/42"
+INDEX_APP = "ksamodding-index"
+INDEX_BOT = {"login": f"{INDEX_APP}[bot]", "type": "Bot"}
 
 
 def fenced_blocks(text):
@@ -2178,12 +2186,46 @@ class DataHostRecord(unittest.TestCase):
         # A part that the author of the pull request posted is not the record.
         api = RecordingApi(
             comments=[
-                {"id": 1, "body": parts[0], "user": {"type": "Bot"}},
-                {"id": 2, "body": parts[1], "user": {"type": "User"}},
+                {"id": 1, "body": parts[0], "user": INDEX_BOT},
+                {"id": 2, "body": parts[1], "user": {"login": "someone", "type": "User"}},
             ]
         )
-        decide.post_evidence(api, 5, parts)
+        decide.post_evidence(api, 5, parts, INDEX_APP)
         self.assertEqual(api.sent, [("POST", "/issues/5/comments", {"body": parts[1]}, None)])
+
+    def test_a_part_that_another_bot_posted_first_is_posted_again(self):
+        """The bot of a share host can be a GitHub App, post the markers first
+        and edit or delete its comments after the merge (rule 30).
+        """
+        text = json.dumps({"host": "ksadata", "accounts": {}, "note": "x" * decide.COMMENT_LIMIT})
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        parts = decide.evidence_comments(5, result)
+        other = {"login": "ksadata[bot]", "type": "Bot"}
+        # A person who authorized the App posts through it under their own account.
+        through_app = {"login": "someone", "type": "User"}
+        api = RecordingApi(
+            comments=[
+                {"id": 1, "body": parts[0], "user": other, "performed_via_github_app": {"slug": "ksadata"}},
+                {"id": 2, "body": parts[1], "user": through_app,
+                 "performed_via_github_app": {"slug": INDEX_APP}},
+                {"id": 3, "body": parts[1], "user": other},
+            ]
+        )
+        decide.post_evidence(api, 5, parts, INDEX_APP)
+        self.assertEqual(
+            api.sent,
+            [("POST", "/issues/5/comments", {"body": part}, None) for part in parts],
+        )
+
+    def test_without_an_app_slug_every_part_is_posted(self):
+        text = json.dumps({"host": "ksadata", "accounts": {}})
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        [part] = decide.evidence_comments(5, result)
+        api = RecordingApi(comments=[{"id": 1, "body": part, "user": INDEX_BOT}])
+        decide.post_evidence(api, 5, [part], "")
+        self.assertEqual(api.sent, [("POST", "/issues/5/comments", {"body": part}, None)])
 
     def test_two_data_hosts_with_the_same_path_read_their_own_file(self):
         other = dict(DATA_TABLE, data="https://data.example.org/")

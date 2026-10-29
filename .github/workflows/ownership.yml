@@ -75,6 +75,8 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           RUN_URL: ${{ github.event.workflow_run.html_url }}
           RECORD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # Only the comments of this App count as an ownership record already posted.
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
         run: |
           set -euo pipefail
           python tools/decide.py \
@@ -85,4 +87,5 @@ jobs:
             --head-sha "$HEAD_SHA" \
             --repository "$REPOSITORY" \
             --run-url "$RUN_URL" \
-            --record-url "$RECORD_URL"
+            --record-url "$RECORD_URL" \
+            --app-slug "$APP_SLUG"
