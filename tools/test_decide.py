@@ -1274,6 +1274,21 @@ class DecideArguments(unittest.TestCase):
         for line in run_block_lines(self.step()):
             self.assertNotIn("${{", line, f"interpolated into a command: {line.strip()}")
 
+    def test_the_verdict_artifact_can_not_replace_the_tools(self):
+        """A pull request can change checks.yml and so put any file into the
+        artifact, so it lands outside the checkout and after the install."""
+        lines = self.step().splitlines()
+        install = next(i for i, line in enumerate(lines) if "pip install" in line)
+        download = next(i for i, line in enumerate(lines) if "actions/download-artifact" in line)
+        self.assertLess(install, download, "the install must run before the download")
+        step = []
+        for line in lines[download + 1 :]:
+            if line.strip().startswith("- ") or not line.strip():
+                break
+            step.append(line.strip())
+        self.assertIn("path: ${{ runner.temp }}/verdict", step)
+        self.assertIn('--verdict "$RUNNER_TEMP/verdict/verdict.json"', self.step())
+
 
 class Act(unittest.TestCase):
     """The whole run, with only the API replaced."""
