@@ -19,15 +19,30 @@ bugtracker = "https://github.com/Restricted117/KSA-CompactHUD/issues"
 
 [compatibility]
 game_min = "2026.10.19.5638"
-game_max = "2026.10.19.5638"
 
 [loader]
 id = "StarMap"
 min = "0.4.8"
 
 [images.icon]
-url = "https://i.imghos.co/oSbHRidK.jpg"
-sha256 = "3ff32726b9b28cf435195cf96b3ad111b7f8f421c3cac66cddb21cf54fbeda22"
+url = "https://github.com/Restricted117/KSA-CompactHUD/blob/master/images/icon.jpg?raw=true"
+sha256 = "c6d5b34a5efa5328c834ad57135a283cf9799e40b3c932536138b6fc2631499a"
 width = 270
 height = 287
-size = 15248
+size = 16848
+
+[[images.description]]
+id = "Horizontal"
+url = "https://github.com/Restricted117/KSA-CompactHUD/blob/master/images/horizontal.png?raw=true"
+sha256 = "d2bcba1ba2c22ad1000b8ea1eaf6a48adc850feff663c2f9dd03315438bae0e6"
+width = 1920
+height = 1008
+size = 946713
+
+[[images.description]]
+id = "Vertical"
+url = "https://github.com/Restricted117/KSA-CompactHUD/blob/master/images/vertical.png?raw=true"
+sha256 = "9b3f395ee22271fb5a2ee9a3271496a82e0bcab6e045bfb516ba4ac20bc2f05e"
+width = 1920
+height = 1008
+size = 439833
