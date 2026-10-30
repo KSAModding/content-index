@@ -5,13 +5,13 @@ id = "KsaChinese"
 type = "mod"
 name = "KSA Chinese / 简体中文"
 authors = ["kuxiaowo", "KsaUiLanguages contributors"]
-abstract = "KSA 5638 简体中文界面、部件名称与提示，支持中英切换。Partial Simplified Chinese UI, part names and tooltips for KSA 5638, with an English / 简体中文 switch."
+abstract = "KSA 5707 简体中文界面、部件名称与提示，支持中英切换。Partial Simplified Chinese UI, part names and tooltips for KSA 5707, with an English / 简体中文 switch."
 description = '''
 作者 / Author: [kuxiaowo](https://github.com/kuxiaowo)
 
 ## 中文
 
-为 **Windows x64 上的 KSA 2026.10.19.5638** 提供简体中文本地化，支持在 **English / 简体中文** 之间切换。
+为 **Windows x64 上的 KSA 2026.10.25.5707** 提供简体中文本地化，支持在 **English / 简体中文** 之间切换。
 
 - 翻译已支持的界面、部件与物质名称、提示，以及部分更新记录。
 - 包含独立命名的 Noto Sans SC 字体子集；语言选择按游戏档案保存，Borea 各实例互不影响。
@@ -26,7 +26,7 @@ description = '''
 
 ## English
 
-Partial Simplified Chinese localization for **KSA 2026.10.19.5638 on Windows x64**, with an **English / 简体中文** switch.
+Partial Simplified Chinese localization for **KSA 2026.10.25.5707 on Windows x64**, with an **English / 简体中文** switch.
 
 - Translates supported UI, part and substance captions, tooltips and selected version history.
 - Includes a renamed Noto Sans SC font subset.
@@ -68,8 +68,8 @@ bugtracker = "https://github.com/kuxiaowo/KSA-CHINESE/issues"
 documentation = "https://github.com/kuxiaowo/KSA-CHINESE/blob/main/README-%E7%94%9F%E6%80%81%E5%AE%89%E8%A3%85.md"
 
 [compatibility]
-game_min = "2026.10.19.5638"
-game_max = "2026.10.19.5638"
+game_min = "2026.10.25.5707"
+game_max = "2026.10.25.5707"
 os = ["windows"]
 
 [loader]
