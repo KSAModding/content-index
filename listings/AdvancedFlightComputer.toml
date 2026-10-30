@@ -103,7 +103,7 @@ Execute a planned burn with RCS thrusters only, no main engine. Useful for small
 
 Activates the next sequence whenever the active engines run out of propellant, and drops burnt-out boosters while the rest of the stage keeps firing. Works during auto-burns (continues the burn instead of aborting) and manual burns. Formerly the separate AutoStage mod; remove that mod when you install this version, because two stagers on one burnout would activate two sequences. The settings written by AutoStage are imported on the first load.
 
-- **AUTOSTAGE toggle button** on the EngineControl gauge panel, in the free slot under RCS. The switch belongs to the vehicle, so an armed craft keeps staging when you control another one. The same switch is available on the Mods settings page for installs without KittenExtensions.
+- **AUTOSTAGE toggle button** on the EngineControl gauge panel, in the free slot under RCS. The switch belongs to the vehicle, so an armed craft keeps staging when you control another one. The same switch is available on the Mods settings page for installs without KittenExtensions Continued.
 - **Control-module guard** - a sequence that would separate the last control module is never staged automatically; stage it by hand if that is what you want.
 - **Auto-burn continuation** - keeps the burn mode at Auto through staging so planned burns do not abort.
 - **Cascade staging** - stages again if the next stage is empty or only has decouplers.
@@ -154,7 +154,7 @@ The stock Transfer Planner filters out bodies with eccentricity >= 1. This mod l
 [![Watch the PoweredGuidance demo](ksa-image:twin-boosters)](https://youtu.be/hSUcV6tx3oY)
 
 Closed-loop guidance that flies the vehicle for you, originally the [PoweredGuidance](https://github.com/cairn5/PoweredGuidance) mod by cairn5, see Credits.
-Open the **AFC Guidance** menu in the top bar, switch **Enabled** on and open the panel with **Show panel**. EXECUTE, ABORT and RETARGET act on the selected tab.
+Open the **AFC Guidance** menu in the top bar (with [ModMenu](https://github.com/MrJeranimo/ModMenu): **Mods > AFC Guidance**), check that **Enabled** is on and open the panel with **Show panel**. EXECUTE, ABORT and RETARGET act on the selected tab.
 
 - **Ascent** flies UPFG, the Space Shuttle's ascent guidance, to a target periapsis, apoapsis, inclination and LAN, optionally holding the argument of periapsis too and otherwise inserting wherever the burn costs least dV, with an optional launch window, g-limit and booster reserve. Launching to a target vehicle flies a co-elliptic chase orbit below it. Staging goes through automatic staging, and a stage that separates with a command pod can get its own landing site.
 - **Boostback** flies a separated booster back toward its landing site with a settling burn, a flip, the boostback burn and an entry attitude, against an impact prediction through the atmosphere.
@@ -169,9 +169,9 @@ The native solvers `clarabel_c.dll` and `scs.dll` ship with the mod. See the [gu
 
 ## Installation
 
-1. Install [StarMap](https://github.com/StarMapLoader/StarMap) and [KittenExtensions](https://github.com/tsholmes/KittenExtensions) (the latter is only required for hyperbolic targets and the AUTOSTAGE gauge button).
+1. Install [StarMap](https://github.com/StarMapLoader/StarMap) and [KittenExtensions Continued](https://github.com/AMPW-german/KittenExtensions) (the latter is only required for hyperbolic targets and the AUTOSTAGE gauge button).
 2. Download the latest release from the [Releases](https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/releases) tab.
-3. Extract into `Documents\My Games\Kitten Space Agency\mods\AdvancedFlightComputer\`.
+3. Extract the zip into `Documents\My Games\Kitten Space Agency\mods\`. It already contains the `AdvancedFlightComputer` folder.
 4. The game auto-discovers new mods and prompts you to enable them. Alternatively, add to `Documents\My Games\Kitten Space Agency\manifest.toml`:
 
 ```toml
@@ -183,7 +183,7 @@ enabled = true
 ## Dependencies
 
 - [StarMap](https://github.com/StarMapLoader/StarMap): Mod loader, required at runtime (see Installation). Tested version 0.4.6.
-- [KittenExtensions](https://github.com/tsholmes/KittenExtensions): Optional, required at runtime for the hyperbolic-targets and AUTOSTAGE button XML patches. Tested version v0.4.0.
+- [KittenExtensions Continued](https://github.com/AMPW-german/KittenExtensions): Optional, required at runtime for the hyperbolic-targets and AUTOSTAGE button XML patches. Tested version v0.5.3. The original KittenExtensions does not load on KSA 2026.10.19.5638 and later, so remove it before you install the continued version.
 
 ## Build dependencies
 
@@ -197,6 +197,7 @@ The native guidance solvers are built from the vendored sources with Rust and Zi
 ## Mod compatibility
 
 - [AutoStage](https://github.com/Maximilian-Nesslauer/KSA-AutoStage), [AutoRemoveFinishedBurns](https://github.com/Maximilian-Nesslauer/KSA-AutoRemoveFinishedBurns) and [PoweredGuidance](https://github.com/cairn5/PoweredGuidance) are now part of this mod. Delete their folders under `mods`, because a disabled mod still applies its XML patches.
+- [ModMenu](https://github.com/MrJeranimo/ModMenu) 0.2.3 or later is optional. With it, the AFC Guidance menu is under **Mods**.
 - Known conflicts: none
 
 ## Credits
@@ -239,11 +240,21 @@ bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer
 discussions = "https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/discussions"
 
 [compatibility]
-game_min = "2026.10.19.5638"
+game_min = "2026.10.25.5707"
 
 [loader]
 id = "StarMap"
 min = "0.4.5"
+
+[[dependencies]]
+id = "KittenExtensionsContinued"
+kind = "recommends"
+min = "0.5.3"
+
+[[dependencies]]
+id = "ModMenu"
+kind = "suggests"
+min = "0.2.3"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/cb965edca9f65f38008d2f3bef4b83254f9ecf2f/images/listing/icon.png"

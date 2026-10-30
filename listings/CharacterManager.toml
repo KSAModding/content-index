@@ -1,0 +1,33 @@
+spec_version = 1
+id = "CharacterManager"
+type = "mod"
+name = "Character Manager"
+authors = ["paulo-santana"]
+abstract = "Choose which character mods your crew roster draws from, and give recruits the names and fixed crew their mod provides."
+description = """
+Choose which character mods your crew roster draws from, and give recruits the names and fixed crew their mod provides.
+
+**It does nothing on its own.** It manages the characters that other mods add, such as KSP Characters, and works with any character mod.
+
+Open it in game from **View > Mods > Characters**. The features, and the format for character mod authors, are in the [README](https://github.com/paulo-santana/KSA-Character-Manager#readme).
+"""
+license = "MIT"
+tags = ["gameplay"]
+
+[releases]
+github = "paulo-santana/KSA-Character-Manager"
+spacedock = 4757
+authority = "spacedock"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/character-manager.1479/"
+repository = "https://github.com/paulo-santana/KSA-Character-Manager"
+spacedock = "https://spacedock.info/mod/4757/Character%20Manager"
+bugtracker = "https://github.com/paulo-santana/KSA-Character-Manager/issues"
+
+[compatibility]
+game_min = "2026.10.19.5638"
+
+[loader]
+id = "StarMap"
+min = "0.4.5"

@@ -1,0 +1,44 @@
+spec_version = 1
+id = "KSP-Characters"
+type = "mod"
+name = "KSP Characters"
+authors = ["paulo-santana"]
+abstract = "Adds the Kerbals from Kerbal Space Program as crew characters, with KSP's own models, textures and animations."
+description = """
+Adds the Kerbals from Kerbal Space Program as crew characters in KSA, with KSP's own models, textures and animations: male and female, in KSP's white and orange suits. New crew are a random mix of kittens and Kerbals.
+
+It is a data mod: no code and no mod loader. With the optional Character Manager, Kerbals get Kerbal names, and Jeb, Bill, Bob and Val join every new game.
+
+What it includes and its known limitations are in the [README](https://github.com/paulo-santana/KSA-KSP-Characters#readme).
+
+## Credits and legal
+
+The Kerbals' models, textures, animations and name lists come from Kerbal Space Program and belong to its rights holders. The jetpack and its textures are Kitten Space Agency's. This is a fan port, not affiliated with or endorsed by either. Only the XML definitions and the documentation are MIT licensed; see LICENSE.
+"""
+license = "MIT AND LicenseRef-KSP-Assets AND LicenseRef-KSA-Assets"
+tags = ["visual"]
+
+[releases]
+github = "paulo-santana/KSA-KSP-Characters"
+spacedock = 4753
+authority = "spacedock"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/ksp-characters.1474/"
+repository = "https://github.com/paulo-santana/KSA-KSP-Characters"
+spacedock = "https://spacedock.info/mod/4753/KSP%20Characters"
+bugtracker = "https://github.com/paulo-santana/KSA-KSP-Characters/issues"
+
+[compatibility]
+game_min = "2026.10.19.5638"
+
+[[dependencies]]
+id = "CharacterManager"
+kind = "suggests"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/paulo-santana/KSA-KSP-Characters/b2ab2525fa3660e9b628698693b907cab762c08e/listing/icon.png"
+sha256 = "71e50d75fc20b558422819ba6ba2853646854fa0411d1695ed3ffd94ec9ea182"
+width = 512
+height = 512
+size = 242747

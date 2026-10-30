@@ -89,7 +89,7 @@ spacedock = "https://spacedock.info/mod/4319/MeasureTools"
 bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-MeasureTools/issues"
 
 [compatibility]
-game_min = "2026.10.19.5638"
+game_min = "2026.10.25.5707"
 
 [loader]
 id = "StarMap"
