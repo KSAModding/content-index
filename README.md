@@ -11,7 +11,8 @@ Design discussion belongs there, not here.
 
 ## Clients do not read this repository
 
-A client fetches one snapshot artifact, which merges both halves of the index plus the game release list into a single document:
+A client fetches the snapshot, which merges both halves of the index plus the game release list.
+It is the main document below plus the files that [Fetching it](https://github.com/KSAModding/content-manager-design/blob/main/spec/snapshot.md#fetching-it) in the snapshot specification names:
 
 ```text
 https://ksamodding.github.io/content-index-releases/v1/index.json
@@ -22,7 +23,7 @@ https://ksamodding.github.io/content-index-releases/v1/index.json
 | Path | Contents |
 |---|---|
 | `listings/<id>.toml` | One authored document per mod or mod loader. |
-| `vehicles/<id>.toml` | One authored document per vehicle, per [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md). The schema refuses it until [#210](https://github.com/KSAModding/content-index/issues/210) lifts the rollout gate. |
+| `vehicles/<id>.toml` | One authored document per vehicle, per [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md). |
 | `saves/<id>.toml` | One authored document per save, per RFC 0085. The schema refuses it until [#210](https://github.com/KSAModding/content-index/issues/210) lifts the rollout gate. |
 | `packs/<id>/<version>.toml` | One authored document per mod pack version. |
 | `packs/<id>/owner.json` | The GitHub account that owns a pack id, recorded by its first claim. |
@@ -41,6 +42,7 @@ https://ksamodding.github.io/content-index-releases/v1/index.json
 ## Getting listed
 
 Write your authored document per RFC 0031, or let the [listing page](https://ksamodding.github.io/content-index/) write it, and open a pull request that adds it. One pull request can carry several documents.
+A mod, a mod loader, a pack and a vehicle can be listed, and a vehicle also follows RFC 0085, see [Listing a vehicle](CONTRIBUTING.md#listing-a-vehicle).
 
 Checks validate it, a further check verifies that you control the release host the listing points at, and when everything is green the pull request merges itself.
 
