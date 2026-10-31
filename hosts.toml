@@ -44,7 +44,7 @@ data = "https://ksamods-share.fsn1.your-objectstorage.com/"
 downloads = ["https://ksamods.gg/share/files/", "https://ksamods-share.fsn1.your-objectstorage.com/archives/"]
 key = "MCowBQYDK2VwAyEAaCX9EfN/soDON+IExBZkzV2di0uBZagD+kqVctDwxaY="
 retired_keys = []
-bot = 347480000
+bot = 314655007
 api = "https://ksamods.gg/api/share/v1/"
 types = ["vehicle", "save"]
 max_bytes = { vehicle = 10485760, save = 104857600 }
