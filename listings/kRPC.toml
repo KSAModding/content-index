@@ -45,6 +45,9 @@ kRPC for KSA is experimental, and its API may change between releases.
 license = "LGPL-3.0-or-later"
 tags = ["tools"]
 
+[install]
+manages = ["settings.toml"]
+
 [releases]
 github = "krpc/krpc"
 tag_prefix = "ksa-v"
