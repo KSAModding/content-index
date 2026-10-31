@@ -595,38 +595,92 @@ class Agreement(unittest.TestCase):
 class Comment(unittest.TestCase):
     def test_the_first_run_creates_one(self):
         api = RecordingApi()
-        decide.upsert_comment(api, 5, "Something to say")
+        decide.upsert_comment(api, 5, "Something to say", INDEX_APP)
         methods = [(method, path) for method, path, _, _ in api.sent]
         self.assertEqual(methods, [("POST", "/issues/5/comments")])
         self.assertIn(decide.COMMENT_MARKER, api.sent[0][2]["body"])
 
     def test_a_later_run_edits_the_same_one(self):
-        api = RecordingApi(comments=[{"id": 9, "body": f"{decide.COMMENT_MARKER}\nold"}])
-        decide.upsert_comment(api, 5, "new")
+        api = RecordingApi(
+            comments=[{"id": 9, "body": f"{decide.COMMENT_MARKER}\nold", "user": INDEX_BOT}]
+        )
+        decide.upsert_comment(api, 5, "new", INDEX_APP)
         self.assertEqual([m for m, _, _, _ in api.sent], ["PATCH"])
         self.assertIn("/issues/comments/9", api.sent[0][1])
 
     def test_an_unchanged_comment_is_left_alone(self):
         body = f"{decide.COMMENT_MARKER}\nsame"
-        api = RecordingApi(comments=[{"id": 9, "body": body}])
-        decide.upsert_comment(api, 5, "same")
+        api = RecordingApi(comments=[{"id": 9, "body": body, "user": INDEX_BOT}])
+        decide.upsert_comment(api, 5, "same", INDEX_APP)
         self.assertEqual(api.sent, [])
 
     def test_nothing_to_say_and_nothing_there_posts_nothing(self):
         api = RecordingApi()
-        decide.upsert_comment(api, 5, None)
+        decide.upsert_comment(api, 5, None, INDEX_APP)
         self.assertEqual(api.sent, [])
 
     def test_nothing_to_say_resolves_a_comment_that_is_there(self):
-        api = RecordingApi(comments=[{"id": 9, "body": f"{decide.COMMENT_MARKER}\nrejected"}])
-        decide.upsert_comment(api, 5, None)
+        api = RecordingApi(
+            comments=[{"id": 9, "body": f"{decide.COMMENT_MARKER}\nrejected", "user": INDEX_BOT}]
+        )
+        decide.upsert_comment(api, 5, None, INDEX_APP)
         self.assertEqual([m for m, _, _, _ in api.sent], ["PATCH"])
         self.assertIn("ownership verified", api.sent[0][2]["body"])
 
     def test_a_foreign_comment_is_not_touched(self):
         api = RecordingApi(comments=[{"id": 9, "body": "a human said something"}])
-        decide.upsert_comment(api, 5, "mine")
+        decide.upsert_comment(api, 5, "mine", INDEX_APP)
         self.assertEqual([m for m, _, _, _ in api.sent], ["POST"])
+
+    def test_a_comment_with_the_marker_by_someone_else_is_ignored(self):
+        """The App can not edit it, so an edit would fail with 403."""
+        stranger = {"login": "someone", "type": "User"}
+        other_bot = {"login": "ksadata[bot]", "type": "Bot"}
+        api = RecordingApi(
+            comments=[
+                {"id": 8, "body": f"{decide.COMMENT_MARKER}\nfake", "user": stranger},
+                {"id": 7, "body": f"{decide.COMMENT_MARKER}\nfake", "user": other_bot},
+            ]
+        )
+        decide.upsert_comment(api, 5, "mine", INDEX_APP)
+        self.assertEqual(
+            api.sent,
+            [("POST", "/issues/5/comments", {"body": f"{decide.COMMENT_MARKER}\nmine"}, None)],
+        )
+
+    def test_a_second_run_edits_the_comment_that_the_first_run_posted(self):
+        api = RecordingApi(
+            comments=[
+                {"id": 8, "body": f"{decide.COMMENT_MARKER}\nfake", "user": {"login": "someone", "type": "User"}}
+            ]
+        )
+        decide.upsert_comment(api, 5, "first", INDEX_APP)
+        [(_, _, posted, _)] = api.sent
+        api.sent.clear()
+        api.comments.append({"id": 9, "body": posted["body"], "user": INDEX_BOT})
+        decide.upsert_comment(api, 5, "second", INDEX_APP)
+        self.assertEqual(
+            api.sent,
+            [("PATCH", "/issues/comments/9", {"body": f"{decide.COMMENT_MARKER}\nsecond"}, None)],
+        )
+
+    def test_without_an_app_slug_no_comment_counts(self):
+        api = RecordingApi(
+            comments=[{"id": 9, "body": f"{decide.COMMENT_MARKER}\nold", "user": INDEX_BOT}]
+        )
+        decide.upsert_comment(api, 5, "new", "")
+        self.assertEqual(
+            api.sent,
+            [("POST", "/issues/5/comments", {"body": f"{decide.COMMENT_MARKER}\nnew"}, None)],
+        )
+
+    def test_nothing_to_say_leaves_a_comment_of_someone_else_alone(self):
+        stranger = {"login": "someone", "type": "User"}
+        api = RecordingApi(
+            comments=[{"id": 8, "body": f"{decide.COMMENT_MARKER}\nfake", "user": stranger}]
+        )
+        decide.upsert_comment(api, 5, None, INDEX_APP)
+        self.assertEqual(api.sent, [])
 
 
 class MissingLabelApi(RecordingApi):
