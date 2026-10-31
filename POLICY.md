@@ -119,7 +119,7 @@ When the key changes, for a successor or for a new key of the same operator, the
 
 For content on a share host, its operator handles takedowns, abuse reports and the privacy of its accounts, under the policy that its table in `hosts.toml` links:
 
-- No share host is registered yet.
+- [ksamods.gg](https://ksamods.gg/policy), the host in the table `[ksamods]`.
 
 A takedown on a host with storage deletes the release in its storage repository.
 A takedown on a host with `data` makes the `url` of the archive answer `410 Gone`, and the host signs the changed release list again.
