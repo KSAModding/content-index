@@ -1,0 +1,99 @@
+spec_version = 1
+id = "purr2d2"
+type = "mod"
+name = "purr2d2"
+authors = ["Alex", "tomservo"]
+abstract = "BFL9K and The Furce at your fingertips"
+description = """
+A Kitten Spacy Agency mod to add:
+
+- BFL9K (Big Fucking Laser 9000)
+- The Furce
+
+# media
+
+![bfl9k_01](ksa-image:bfl9k_01)
+
+![bfl9k_02](ksa-image:bfl9k_02)
+
+![bfl9k_03](ksa-image:bfl9k_03)
+
+![blf9k_04](ksa-image:blf9k_04)
+
+![slicing_01](ksa-image:slicing_01)
+
+![the_furce_01](ksa-image:the_furce_01)
+"""
+license = "MIT"
+tags = ["gameplay"]
+
+[releases]
+github = "meow-sci/purr2d2"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/purr2d2n-release.1500/"
+homepage = "https://github.com/meow-sci/purr2d2"
+repository = "https://github.com/meow-sci/purr2d2"
+bugtracker = "https://github.com/meow-sci/purr2d2/issues"
+
+[compatibility]
+game_min = "2026.10.25.5707"
+
+[loader]
+id = "StarMap"
+min = "0.4.8"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/meow-sci/purr2d2/5847385922fbe5b80fdd0df406d57d22d86bc61e/docs/media/borea_icon.webp"
+sha256 = "b420817878c415b424fe1c573f1400e6882db43606888b0cd68737c9ed8a4f10"
+width = 1024
+height = 1024
+size = 102268
+
+[[images.description]]
+id = "bfl9k_01"
+url = "https://raw.githubusercontent.com/meow-sci/purr2d2/bd3afea087e22c0f0e92e551a098007f5c68136b/docs/media/bfl9k_01.webp"
+sha256 = "4d3fcc65100a0f88a5d8633f9c97e12e60ecc5c0feedaa20abfd647f83eb4723"
+width = 1920
+height = 1080
+size = 306852
+
+[[images.description]]
+id = "bfl9k_02"
+url = "https://raw.githubusercontent.com/meow-sci/purr2d2/bd3afea087e22c0f0e92e551a098007f5c68136b/docs/media/bfl9k_02.webp"
+sha256 = "421e9a2fd399579ef054afb175751d81261eed6ef760e19a9cb0341038102c76"
+width = 1920
+height = 1080
+size = 142936
+
+[[images.description]]
+id = "bfl9k_03"
+url = "https://raw.githubusercontent.com/meow-sci/purr2d2/bd3afea087e22c0f0e92e551a098007f5c68136b/docs/media/bfl9k_03.webp"
+sha256 = "14b7e13299a0bab5477e3360d355fd34392263ff1410a131a7ae5d55607f8054"
+width = 1920
+height = 1080
+size = 314434
+
+[[images.description]]
+id = "blf9k_04"
+url = "https://raw.githubusercontent.com/meow-sci/purr2d2/bd3afea087e22c0f0e92e551a098007f5c68136b/docs/media/blf9k_04.webp"
+sha256 = "195e89ed005661d9cc283892d20733eafecd1c70bf94579afe0312ff18119c68"
+width = 1920
+height = 1080
+size = 257752
+
+[[images.description]]
+id = "slicing_01"
+url = "https://raw.githubusercontent.com/meow-sci/purr2d2/bd3afea087e22c0f0e92e551a098007f5c68136b/docs/media/slicing_01.webp"
+sha256 = "8c5b42eebf90495aaacc017a4f8fe57055cba8bf43139411aa661836c30fb1c6"
+width = 1920
+height = 1080
+size = 528678
+
+[[images.description]]
+id = "the_furce_01"
+url = "https://raw.githubusercontent.com/meow-sci/purr2d2/bd3afea087e22c0f0e92e551a098007f5c68136b/docs/media/the_furce_01.webp"
+sha256 = "3f985fbaed6f3a3157d5243f16dce1bd08bc96ec5ce346b4f688e7dc9a0036be"
+width = 1920
+height = 1080
+size = 680866
