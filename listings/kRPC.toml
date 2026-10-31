@@ -67,8 +67,8 @@ id = "StarMap"
 min = "0.4.8"
 
 [images.icon]
-url = "https://raw.githubusercontent.com/krpc/krpc/eaee3dc9a53c2282bfe2695e5086d2b3734bcec0/media/logo-mark.png"
-sha256 = "411a2d880db0d16faff0c0551030e22de05f716160d35c59d1f1770c4a937cca"
+url = "https://raw.githubusercontent.com/krpc/krpc/3d27cc71b2bfe9826db93958b6dd491aab71ca01/media/logo-square.png"
+sha256 = "86b07fffb26ae694f354ce163caed947e12ee4e5f32c9e76cdb084ba2bfb6c41"
 width = 512
 height = 512
-size = 23861
+size = 20648
