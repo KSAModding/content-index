@@ -1,0 +1,71 @@
+spec_version = 1
+id = "kRPC"
+type = "mod"
+name = "kRPC"
+authors = ["djungelorm"]
+abstract = "Control the game from your own scripts, written in Python, C#, C++, C, Java, Lua and more."
+description = """
+kRPC lets you control Kitten Space Agency from scripts running outside the game. A server mod inside the game exposes the game's API, and your scripts call it over a network connection, from the same computer or another one.
+
+This Python script launches a rocket straight up, and cuts the engine at 10 km:
+
+```python
+import krpc
+
+conn = krpc.connect(name="Launch")
+vehicle = conn.ksa.launch_vehicle("Rocket", "CCSFS LC-39A")
+flight = vehicle.flight
+
+vehicle.auto_pilot.target_pitch_and_heading(90, 90)
+vehicle.auto_pilot.engage()
+vehicle.control.throttle = 1
+vehicle.control.activate_next_sequence()
+vehicle.control.engine_on = True
+
+event = conn.add_event(lambda: flight.mean_altitude > 10000)
+with event.condition:
+    event.wait()
+vehicle.control.engine_on = False
+```
+
+**Features**
+
+- Client libraries for Python, C#, C++, C, Java and Lua, the same ones kRPC uses for Kerbal Space Program
+- A gRPC server, to generate a client for many other languages
+- APIs covering vehicles, parts, engines, crew, flight data, orbits, burns, reference frames, auto-pilot, and more
+- Streams and events, for efficient telemetry and waiting
+- Server side functions that run your code inside the game
+- APIs for saving and loading, the camera, on-screen messages, and drawing lines and user interface windows in the game
+
+kRPC for KSA is experimental, and its API may change between releases.
+
+- [Documentation](https://krpc.github.io/krpc/experimental/ksa/)
+- [Source](https://github.com/krpc/krpc)
+- [Issues](https://github.com/krpc/krpc/issues)"""
+license = "LGPL-3.0-or-later"
+tags = ["tools"]
+
+[releases]
+github = "krpc/krpc"
+tag_prefix = "ksa-v"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/krpc-v0-1-0-control-ksa-with-scripts-in-python-c-c-c-java-lua-and-more.1462/"
+homepage = "https://krpc.github.io/krpc/experimental/ksa/index.html"
+repository = "https://github.com/krpc/krpc"
+spacedock = "https://spacedock.info/mod/4747/kRPC"
+bugtracker = "https://github.com/krpc/krpc/issues"
+
+[compatibility]
+game_min = "2026.10.25.5707"
+
+[loader]
+id = "StarMap"
+min = "0.4.8"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/krpc/krpc/eaee3dc9a53c2282bfe2695e5086d2b3734bcec0/media/logo-mark.png"
+sha256 = "411a2d880db0d16faff0c0551030e22de05f716160d35c59d1f1770c4a937cca"
+width = 512
+height = 512
+size = 23861
