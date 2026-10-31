@@ -1,0 +1,14 @@
+spec_version = 1
+id = "superheavy33"
+type = "vehicle"
+name = "Superheavy booster engine layout - Stock"
+authors = ["elevatorctln"]
+abstract = "A configuration of tanks and engines that mimick the layout of the Super Heavy booster in real life."
+description = "Not a full rocket and certainly not a recreation of Supeheavy. it is just tanks configured to support 33 engines symmetrically in the same layout as Superheavy, with the stock LR-91 Sea engines installed. Scale is mostly accurate, it's like 10m wide or something."
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/superheavy33"
+
+[releases]
+ksamods = "superheavy33"
