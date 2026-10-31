@@ -17,3 +17,22 @@
 # max_bytes = { vehicle = 10485760, save = 104857600 }
 # new_listings_per_day = 5
 # policy = "https://example.org/policy"
+#
+# A host that keeps its archives and data files outside GitHub (RFC 0104)
+# names data, downloads and key instead of storage and pages. key is the
+# Ed25519 public key that signs every data file, as base64 of its
+# SubjectPublicKeyInfo, and retired_keys keeps its earlier values:
+#
+# [example-cdn]
+# kind = "share"
+# name = "example.net"
+# data = "https://data.example.net/share/"
+# downloads = ["https://files.example.net/"]
+# key = "MCowBQYDK2VwAyEAAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+# retired_keys = []
+# bot = 98765433
+# api = "https://example.net/api/share/v1/"
+# types = ["vehicle", "save"]
+# max_bytes = { vehicle = 10485760, save = 104857600 }
+# new_listings_per_day = 5
+# policy = "https://example.net/policy"

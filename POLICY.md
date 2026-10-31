@@ -104,13 +104,22 @@ A mention subscribes the owner to that one pull request, and they can unsubscrib
 ## Content on a share host
 
 A share host lets a player publish a vehicle or a save without a GitHub repository of their own, per [RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md).
-The stewards register each share host in [`hosts.toml`](hosts.toml), and its operator agrees at registration to transfer its storage repository to a successor the stewards name when it stops operating.
+The stewards register each share host in [`hosts.toml`](hosts.toml).
+A host keeps its files in a GitHub storage repository, or on its own servers under a `data` base URL with every data file signed by its Ed25519 `key`, per [RFC 0104](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0104-share-host-conformance.md).
+At registration its operator agrees to hand over to a successor the stewards name when it stops operating.
+A host with storage transfers that repository.
+A host with `data` gives the successor every data file, signature and archive, and transfers the domains of `data` and `downloads` or keeps them redirecting to the successor's copies for at least one year.
+
+The signing key of a host with `data` is never handed over.
+When the key changes, for a successor or for a new key of the same operator, the new key goes into `key` and the old one moves to `retired_keys` with a steward's pull request, so its signatures can still be checked, and the host signs every current data file again.
 
 For content on a share host, its operator handles takedowns, abuse reports and the privacy of its accounts, under the policy that its table in `hosts.toml` links:
 
 - No share host is registered yet.
 
-A takedown on the host deletes the release in its storage repository, and the watcher then marks the release gone.
+A takedown on a host with storage deletes the release in its storage repository.
+A takedown on a host with `data` makes the `url` of the archive answer `410 Gone`, and the host signs the changed release list again.
+In both cases the watcher then marks the release gone.
 The index still owns its listing states, so a steward can delist content on a share host through `index-status.toml` as for any other listing, which is the faster path for content that must go at once.
 
 An id dispute between two accounts of one share host is settled by the first upload of that id on the host, which the records of the host show.

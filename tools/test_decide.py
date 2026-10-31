@@ -3,6 +3,7 @@
 """Tests for what the privileged half does about a verdict. No token, no network."""
 
 import copy
+import hashlib
 import json
 import re
 import sys
@@ -1266,13 +1267,33 @@ class DecideArguments(unittest.TestCase):
 
     def test_every_argument_the_script_needs_is_passed(self):
         text = self.step()
-        for flag in ("--event", "--head-repository", "--head-branch", "--head-sha"):
+        flags = ("--event", "--head-repository", "--head-branch", "--head-sha", "--record-url", "--app-slug")
+        for flag in flags:
             self.assertIn(flag, text, f"ownership.yml does not pass {flag}")
+
+    def test_the_app_slug_comes_from_the_token_that_posts_the_record(self):
+        self.assertIn("APP_SLUG: ${{ steps.app-token.outputs.app-slug }}", self.step())
+        self.assertIn('--app-slug "$APP_SLUG"', self.step())
 
     def test_nothing_is_interpolated_into_a_shell_here(self):
         """A fork picks its own branch name, and this job holds the App token."""
         for line in run_block_lines(self.step()):
             self.assertNotIn("${{", line, f"interpolated into a command: {line.strip()}")
+
+    def test_the_verdict_artifact_can_not_replace_the_tools(self):
+        """A pull request can change checks.yml and so put any file into the
+        artifact, so it lands outside the checkout and after the install."""
+        lines = self.step().splitlines()
+        install = next(i for i, line in enumerate(lines) if "pip install" in line)
+        download = next(i for i, line in enumerate(lines) if "actions/download-artifact" in line)
+        self.assertLess(install, download, "the install must run before the download")
+        step = []
+        for line in lines[download + 1 :]:
+            if line.strip().startswith("- ") or not line.strip():
+                break
+            step.append(line.strip())
+        self.assertIn("path: ${{ runner.temp }}/verdict", step)
+        self.assertIn('--verdict "$RUNNER_TEMP/verdict/verdict.json"', self.step())
 
 
 class Act(unittest.TestCase):
@@ -1292,7 +1313,7 @@ class Act(unittest.TestCase):
         patch.start()
         self.addCleanup(patch.stop)
 
-    def act(self, document=None, write=True, event="pull_request"):
+    def act(self, document=None, write=True, event="pull_request", record_url=""):
         path = self.root / "verdict.json"
         if write:
             path.write_text(json.dumps(document if document is not None else verdict()),
@@ -1305,6 +1326,8 @@ class Act(unittest.TestCase):
             head_sha="abc",
             repository=self.api.repository,
             run_url="",
+            record_url=record_url,
+            app_slug=INDEX_APP,
             dry_run=False,
         )
         return decide.act(self.api, arguments)
@@ -2037,6 +2060,189 @@ class ShareHostPullRequests(unittest.TestCase):
         self.api.files = {(path, "main"): share_vehicle("MunRover"), (path, "abc"): share_vehicle("MunRover")}
         notes = decide.owner_notes(self.api, pull_request(), [check_scope.Change(path, "modified")], "abc")
         self.assertEqual(notes, [])
+
+
+DATA_KEY = "MCowBQYDK2VwAyEA" + "A" * 43 + "="
+DATA_TABLE = {
+    "kind": "share",
+    "data": "https://data.example.net/",
+    "downloads": ["https://files.example.net/"],
+    "key": DATA_KEY,
+    "bot": SHARE_BOT,
+    "types": ["vehicle"],
+}
+RECORD_URL = "https://github.com/KSAModding/content-index/actions/runs/42"
+INDEX_APP = "ksamodding-index"
+INDEX_BOT = {"login": f"{INDEX_APP}[bot]", "type": "Bot"}
+
+
+def fenced_blocks(text):
+    """The text of every code block in Markdown, read the way CommonMark closes a fence."""
+    blocks, lines, fence = [], [], None
+    for line in text.split("\n"):
+        if fence is None:
+            opened = re.match(r"(`{3,})", line)
+            if opened:
+                fence, lines = opened.group(1), []
+        elif re.fullmatch(f"{fence}`*", line):
+            blocks.append("\n".join(lines) + "\n")
+            fence = None
+        else:
+            lines.append(line)
+    return blocks
+
+
+class DataHostRecord(unittest.TestCase):
+    """A verified proof from a host with `data` leaves its attestation on the
+    pull request (RFC 0104, rule 30).
+    """
+
+    act = Act.act
+    statuses = Act.statuses
+
+    def setUp(self):
+        Act.setUp(self)
+        patch = mock.patch.object(ownership, "share_hosts", lambda *a, **k: {"ksadata": DATA_TABLE})
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.summary = self.root / "summary.md"
+        patch = mock.patch.dict("os.environ", {"GITHUB_STEP_SUMMARY": str(self.summary)})
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def test_a_verified_data_host_proof_is_recorded_in_the_comment_and_the_summary(self):
+        self.api.pulls = [dict(pull_request(), user={"login": "ksadata-bot", "id": SHARE_BOT})]
+        identifiers = ["Zephyr", "MunRover"]
+        paths = [f"vehicles/{identifier}.toml" for identifier in identifiers]
+        changes = [
+            check_scope.Change(path, "added", None, f"{index + 1:040x}") for index, path in enumerate(paths)
+        ]
+        for path, identifier in zip(paths, identifiers):
+            self.api.files[(path, "abc")] = share_vehicle(identifier).replace("ksamods", "ksadata")
+        attestation = ownership.ATTESTATION.format(digest=ownership.change_digest(changes))
+        text = json.dumps({"host": "ksadata", "accounts": {f"vehicle/{i}": f"u_{i}" for i in identifiers}})
+        files = {attestation: ownership.SignedFile(text, "c2lnbmF0dXJl\n", DATA_KEY)}
+        for identifier in identifiers:
+            record = json.dumps({"id": identifier, "type": "vehicle", "account": f"u_{identifier}"})
+            files[f"owners/vehicle/{identifier}.json"] = ownership.SignedFile(record, "b3duZXI=\n", DATA_KEY)
+        read = []
+
+        def share_file_signed(table, path, user_agent=None):
+            read.append(path)
+            return files.get(path)
+
+        checks = [validate.Check("schema", validate.PASS, []).as_dict()]
+        with mock.patch.object(decide, "changed_paths", lambda api, number: changes), mock.patch.object(
+            ownership, "share_file_signed", share_file_signed
+        ):
+            self.assertEqual(self.act(verdict(checks=checks, documents=paths), record_url=RECORD_URL), 0)
+
+        self.assertEqual(sorted(read), sorted(files))
+        self.assertEqual([status["state"] for status in self.statuses()], ["pending", "success"])
+        posted = [p["body"] for _, where, p, _ in self.api.sent if where == "/issues/5/comments"]
+        self.assertEqual(len(posted), 2)
+        record, comment = posted
+        self.assertTrue(record.startswith("<!-- content-index:ownership-record "))
+        self.assertIn(decide.EVIDENCE_POSTED, comment)
+        self.assertIn(f"[The ownership run]({RECORD_URL})", comment)
+        self.assertNotIn(text, comment)
+        entry = self.summary.read_text(encoding="utf-8")
+        for body in (record, entry):
+            self.assertIn(f"`{attestation}` of the share host `ksadata`", body)
+            self.assertIn(DATA_KEY, body)
+            self.assertEqual(fenced_blocks(body)[-2:], ["c2lnbmF0dXJl\n", text + "\n"])
+        self.assertEqual(entry.strip(), record)
+
+    def test_an_attestation_that_holds_a_fence_stays_inside_its_block(self):
+        text = json.dumps({"host": "ksadata", "accounts": {}, "note": "``` ```` end"}) + "\n"
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        [record] = decide.evidence_comments(5, result)
+        self.assertIn("\n`````json\n", record)
+        self.assertEqual(fenced_blocks(record), ["c2ln\n", text])
+
+    def test_an_attestation_of_the_largest_size_is_split_over_two_comments(self):
+        start, end, unit = '{"host": "ksadata", "accounts": {}, "note": "', '"}', "x" * 500 + "```` \u00fc "
+        room = ownership.MAX_SHARE_FILE - len(start) - len(end)
+        note = unit * (room // len(unit.encode("utf-8")))
+        text = start + note + "x" * (room - len(note.encode("utf-8"))) + end
+        self.assertEqual(len(text.encode("utf-8")), ownership.MAX_SHARE_FILE)
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        parts = decide.evidence_comments(5, result)
+        self.assertEqual(len(parts), 2)
+        for part in parts:
+            self.assertLessEqual(len(part.encode("utf-8")), decide.COMMENT_LIMIT)
+        # The text has no line break, so each block only adds the one that closes it.
+        joined = "".join(fenced_blocks(part)[-1][:-1] for part in parts)
+        self.assertEqual(joined, text)
+        self.assertIn(hashlib.sha256(text.encode("utf-8")).hexdigest(), parts[0])
+
+    def test_a_second_run_posts_only_what_is_missing_and_edits_nothing(self):
+        text = json.dumps({"host": "ksadata", "accounts": {}, "note": "x" * decide.COMMENT_LIMIT})
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        parts = decide.evidence_comments(5, result)
+        # A part that the author of the pull request posted is not the record.
+        api = RecordingApi(
+            comments=[
+                {"id": 1, "body": parts[0], "user": INDEX_BOT},
+                {"id": 2, "body": parts[1], "user": {"login": "someone", "type": "User"}},
+            ]
+        )
+        decide.post_evidence(api, 5, parts, INDEX_APP)
+        self.assertEqual(api.sent, [("POST", "/issues/5/comments", {"body": parts[1]}, None)])
+
+    def test_a_part_that_another_bot_posted_first_is_posted_again(self):
+        """The bot of a share host can be a GitHub App, post the markers first
+        and edit or delete its comments after the merge (rule 30).
+        """
+        text = json.dumps({"host": "ksadata", "accounts": {}, "note": "x" * decide.COMMENT_LIMIT})
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        parts = decide.evidence_comments(5, result)
+        other = {"login": "ksadata[bot]", "type": "Bot"}
+        # A person who authorized the App posts through it under their own account.
+        through_app = {"login": "someone", "type": "User"}
+        api = RecordingApi(
+            comments=[
+                {"id": 1, "body": parts[0], "user": other, "performed_via_github_app": {"slug": "ksadata"}},
+                {"id": 2, "body": parts[1], "user": through_app,
+                 "performed_via_github_app": {"slug": INDEX_APP}},
+                {"id": 3, "body": parts[1], "user": other},
+            ]
+        )
+        decide.post_evidence(api, 5, parts, INDEX_APP)
+        self.assertEqual(
+            api.sent,
+            [("POST", "/issues/5/comments", {"body": part}, None) for part in parts],
+        )
+
+    def test_without_an_app_slug_every_part_is_posted(self):
+        text = json.dumps({"host": "ksadata", "accounts": {}})
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        [part] = decide.evidence_comments(5, result)
+        api = RecordingApi(comments=[{"id": 1, "body": part, "user": INDEX_BOT}])
+        decide.post_evidence(api, 5, [part], "")
+        self.assertEqual(api.sent, [("POST", "/issues/5/comments", {"body": part}, None)])
+
+    def test_two_data_hosts_with_the_same_path_read_their_own_file(self):
+        other = dict(DATA_TABLE, data="https://data.example.org/")
+        path = "attestations/a.json"
+        read = []
+
+        def share_file_signed(table, path, user_agent=None):
+            read.append((table["data"], path))
+            return ownership.SignedFile(table["data"], "c2ln\n", DATA_KEY)
+
+        lookups = decide.OwnershipApi(RecordingApi())
+        with mock.patch.object(ownership, "share_file_signed", share_file_signed):
+            first = [lookups.share_file_signed(table, path) for table in (DATA_TABLE, other, DATA_TABLE, other)]
+            self.assertEqual(lookups.share_file(other, path), "https://data.example.org/")
+
+        self.assertEqual([found.text for found in first], [DATA_TABLE["data"], other["data"]] * 2)
+        self.assertEqual(read, [(DATA_TABLE["data"], path), (other["data"], path)])
 
 
 if __name__ == "__main__":

@@ -31,10 +31,32 @@ new_listings_per_day = 5
 policy = "https://ksamods.gg/policy"
 """
 
+# Two Ed25519 public keys as base64 of their SubjectPublicKeyInfo. Only their
+# form is read here, so they are fixed bytes and not the keys of a signer.
+KEY = "MCowBQYDK2VwAyEAAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+OLD_KEY = "MCowBQYDK2VwAyEAICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8="
+# The identity point, a key of small order that the schema pattern still takes.
+IDENTITY_KEY = "MCowBQYDK2VwAyEAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 
-def host(replace=None, drop=(), key="ksamods"):
-    """The example host of RFC 0094, with one line replaced or some keys dropped."""
-    lines = HOST.replace("[ksamods]", f"[{key}]").splitlines()
+# The same host without GitHub storage, by RFC 0104.
+DATA_HOST = f"""[ksamods]
+kind = "share"
+name = "ksamods.gg"
+data = "https://data.ksamods.gg/share/"
+downloads = ["https://files.ksamods.gg/"]
+key = "{KEY}"
+bot = 98765432
+api = "https://ksamods.gg/api/share/v1/"
+types = ["vehicle", "save"]
+max_bytes = {{ vehicle = 10485760, save = 104857600 }}
+new_listings_per_day = 5
+policy = "https://ksamods.gg/policy"
+"""
+
+
+def host(replace=None, drop=(), key="ksamods", text=HOST):
+    """An example host, with one line replaced or some keys dropped."""
+    lines = text.replace("[ksamods]", f"[{key}]").splitlines()
     if replace:
         name = replace.split(" = ")[0]
         lines = [replace if line.startswith(f"{name} = ") else line for line in lines]
@@ -107,15 +129,55 @@ class Load(unittest.TestCase):
     def test_a_size_is_a_positive_integer(self):
         self.assert_refused(host(replace="max_bytes = { vehicle = 0, save = 1 }"), "ksamods.max_bytes.vehicle")
 
-    def test_a_host_names_storage_or_data(self):
-        words = "ksamods: a host names either storage or data, and not both"
-        self.assert_refused(host(drop=("storage", "pages")), words)
-        both = host().replace("bot = ", 'data = "https://ksamods.gg/data/"\nbot = ')
-        self.assert_refused(both, words)
+    def test_a_host_with_data_downloads_and_key_is_valid(self):
+        tables, errors = self.load(DATA_HOST)
+        self.assertEqual(errors, [])
+        self.assertEqual(tables["ksamods"]["key"], KEY)
+        retired = DATA_HOST.replace("bot = ", f'retired_keys = ["{OLD_KEY}"]\nbot = ')
+        self.assertEqual(self.load(retired)[1], [])
 
-    def test_a_host_with_data_alone_is_valid_by_the_schema_and_not_read_yet(self):
-        text = host(drop=("storage", "pages")).replace("bot = ", 'data = "https://ksamods.gg/data/"\nbot = ')
-        self.assert_refused(text, "names data and no storage")
+    def test_a_host_names_storage_or_data(self):
+        words = "ksamods: a host names storage, or data with downloads and key, and not keys of both"
+        cases = {
+            "neither": host(drop=("storage", "pages")),
+            "storage and data": DATA_HOST.replace("bot = ", 'storage = "ksamods-content/share"\nbot = '),
+            "storage and key": host().replace("bot = ", f'key = "{KEY}"\nbot = '),
+            "pages with data": DATA_HOST.replace("bot = ", 'pages = "https://ksamods-content.github.io/share/"\nbot = '),
+            "data without key": host(drop=("key",), text=DATA_HOST),
+            "data without downloads": host(drop=("downloads",), text=DATA_HOST),
+        }
+        for name, text in cases.items():
+            with self.subTest(name):
+                self.assert_refused(text, words)
+
+    def test_a_key_is_standard_base64_of_an_ed25519_public_key(self):
+        url_safe = "MCowBQYDK2VwAyEA-__7__v_-__7__v_-__7__v_-__7__v_-__7__v_-_8="
+        x25519 = "MCowBQYDK2VuAyEAAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+        for value in (url_safe, x25519, KEY.rstrip("=")):
+            with self.subTest(value):
+                self.assert_refused(
+                    host(replace=f'key = "{value}"', text=DATA_HOST),
+                    f"ksamods.key: {value!r} is not an Ed25519 public key as standard base64 of its "
+                    "SubjectPublicKeyInfo",
+                )
+
+    def test_a_small_order_key_is_refused(self):
+        self.assert_refused(
+            host(replace=f'key = "{IDENTITY_KEY}"', text=DATA_HOST),
+            "ksamods.key: the key is a small-order point, so it protects nothing",
+        )
+        retired = DATA_HOST.replace("bot = ", f'retired_keys = ["{IDENTITY_KEY}"]\nbot = ')
+        self.assert_refused(retired, "ksamods.retired_keys[0]: the key is a small-order point, so it protects nothing")
+
+    def test_a_download_prefix_is_an_https_url(self):
+        self.assert_refused(
+            host(replace='downloads = ["http://files.ksamods.gg/"]', text=DATA_HOST),
+            "ksamods.downloads[0]: 'http://files.ksamods.gg/' is not an https URL that ends with /",
+        )
+
+    def test_the_current_key_is_not_retired(self):
+        text = DATA_HOST.replace("bot = ", f'retired_keys = ["{OLD_KEY}", "{KEY}"]\nbot = ')
+        self.assert_refused(text, "ksamods.retired_keys: the host lists its current key as retired too")
 
     def test_pages_is_the_github_pages_address_of_storage(self):
         self.assert_refused(
