@@ -131,6 +131,7 @@ Name each one `<stem>-windows.zip`, `<stem>-linux.zip` or `<stem>-macos.zip`, wh
 An underscore instead of the hyphen works too, and the case does not matter.
 Add only one archive per platform, because two for the same platform reject the release.
 The archive for every platform, `<stem>.zip`, stays required, because it is the file for a platform that has no archive of its own and for a manager that does not read platform archives.
+A manager downloads the archive of its own platform when the release has one that is not gone from its host, and otherwise `<stem>.zip`, per [RFC 0112](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0112-per-platform-downloads.md).
 
 Each platform archive must hold the same mod folder as `<stem>.zip`, and for a mod, the same dependencies in its `mod.toml`.
 For a mod loader, it must also hold every `launch` file that applies to its platform.
