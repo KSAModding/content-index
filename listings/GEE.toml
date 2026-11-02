@@ -1,0 +1,38 @@
+spec_version = 1
+id = "GEE"
+type = "mod"
+name = "GEE - General Earth Enhancements"
+authors = ["KarloDerEchte"]
+abstract = "Puts the real world on Earth: OpenStreetMap buildings and roads, city lights at night, satellite imagery from altitude, and modelled launch complexes."
+description = """
+GEE streams buildings and roads from OpenStreetMap around the camera, lights up cities at night and drapes satellite imagery over the ground when you look down from altitude.
+
+- **Buildings and roads** with facades, roofs, details nearby and lit windows. Roads are laid on the terrain, and the game's trees are cleared from roads and buildings.
+- **Far field**: simplified buildings out to tens of kilometres, so cities stay visible after launch.
+- **Night**: lit windows, street lights in towns, and city lights visible from orbit.
+- **Satellite imagery** (Sentinel-2 cloudless, 2016) from altitude.
+- **Launch complexes** at all of the game's Earth pads: LC-39A/B with the VAB and a crew access arm, Starbase, ELA-4, SLC-4E and LC-1.
+
+Every part can be switched off on its own. The mod needs an internet connection the first time an area is shown and caches everything it downloads.
+
+This mod was programmed entirely by Claude (Anthropic's AI). It is a hobby project, so expect rough edges.
+
+Map data © OpenStreetMap contributors (ODbL), © OpenMapTiles, tiles by OpenFreeMap. Imagery: EOxCloudless by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0.
+"""
+license = "GPL-3.0-only AND ODbL-1.0"
+tags = ["visual"]
+
+[releases]
+github = "KarloDerEchte/KSA-GEE-General-Earth-Enhancements"
+
+[links]
+forums = "https://forums.ahwoo.com/threads/gee-general-earth-enhancements.1527/"
+repository = "https://github.com/KarloDerEchte/KSA-GEE-General-Earth-Enhancements"
+bugtracker = "https://github.com/KarloDerEchte/KSA-GEE-General-Earth-Enhancements/issues"
+
+[compatibility]
+game_min = "2026.10.25.5707"
+
+[loader]
+id = "StarMap"
+min = "0.4.8"
