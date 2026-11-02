@@ -1,7 +1,7 @@
 # Ask the generated half to rebuild the published snapshot.
 #
 # Everything here is part of that snapshot, so a merged listing, a new pack
-# version or a steward writing index-status.toml has to reach clients in one
+# version or a steward writing index-status.toml, hosts.toml or tags.toml has to reach clients in one
 # build rather than at the next hourly one (RFC 0033).
 name: snapshot dispatch
 
@@ -14,6 +14,8 @@ on:
       - saves/**
       - packs/**
       - index-status.toml
+      - hosts.toml
+      - tags.toml
 
 # The job authenticates as the org App, so the workflow token needs nothing.
 permissions: {}
