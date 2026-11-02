@@ -1,0 +1,13 @@
+spec_version = 1
+id = "OctoSmokeMonster"
+type = "vehicle"
+name = "Octo Smoke Monster"
+authors = ["Beik"]
+abstract = "How much smoke do you want? Yes."
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/OctoSmokeMonster"
+
+[releases]
+ksamods = "OctoSmokeMonster"
