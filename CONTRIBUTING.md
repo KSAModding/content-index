@@ -124,6 +124,20 @@ The platform names are `windows`, `linux` and `macos`.
 Leave out `runtime` when your loader has its own executable on that platform.
 Every `launch` must be in your release archive, or the release is rejected.
 
+## Archives for one platform
+
+A mod or a mod loader that you release on GitHub can add a smaller archive for each platform, for example when its runtime files differ between Windows and Linux.
+Name each one `<stem>-windows.zip`, `<stem>-linux.zip` or `<stem>-macos.zip`, where `<stem>.zip` is the archive of the release, and add it to the same release.
+An underscore instead of the hyphen works too, and the case does not matter.
+Add only one archive per platform, because two for the same platform reject the release.
+The archive for every platform, `<stem>.zip`, stays required, because it is the file for a platform that has no archive of its own and for a manager that does not read platform archives.
+A manager downloads the archive of its own platform when the release has one that is not gone from its host, and otherwise `<stem>.zip`, per [RFC 0112](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0112-per-platform-downloads.md).
+
+Each platform archive must hold the same mod folder as `<stem>.zip`, and for a mod, the same dependencies in its `mod.toml`.
+For a mod loader, it must also hold every `launch` file that applies to its platform.
+The index rejects the release when one of these differs.
+A listing on SpaceDock, a release by pull request, a vehicle and a save take no platform archives, and their releases keep today's rules for which zip is used.
+
 ## Listing a vehicle or a save
 
 A vehicle or a save is a folder the game wrote, shared with the mods it needs, per [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md).
