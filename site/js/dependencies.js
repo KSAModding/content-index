@@ -182,6 +182,14 @@ export function dependencyNotes(document, index, validId) {
   return found;
 }
 
+// A table as the TOML parser returns it, a plain object whose prototype is
+// Object.prototype or, from smol-toml 1.9 on, null.
+function isTable(value) {
+  if (!isObject(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 // The truth of a value as Python reads it.
 function truthy(value) {
   if (value === null || value === undefined) return false;
@@ -190,7 +198,7 @@ function truthy(value) {
   if (typeof value === "number") return value !== 0;
   if (typeof value === "bigint") return value !== 0n;
   if (Array.isArray(value)) return value.length > 0;
-  if (Object.getPrototypeOf(value) === Object.prototype) return Object.keys(value).length > 0;
+  if (isTable(value)) return Object.keys(value).length > 0;
   return true;
 }
 
@@ -199,7 +207,7 @@ function truthy(value) {
 export function modTomlDependencies(manifest) {
   const starMap = manifest.StarMap;
   if (!truthy(starMap)) return [];
-  if (!isObject(starMap) || Object.getPrototypeOf(starMap) !== Object.prototype) {
+  if (!isTable(starMap)) {
     throw new StampError("[StarMap] of the mod.toml is not a table");
   }
   const blocks = starMap.ModDependencies;
@@ -208,7 +216,7 @@ export function modTomlDependencies(manifest) {
     throw new StampError("StarMap.ModDependencies of the mod.toml is not a list of [[StarMap.ModDependencies]] blocks");
   }
   return blocks.map((block) => {
-    if (!isObject(block) || Object.getPrototypeOf(block) !== Object.prototype) {
+    if (!isTable(block)) {
       throw new StampError("a [[StarMap.ModDependencies]] block is not a table");
     }
     if (!truthy(block.ModId)) throw new StampError("a [[StarMap.ModDependencies]] block carries no ModId");

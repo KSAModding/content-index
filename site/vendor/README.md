@@ -7,7 +7,7 @@ After the build, the two non-ASCII characters that esbuild leaves in regular exp
 | File | Packages |
 |---|---|
 | `ajv2020.js` | ajv 8.20.0 (`ajv/dist/2020`), fast-deep-equal 3.1.3, fast-uri 3.1.8, json-schema-traverse 1.0.0 |
-| `smol-toml.js` | smol-toml 1.8.0 |
+| `smol-toml.js` | smol-toml 1.9.1 |
 | `spdx.js` | spdx-expression-parse 5.0.0, spdx-license-ids 3.0.24, spdx-exceptions 2.5.0 |
 | `markdown-it.js` | markdown-it 14.1.0, entities 4.5.0, linkify-it 5.0.2, mdurl 2.1.0, punycode.js 2.3.1, uc.micro 2.1.0 |
 
