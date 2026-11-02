@@ -16,6 +16,7 @@ import tomllib
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import namedtuple
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -35,11 +36,13 @@ TREE_KINDS = {"tree": "dir", "blob": "file", "commit": "submodule"}
 STATUS_CONTEXT = "validate"
 STEWARD_LABEL = "needs-steward"
 STEWARD_TEAM = "content-manager-stewards"
+DUPLICATE_LABEL = "duplicate"
 
 # The labels this workflow writes, each with the colour and the description a
 # missing one is created from.
 LABELS = {
     STEWARD_LABEL: ("d93f0b", "waiting on a steward"),
+    DUPLICATE_LABEL: ("cfd3d7", "repeats what the base branch already holds"),
     check_scope.LISTING_KIND: ("0e8a16", "changes a listing document"),
     check_scope.PACK_KIND: ("0e8a16", "changes a pack document"),
     check_scope.VEHICLE_KIND: ("0e8a16", "changes a vehicle document"),
@@ -65,6 +68,11 @@ LISTING_FOLDERS = {
     "vehicles": check_scope.VEHICLE_KIND,
     "saves": check_scope.SAVE_KIND,
 }
+FOLDER_OF_KIND = {kind: folder for folder, kind in LISTING_FOLDERS.items()}
+
+# The head branch a share host opens a pull request from, which names the
+# listing and a timestamp, such as share/Boatmobile-20261102171548.
+SHARE_BRANCH = re.compile(r"share/([A-Za-z0-9._-]+)-[0-9]+")
 
 PASS = "pass"
 REJECT = "reject"
@@ -72,12 +80,15 @@ COULD_NOT_EVALUATE = "could-not-evaluate"
 
 
 class Decision:
-    def __init__(self, status, description, auto_merge=False, needs_steward=False, comment=None):
+    def __init__(
+        self, status, description, auto_merge=False, needs_steward=False, comment=None, close=False
+    ):
         self.status = status
         self.description = description
         self.auto_merge = auto_merge
         self.needs_steward = needs_steward
         self.comment = comment
+        self.close = close
 
 
 PUSH_AGAIN = "Push a fix and the checks run again."
@@ -289,11 +300,29 @@ def _part_size(head, chunk):
     return len(f"{marker}\n{head}\n\n{_fenced(chunk, 'json')}".encode("utf-8"))
 
 
-def decide(verdict, candidate, ownership_result, run_url="", advice=()):
+def empty_paragraphs(empty, closed=True):
+    """Why an empty change does not merge, and the listing it repeats when one
+    is known. `closed` says whether this run closed it or left it to a steward.
+    """
+    lines = [f"This pull request changes no file against `{empty.base}`, so there is nothing to merge."]
+    if empty.path and empty.number:
+        lines.append(f"`{empty.base}` already holds `{empty.path}`, which #{empty.number} last added or changed.")
+    elif empty.path:
+        lines.append(f"`{empty.base}` already holds `{empty.path}`.")
+    if closed:
+        lines.append("So this pull request is closed. A change to the listing comes in a new pull request.")
+    else:
+        lines.append("This pull request could not be closed, so a steward closes it.")
+    return [" ".join(lines)]
+
+
+def decide(verdict, candidate, ownership_result, run_url="", advice=(), empty=None):
     """The status reports validation alone. Ownership is a separate axis, so a
     listing that validates but cannot prove it is green and waits for a steward.
 
-    `advice` goes into the comment whatever the outcome.
+    `advice` goes into the comment whatever the outcome. `empty` is an Empty
+    when the change touches no file, and such a change that validates is
+    closed, because there is nothing a steward could merge.
     """
     outcome = verdict.get("verdict")
 
@@ -325,6 +354,14 @@ def decide(verdict, candidate, ownership_result, run_url="", advice=()):
                 [_sentence(ownership_result.reason)],
                 rerun=True,
             ),
+        )
+
+    if empty is not None:
+        return Decision(
+            "success",
+            "validated, and the change touches no file, so it is closed",
+            close=True,
+            comment=comment("Validated.", empty_paragraphs(empty)),
         )
 
     if not candidate:
@@ -774,6 +811,95 @@ def changed_paths(api, number):
         page += 1
 
 
+# A change that touches no file. `path` is the listing on the base branch that
+# it repeats, and `number` the merged pull request that last added or changed
+# that listing, each None when it is not known.
+Empty = namedtuple("Empty", "base path number", defaults=[None, None])
+
+
+def changes_nothing(api, number):
+    """Whether GitHub counts no changed file in the pull request itself.
+
+    An empty file list closes the pull request, so the count of the pull
+    request has to agree with it. A count that could not be read is not zero.
+    """
+    try:
+        answer = api.get(f"/pulls/{number}")
+    except (urllib.error.HTTPError, OSError, ValueError) as error:
+        api.log(f"the pull request could not be read again: {error}")
+        return False
+    return isinstance(answer, dict) and answer.get("changed_files") == 0
+
+
+def last_pull_request(api, path, base_ref):
+    """The merged pull request that last changed `path` on `base_ref`, or None.
+
+    Only a best effort, so any failure names no pull request.
+    """
+    try:
+        # Api.get takes the path of the call as `path`, so the query goes into it here.
+        query = urllib.parse.urlencode({"path": path, "sha": base_ref, "per_page": 1})
+        commits = api.get(f"/commits?{query}") or []
+        sha = commits[0].get("sha") if commits and isinstance(commits[0], dict) else None
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+            return None
+        pulls = api.get(f"/commits/{sha}/pulls") or []
+    except (urllib.error.HTTPError, OSError, ValueError, AttributeError) as error:
+        api.log(f"the pull request that changed {path} could not be found: {error}")
+        return None
+    for pull in pulls if isinstance(pulls, list) else []:
+        if not isinstance(pull, dict) or not pull.get("merged_at"):
+            continue
+        if ((pull.get("base") or {}).get("ref")) != base_ref:
+            continue
+        if type(pull.get("number")) is int:
+            return pull["number"]
+    return None
+
+
+def repeated_listing(api, pull, registry=None):
+    """What an empty change repeats, as an Empty.
+
+    A share host (RFC 0094) names the listing in its head branch, so for a pull
+    request from the account of a host the listing of that name on the base
+    branch is looked up, in the folder of each type the host takes. Nothing is
+    named for anyone else, and nothing when the listing is not there.
+    """
+    base_ref = (pull.get("base") or {}).get("ref") or ""
+    empty = Empty(base_ref or "the base branch")
+    author_id = (pull.get("user") or {}).get("id")
+    branch = (pull.get("head") or {}).get("ref") or ""
+    found = SHARE_BRANCH.fullmatch(branch)
+    if not base_ref or type(author_id) is not int or not found:
+        return empty
+
+    hosts = ownership.share_hosts() if registry is None else registry
+    for table in hosts.values():
+        bot = table.get("bot")
+        if table.get("kind") != ownership.SHARE_KIND or type(bot) is not int or bot != author_id:
+            continue
+        types = table.get("types")
+        for kind in types if isinstance(types, list) else []:
+            folder = FOLDER_OF_KIND.get(kind)
+            path = f"{folder}/{found.group(1)}.toml"
+            if not folder or not PLAIN_LISTING.fullmatch(path):
+                continue
+            document, _ = authored_document(api, path, base_ref)
+            if document is not None:
+                return Empty(base_ref, path, last_pull_request(api, path, base_ref))
+    return empty
+
+
+def close_pull_request(api, number):
+    """Whether the pull request is closed. False leaves it to a steward."""
+    try:
+        api.send("PATCH", f"/pulls/{number}", {"state": "closed"})
+    except (urllib.error.HTTPError, OSError, ValueError) as error:
+        api.log(f"the pull request could not be closed: {error}")
+        return False
+    return True
+
+
 def authored_document(api, path, ref):
     """One authored document at `ref`, and what stopped the read.
 
@@ -1206,9 +1332,22 @@ def act(api, arguments):
         advice.append(EVIDENCE_POSTED)
         if arguments.record_url:
             advice.append(f"[The ownership run]({arguments.record_url})")
+    # A change that touches no file has nothing to merge, so it is closed and
+    # not queued for a steward.
+    empty = repeated_listing(api, pull) if not changes and changes_nothing(api, number) else None
     decision = decide(
-        {**verdict, "scope_reason": reason}, candidate, result, arguments.run_url, advice
+        {**verdict, "scope_reason": reason}, candidate, result, arguments.run_url, advice, empty
     )
+
+    if decision.close and not close_pull_request(api, number):
+        decision = Decision(
+            decision.status,
+            "validated, and the change touches no file, but it could not be closed",
+            needs_steward=True,
+            comment=_comment(
+                "Validated.", verdict, [*empty_paragraphs(empty, closed=False), *advice], arguments.run_url
+            ),
+        )
 
     if decision.auto_merge:
         # Auto-merge cannot be armed once GitHub calls the pull request mergeable.
@@ -1231,6 +1370,8 @@ def act(api, arguments):
     post_status(api, arguments.head_sha, decision, arguments.run_url)
     upsert_comment(api, number, decision.comment, arguments.app_slug)
     sync_document_labels(api, number, check_scope.kinds(changes))
+    if empty is not None and empty.path and DUPLICATE_LABEL not in _labels(api, number):
+        _put_label(api, number, DUPLICATE_LABEL)
 
     if decision.needs_steward:
         add_steward_label(api, number)

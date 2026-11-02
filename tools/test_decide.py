@@ -2250,5 +2250,195 @@ class DataHostRecord(unittest.TestCase):
         self.assertEqual(read, [(DATA_TABLE["data"], path), (other["data"], path)])
 
 
+SHARE_BRANCH = "share/Boatmobile-20261102171548"
+BOATMOBILE = "vehicles/Boatmobile.toml"
+EARLIER_COMMIT = "d7e08c585b59e0274a875b75031814f4c0bd5e40"
+
+
+class EmptyChange(unittest.TestCase):
+    """A change that touches no file has nothing to merge, so it is closed."""
+
+    act = Act.act
+    statuses = Act.statuses
+    labelled = Act.labelled
+
+    def setUp(self):
+        Act.setUp(self)
+        patch = mock.patch.object(ownership, "share_hosts", lambda *a, **k: {"ksamods": SHARE_TABLE})
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.changed = []
+        self.counted = 0
+        self.commits = []
+        self.merged = []
+        answer = self.api.get
+
+        def get(path, **query):
+            if path == "/pulls/5":
+                return {"number": 5, "changed_files": self.counted}
+            if path.startswith("/commits?"):
+                self.api.asked.append((path, query))
+                return self.commits
+            if path == f"/commits/{EARLIER_COMMIT}/pulls":
+                return self.merged
+            return answer(path, **query)
+
+        self.api.get = get
+        patch = mock.patch.object(decide, "changed_paths", lambda api, number: list(self.changed))
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def from_share_host(self):
+        self.api.pulls = [
+            dict(pull_request(branch=SHARE_BRANCH), user={"login": "ksamods-gg[bot]", "id": SHARE_BOT})
+        ]
+        self.api.files = {(BOATMOBILE, "main"): share_vehicle("Boatmobile")}
+        return self.act_on(SHARE_BRANCH)
+
+    def act_on(self, branch):
+        """Act.act with another head branch than the fork branch it names."""
+        path = self.root / "verdict.json"
+        path.write_text(json.dumps(verdict(documents=[])), encoding="utf-8")
+        arguments = mock.Mock(
+            verdict=path, event="pull_request", head_repository=FORK, head_branch=branch,
+            head_sha="abc", repository=self.api.repository, run_url="", record_url="",
+            app_slug=INDEX_APP, dry_run=False,
+        )
+        return decide.act(self.api, arguments)
+
+    def closed(self):
+        return [payload for method, path, payload, _ in self.api.sent if (method, path) == ("PATCH", "/pulls/5")]
+
+    def comment(self):
+        return [p for _, where, p, _ in self.api.sent if where == "/issues/5/comments"][0]["body"]
+
+    def test_an_empty_change_from_a_share_host_closes_and_names_the_earlier_pull_request(self):
+        self.commits = [{"sha": EARLIER_COMMIT}]
+        self.merged = [
+            {"number": 279, "merged_at": None, "base": {"ref": "main"}},
+            {"number": 280, "merged_at": "2026-11-02T17:06:59Z", "base": {"ref": "main"}},
+        ]
+        self.assertEqual(self.from_share_host(), 0)
+
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        self.assertEqual([status["state"] for status in self.statuses()], ["success"])
+        self.assertIn(("/commits?path=vehicles%2FBoatmobile.toml&sha=main&per_page=1", {}), self.api.asked)
+        comment = self.comment()
+        self.assertIn("changes no file against `main`, so there is nothing to merge", comment)
+        self.assertIn(f"`main` already holds `{BOATMOBILE}`, which #280 last added or changed.", comment)
+        self.assertIn("is closed", comment)
+        self.assertEqual(self.labelled(), [decide.DUPLICATE_LABEL])
+        self.assertFalse(any(path.endswith("/requested_reviewers") for _, path, _, _ in self.api.sent))
+        self.assertEqual(self.api.graphql_calls, [])
+
+    def test_an_earlier_pull_request_that_cannot_be_found_is_not_named(self):
+        self.commits = [{"sha": EARLIER_COMMIT}]
+        self.merged = []
+        self.assertEqual(self.from_share_host(), 0)
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        comment = self.comment()
+        self.assertIn(f"`main` already holds `{BOATMOBILE}`.", comment)
+        self.assertNotIn("which #", comment)
+        self.assertEqual(self.labelled(), [decide.DUPLICATE_LABEL])
+
+    def test_a_failed_lookup_of_the_earlier_pull_request_still_closes(self):
+        def failing(path, **query):
+            raise urllib.error.HTTPError(path, 502, "bad gateway", {}, None)
+
+        get = self.api.get
+        self.api.get = lambda path, **query: failing(path) if path.startswith("/commits?") else get(path, **query)
+        self.assertEqual(self.from_share_host(), 0)
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        self.assertIn(f"`main` already holds `{BOATMOBILE}`.", self.comment())
+
+    def test_an_empty_change_from_anyone_else_closes_without_a_name(self):
+        self.assertEqual(self.act(), 0)
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        comment = self.comment()
+        self.assertIn("changes no file against `main`", comment)
+        self.assertNotIn("already holds", comment)
+        self.assertEqual(self.labelled(), [])
+        self.assertFalse(any(path.startswith("/commits") for path, _ in self.api.asked))
+
+    def test_a_share_host_branch_from_another_account_names_nothing(self):
+        self.api.files = {(BOATMOBILE, "main"): share_vehicle("Boatmobile")}
+        self.api.pulls = [pull_request(branch=SHARE_BRANCH)]
+        self.assertEqual(self.act_on(SHARE_BRANCH), 0)
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        self.assertNotIn("already holds", self.comment())
+
+    def test_a_listing_the_base_branch_does_not_hold_names_nothing(self):
+        self.api.pulls = [
+            dict(pull_request(branch=SHARE_BRANCH), user={"login": "ksamods-gg[bot]", "id": SHARE_BOT})
+        ]
+        self.api.files = {}
+        self.assertEqual(self.act_on(SHARE_BRANCH), 0)
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        self.assertNotIn("already holds", self.comment())
+        self.assertEqual(self.labelled(), [])
+
+    def test_a_count_of_changed_files_that_is_not_zero_goes_to_a_steward(self):
+        self.counted = 1
+        self.assertEqual(self.act(), 0)
+        self.assertEqual(self.closed(), [])
+        self.assertIn(decide.STEWARD_LABEL, self.labelled())
+        self.assertIn("touches no file at all", self.comment())
+
+    def test_a_pull_request_that_could_not_be_closed_goes_to_a_steward(self):
+        send = self.api.send
+
+        def refuse(method, path, payload, token=None):
+            if (method, path) == ("PATCH", "/pulls/5"):
+                raise urllib.error.HTTPError(path, 403, "forbidden", {}, None)
+            return send(method, path, payload, token)
+
+        self.api.send = refuse
+        self.assertEqual(self.act(), 0)
+        self.assertIn(decide.STEWARD_LABEL, self.labelled())
+        self.assertIn("could not be closed, so a steward closes it", self.comment())
+        self.assertNotIn("So this pull request is closed", self.comment())
+
+    def test_a_rejected_empty_change_is_not_closed(self):
+        self.assertEqual(self.act(verdict("reject")), 0)
+        self.assertEqual(self.closed(), [])
+        self.assertEqual([status["state"] for status in self.statuses()], ["failure"])
+
+    def test_a_change_that_touches_files_behaves_as_before(self):
+        self.changed = [check_scope.Change("listings/AutoStage.toml", "added")]
+        with mock.patch.object(decide.ownership, "verify", lambda *a, **k: UNVERIFIED):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.closed(), [])
+        self.assertFalse(any(path == "/pulls/5" for path, _ in self.api.asked))
+        self.assertEqual(self.labelled(), ["listing", decide.STEWARD_LABEL])
+        self.assertEqual([status["state"] for status in self.statuses()], ["success"])
+
+    def test_the_empty_decision_needs_a_passing_verdict(self):
+        empty = decide.Empty("main", BOATMOBILE, 280)
+        closing = decide.decide(verdict(), False, UNVERIFIED, empty=empty)
+        self.assertTrue(closing.close)
+        self.assertFalse(closing.needs_steward)
+        for outcome in ("reject", "could-not-evaluate"):
+            decision = decide.decide(verdict(outcome), False, UNVERIFIED, empty=empty)
+            self.assertFalse(decision.close)
+
+
+class RepeatedListing(unittest.TestCase):
+    def test_the_branch_names_the_listing_in_the_folder_of_each_type(self):
+        api = RecordingApi(files={("saves/Boatmobile.toml", "main"): share_vehicle("Boatmobile")})
+        pull = dict(pull_request(branch=SHARE_BRANCH), user={"login": "ksamods-gg[bot]", "id": SHARE_BOT})
+        table = dict(SHARE_TABLE, types=["vehicle", "save"])
+        found = decide.repeated_listing(api, pull, {"ksamods": table})
+        self.assertEqual(found, decide.Empty("main", "saves/Boatmobile.toml", None))
+        self.assertEqual(
+            [path for _, path, _ in api.reads], [BOATMOBILE, "saves/Boatmobile.toml"]
+        )
+
+    def test_a_branch_of_another_shape_names_nothing(self):
+        api = RecordingApi(files={(BOATMOBILE, "main"): share_vehicle("Boatmobile")})
+        for branch in ("share/Boatmobile", "Boatmobile-20261102171548", "share/../x-1", "share/a/b-1"):
+            pull = dict(pull_request(branch=branch), user={"login": "ksamods-gg[bot]", "id": SHARE_BOT})
+            self.assertEqual(decide.repeated_listing(api, pull, {"ksamods": SHARE_TABLE}), decide.Empty("main"))
+
+
 if __name__ == "__main__":
     unittest.main()
