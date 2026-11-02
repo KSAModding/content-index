@@ -4,21 +4,148 @@ type = "mod"
 name = "GEE - General Earth Enhancements"
 authors = ["KarloDerEchte"]
 abstract = "Puts the real world on Earth: OpenStreetMap buildings and roads, city lights at night, satellite imagery from altitude, and modelled launch complexes."
-description = """
-GEE streams buildings and roads from OpenStreetMap around the camera, lights up cities at night and drapes satellite imagery over the ground when you look down from altitude.
+description = '''
+A StarMap mod for **Kitten Space Agency** that puts the real world on Earth:
+buildings and roads from OpenStreetMap around the camera, city lights at night, and satellite imagery when you look
+down from altitude.
 
-- **Buildings and roads** with facades, roofs, details nearby and lit windows. Roads are laid on the terrain, and the game's trees are cleared from roads and buildings.
+> **Heads-up:** this mod was programmed entirely by Claude (Anthropic's AI). It works, but it is a hobby project:
+> don't expect anything too special, and expect rough edges.
+
+![Launch at night with city lights](ksa-image:launch)
+![Florida from orbit with satellite imagery](ksa-image:florida)
+![Satellite imagery under the clouds](ksa-image:clouds)
+![LC-39A launch complex](ksa-image:lc39a)
+
+## Features
+
+- **Buildings and roads** from OpenStreetMap vector tiles, streamed around the camera and cached on disk. Buildings
+  get facades, roofs, details nearby and a window pass. Roads are laid exactly on the terrain. The game's trees and
+  shrubs are cleared from roads and buildings.
 - **Far field**: simplified buildings out to tens of kilometres, so cities stay visible after launch.
 - **Night**: lit windows, street lights in towns, and city lights visible from orbit.
-- **Satellite imagery** (Sentinel-2 cloudless, 2016) from altitude.
-- **Launch complexes** at all of the game's Earth pads: LC-39A/B with the VAB and a crew access arm, Starbase, ELA-4, SLC-4E and LC-1.
+- **Satellite imagery** (Sentinel-2 cloudless, 2016) draped over the ground when seen from altitude.
+- **Trees where real forests are**: the game's trees, shrubs and grass are kept only where ESA WorldCover land cover
+  says they grow, with a few lone trees in open land; none on water, fields, rock or snow.
+- **More kinds of trees**: spruces, pines, birches, an autumn poplar and shrubs from a tree pack are mixed into
+  the game's own trees.
+- **Launch complexes** at all of the game's pads on Earth, placed from OpenStreetMap data:
+  - **LC-39A** (Kennedy): the fixed service structure (from NASA's "Gantry" model) with a crew access arm that docks
+    and undocks, the Starship integration tower, water and lightning towers, hangar, tank farm with boil-off vapour,
+    and pipelines. Also LC-39B's towers and the Vehicle Assembly Building.
+  - **Starbase** (Boca Chica): both Starship launch towers with their catch arms, and the tank farm.
+  - **ELA-4** (Kourou): the Ariane 6 mobile gantry, the four lightning masts and the water tower.
+  - **SLC-4E** (Vandenberg): the launch tower and the helium and propellant tanks.
+  - **LC-1** (Mahia): the lightning masts and the tank rows of pads A and B.
 
-Every part can be switched off on its own. The mod needs an internet connection the first time an area is shown and caches everything it downloads.
+## Install
 
-This mod was programmed entirely by Claude (Anthropic's AI). It is a hobby project, so expect rough edges.
+1. Install Kitten Space Agency and the StarMap mod loader.
+2. Download the zip of the latest release from the
+   [Releases page](https://github.com/KarloDerEchte/KSA-GEE-General-Earth-Enhancements/releases) and extract it
+   so that you have
+   `Documents/My Games/Kitten Space Agency/mods/GEE/` with `mod.toml`, `GEE.dll`, `Assets.xml`,
+   `Meshes/` and `Textures/` in it.
+3. Start the game through StarMap. The mod window is in the mods menu.
 
-Map data © OpenStreetMap contributors (ODbL), © OpenMapTiles, tiles by OpenFreeMap. Imagery: EOxCloudless by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0.
-"""
+The mod needs an internet connection the first time an area is shown. Everything downloaded is cached under
+`mods/GEE/cache/`, and "Clear download cache" in the window empties it.
+
+## Settings
+
+Every part of the mod can be switched off on its own, in the mod window or in `settings.json` in the mod folder
+(written on the first start). For example, turn off the low-poly OSM buildings but keep the roads, the satellite
+imagery and the launch complex.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `Enabled` | on | The whole mod |
+| `ShowBuildings` | on | Plain OpenStreetMap buildings (boxes with facades and roofs) |
+| `ShowRoads` | on | Roads (and the street light glow along them) |
+| `LaunchComplexModels` | on | The modelled launch complexes: LC-39A/B towers, crew arm, VAB, hangar, pipelines, tank farm |
+| `Airports` | on | Runways, taxiways, aprons and their lights |
+| `Roofs`, `BuildingDetails`, `Windows` | on | Pitched roofs, details near the camera (doors, cornices, roof units), window pass |
+| `ReflectorPosts` | on | Small posts along unlit roads |
+| `NightLights`, `CityGlow`, `RegionalLights`, `GlobalLights` | on | Point lights near the camera, night glow, city lights from orbit |
+| `ClearClutter` | on | Removes the game's trees and shrubs from roads and buildings |
+| `LoadRadiusKm`, `RenderDistanceKm` | 3, 15 | How far detailed tiles are loaded and drawn |
+| `MaxInstances` | 150000 | Cap on drawn building pieces; beyond it, distant small buildings thin out |
+| `FarBuildings`, `FarRadiusKm` | on, 35 | Simplified far buildings |
+| `SatelliteImagery`, `SatelliteFadeFromM` | on, 1500 | Satellite imagery from altitude, fading in above this height |
+| `StreetLights` | `BuiltUp` | `BuiltUp` (lit in towns, from building density), `Data` (OpenStreetMap lamps, see below), `All`, `None` |
+| `StreetLightOverpassUrls` | overpass-api.de | Overpass servers for `Data` mode, comma separated |
+| `TankVapor` | on | Vapour over the launch complex tank farms |
+| `DebugLogging` | off | Statistics in the window and progress lines in the game's log (errors are always logged); also "Debug" in the GEE menu |
+
+### Street light data (optional)
+
+`StreetLights = "Data"` places street lights where OpenStreetMap maps them (`highway=street_lamp`, `lit=yes/no`).
+That data is not in the vector tiles, so it comes from an Overpass API server. The public servers are shared,
+volunteer-run and slow (15–90 s per area), and their
+[usage policy](https://dev.overpass-api.de/overpass-doc/en/preface/commons.html) asks apps with many users not to
+rely on them. The mode is therefore off by default. If you use it, prefer your own Overpass instance; results are
+cached for good.
+
+## Building from source
+
+Requirements: .NET 10 SDK, the game, and StarMap.
+
+```
+cd src
+dotnet build -c Release
+```
+
+The build writes `GEE.dll` into the mod folder. If the game is not installed in
+`C:\Program Files\Ahwoo\Games\Kitten Space Agency\`, pass `-p:KsaDir="<game folder>\"`. Close the game first: it
+locks the DLL.
+
+The meshes and textures are generated by Python scripts (Python 3 with numpy and Pillow):
+
+```
+cd src/tools
+python make_assets.py
+```
+
+## Roadmap
+
+Next up:
+
+1. Bug fixes
+2. Street rework
+3. Building enhancements
+
+## Contributing
+
+Contributions are welcome: bug reports, ideas, screenshots and pull requests.
+
+- **Have an idea or found a bug?** Please open an issue on GitHub. Feature wishes, places that look wrong, crashes,
+  anything: every issue helps.
+- **Want to fix or build something yourself?** Pull requests are very welcome, small or large. If it is a bigger
+  change, opening an issue first to talk about it is a good idea, but not required.
+
+By contributing you agree that your contribution is licensed under the GPL-3.0 (with the additional
+permission in `NOTICE.md`), like the rest of the mod.
+
+## Credits and licenses
+
+GEE is free software under the **GNU General Public License v3.0** (`LICENSE`), with an additional
+permission to combine it with Kitten Space Agency, StarMap and Harmony (`NOTICE.md`). You may use, change and share
+it; if you distribute a modified version, you must publish its complete source code under the same license. Data and
+models from others keep their own licenses; `NOTICE.md` has the details.
+
+- Map data © OpenStreetMap contributors (ODbL), © OpenMapTiles; tiles by [OpenFreeMap](https://openfreemap.org).
+- Satellite imagery: EOxCloudless https://cloudless.eox.at by EOX IT Services GmbH (Contains modified Copernicus
+  Sentinel data 2016), CC BY 4.0.
+- Land cover: © ESA WorldCover project 2021 / Contains modified Copernicus Sentinel data (2021) processed by ESA
+  WorldCover consortium, CC BY 4.0.
+- LC-39 fixed service structure: NASA 3D Resources "Gantry" (NASA / Michael D. Carbajal). Not endorsed by NASA.
+- Road asphalt: "Asphalt Pit Lane" by Dimitrios Savva, [Poly Haven](https://polyhaven.com/a/asphalt_pit_lane), CC0.
+- Extra trees: based on ["Low Poly Forest Tree Pack"](https://sketchfab.com/3d-models/low-poly-forest-tree-pack-5ff5a51e74324845a4e4905f182dfb2b)
+  by [99.Miles](https://sketchfab.com/99.Miles), [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/).
+
+This is a fan-made mod. It is not affiliated with or endorsed by the game's developers, NASA, SpaceX, or any data
+provider.
+'''
 license = "GPL-3.0-only AND ODbL-1.0"
 tags = ["visual"]
 
@@ -36,3 +163,42 @@ game_min = "2026.10.25.5707"
 [loader]
 id = "StarMap"
 min = "0.4.8"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/KarloDerEchte/KSA-GEE-General-Earth-Enhancements/main/docs/listing/icon.jpg"
+sha256 = "856e1422e8f8878cc71dc747f3c38979a7d75b95a5f22352ccccac77922fee4f"
+width = 1024
+height = 1024
+size = 254409
+
+[[images.description]]
+id = "launch"
+url = "https://raw.githubusercontent.com/KarloDerEchte/KSA-GEE-General-Earth-Enhancements/main/docs/listing/launch.jpg"
+sha256 = "29584c991aae1b005ba9fbc36dda070c4bba572ee78bf87a3232012c80c50d52"
+width = 2048
+height = 1095
+size = 354920
+
+[[images.description]]
+id = "florida"
+url = "https://raw.githubusercontent.com/KarloDerEchte/KSA-GEE-General-Earth-Enhancements/main/docs/listing/florida.jpg"
+sha256 = "026dc798207efd72d168f4e77f4e20b744106d48fde73fb44f2266e7122050a7"
+width = 1252
+height = 1135
+size = 176881
+
+[[images.description]]
+id = "clouds"
+url = "https://raw.githubusercontent.com/KarloDerEchte/KSA-GEE-General-Earth-Enhancements/main/docs/listing/clouds.jpg"
+sha256 = "9636144175515b0f79fd6f9b7d7e76b7259b55a04e07a0a86697d9002e4e11a5"
+width = 2048
+height = 1090
+size = 546000
+
+[[images.description]]
+id = "lc39a"
+url = "https://raw.githubusercontent.com/KarloDerEchte/KSA-GEE-General-Earth-Enhancements/main/docs/listing/lc39a.jpg"
+sha256 = "d91ff89dce6c4d4734e0ef9b5f91a5907010e7be78384085fbbedd7f79d57762"
+width = 1120
+height = 700
+size = 158709
