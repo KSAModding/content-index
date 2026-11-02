@@ -31,7 +31,8 @@ updates:
         update-types: ["minor", "patch"]
 
   - package-ecosystem: "npm"
-    # The packages the bundles in site/vendor are built from, and the esbuild version that builds them.
+    # The packages the entries of the bundles in site/vendor import, and the esbuild version that builds them.
+    # package-lock.json pins the packages they pull in, so an inner package moves only with the package that needs it.
     # Nothing installs them, and site/test/vendor.test.js fails until the bundle is built again and site/vendor/README.md names the new versions.
     directory: "/site/vendor"
     schedule:
@@ -41,6 +42,7 @@ updates:
     # The increase strategy keeps the exact versions exact.
     versioning-strategy: "increase"
     groups:
-      # The bundles are built again together, so their packages arrive as one pull request.
-      vendor:
-        patterns: ["*"]
+      # Minor and patch bumps arrive as one pull request, because the bundles are built again together.
+      # A major bump stays on its own, because that is the one that can break the page.
+      minor-and-patch:
+        update-types: ["minor", "patch"]

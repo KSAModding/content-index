@@ -13,4 +13,8 @@ After the build, the two non-ASCII characters that esbuild leaves in regular exp
 
 The entry of each bundle re-exports what the page uses, for example `export { parse, TomlDate } from "smol-toml";`.
 
-`package.json` names the same versions so that Dependabot can watch them, and `site/test/vendor.test.js` fails while it and this table disagree, so a Dependabot pull request can merge only after the bundle is built again and the table names the new versions.
+`package.json` names the packages that the entries import, and esbuild, so that Dependabot can watch them.
+`package-lock.json` pins the packages that they pull in, and `overrides` in `package.json` holds an inner package at the version that is bundled when npm resolves a newer one.
+After a change to `package.json`, `npm install --package-lock-only --ignore-scripts` in this folder writes the lock again and installs nothing.
+The lock also holds argparse, require-from-string and the `@esbuild` platform packages, which no bundle contains.
+`site/test/vendor.test.js` fails while `package.json`, the lock and this table disagree, so a Dependabot pull request can merge only after the bundle is built again and the table names the new versions.

@@ -1,21 +1,16 @@
 {
   "private": true,
-  "description": "The npm packages the single-file bundles in this folder are built from. Nothing installs them; the table in README.md names the same versions.",
+  "description": "The npm packages that the entries of the single-file bundles in this folder import, and the esbuild that builds them. Nothing installs them; package-lock.json pins the packages they pull in, and the table in README.md names the same versions.",
   "devDependencies": {
     "ajv": "8.20.0",
-    "entities": "4.5.0",
     "esbuild": "0.28.2",
-    "fast-deep-equal": "3.1.3",
-    "fast-uri": "3.1.8",
-    "json-schema-traverse": "1.0.0",
-    "linkify-it": "5.0.2",
     "markdown-it": "14.1.0",
-    "mdurl": "2.1.0",
-    "punycode.js": "2.3.1",
     "smol-toml": "1.8.0",
     "spdx-exceptions": "2.5.0",
     "spdx-expression-parse": "5.0.0",
-    "spdx-license-ids": "3.0.24",
-    "uc.micro": "2.1.0"
+    "spdx-license-ids": "3.0.24"
+  },
+  "overrides": {
+    "fast-uri": "3.1.8"
   }
 }
