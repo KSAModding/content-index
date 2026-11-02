@@ -1,0 +1,18 @@
+spec_version = 1
+id = "SaveSharingTest"
+type = "save"
+name = "SaveSharingTest"
+authors = ["Maxi"]
+abstract = "Just a save sharing test for Borea development."
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/saves/SaveSharingTest"
+
+[releases]
+ksamods = "SaveSharingTest"
+
+[[dependencies]]
+id = "FastAndPurrious"
+min = "0.1.12"
+kind = "required"
