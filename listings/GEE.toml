@@ -24,9 +24,9 @@ tags = ["visual"]
 
 [releases]
 github = "KarloDerEchte/KSA-GEE-General-Earth-Enhancements"
-authority = "github"
 
 [links]
+forums = "https://forums.ahwoo.com/threads/gee-general-earth-enhancements.1527/"
 repository = "https://github.com/KarloDerEchte/KSA-GEE-General-Earth-Enhancements"
 bugtracker = "https://github.com/KarloDerEchte/KSA-GEE-General-Earth-Enhancements/issues"
 
