@@ -4,6 +4,10 @@ type = "save"
 name = "SaveSharingTest"
 authors = ["Maxi"]
 abstract = "Just a save sharing test for Borea development."
+description = '''
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-6)'''
 license = "CC-BY-4.0"
 
 [links]
@@ -16,3 +20,20 @@ ksamods = "SaveSharingTest"
 id = "FastAndPurrious"
 min = "0.1.12"
 kind = "required"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/save/SaveSharingTest/icon-qxPTA5ZAWSSN6vgD.webp"
+size = 25498
+width = 512
+height = 512
+sha256 = "e1e3ce4935acc27085f2740d3ceccadca462b8cbe2ddd861e4a06097e6390619"
+
+[[images.description]]
+id = "screenshot-6"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/save/SaveSharingTest/kyJRcoYGybWe6oEo.webp"
+sha256 = "97564c723a9ff720afeaecf7f4ceb61a9e9d2cd864b7471217c64581a8b82751"
+width = 1920
+height = 1080
+size = 190468
