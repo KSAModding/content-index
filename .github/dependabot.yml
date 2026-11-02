@@ -1,14 +1,40 @@
-# Keeps the actions the checks run on current. Same shape as the file in
-# KSAModding/Borea, so one convention covers every repository in the org.
+# Keeps every pinned dependency of this repository current: the actions of the workflows, the Python packages of the tools, and the npm packages of the bundles in site/vendor.
+# Each entry runs daily, so a fixed release reaches a pull request within a working day.
+# Security updates do not wait for this schedule, because Dependabot opens them when an advisory is published.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
     # Dependabot reads .github/workflows/ from here.
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     groups:
-      # Minor and patch bumps as one pull request instead of one each. A major
-      # bump stays on its own, because that is the one that can break a job.
+      # All action bumps arrive as one pull request, because the checks of that one pull request show at once whether a job breaks.
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: "pip"
+    # The exact pins the checks and the privileged jobs install with pip install -r.
+    directory: "/tools"
+    schedule:
+      interval: "daily"
+    # The increase strategy writes the new version into the == pin, so a pin stays exact.
+    versioning-strategy: "increase"
+    groups:
+      # Minor and patch bumps arrive as one pull request.
+      # A major bump stays on its own, because that is the one that can break a check.
       minor-and-patch:
         update-types: ["minor", "patch"]
+
+  - package-ecosystem: "npm"
+    # The packages the bundles in site/vendor are built from, and the esbuild version that builds them.
+    # Nothing installs them, and site/test/vendor.test.js fails until the bundle is built again and site/vendor/README.md names the new versions.
+    directory: "/site/vendor"
+    schedule:
+      interval: "daily"
+    # The increase strategy keeps the exact versions exact.
+    versioning-strategy: "increase"
+    groups:
+      # The bundles are built again together, so their packages arrive as one pull request.
+      vendor:
+        patterns: ["*"]

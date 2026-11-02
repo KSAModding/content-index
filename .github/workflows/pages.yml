@@ -36,7 +36,7 @@ jobs:
       - name: Assemble the site
         run: |
           cp -R site _site
-          rm -rf _site/test _site/package.json
+          rm -rf _site/test _site/package.json _site/vendor/package.json
           mkdir _site/rules
           cp schemas/authored.schema.json tags.toml hosts.toml _site/rules/
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5

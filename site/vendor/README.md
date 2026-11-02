@@ -12,3 +12,5 @@ After the build, the two non-ASCII characters that esbuild leaves in regular exp
 | `markdown-it.js` | markdown-it 14.1.0, entities 4.5.0, linkify-it 5.0.2, mdurl 2.1.0, punycode.js 2.3.1, uc.micro 2.1.0 |
 
 The entry of each bundle re-exports what the page uses, for example `export { parse, TomlDate } from "smol-toml";`.
+
+`package.json` names the same versions so that Dependabot can watch them, and `site/test/vendor.test.js` fails while it and this table disagree, so a Dependabot pull request can merge only after the bundle is built again and the table names the new versions.
