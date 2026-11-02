@@ -151,8 +151,8 @@ The process itself, including who the stewards are, is changed in the [design re
 It is optional on a vehicle or a save, per [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md), which amends RFC 0079, because vehicles and saves are many more than mods and the forum may have no place for them.
 Without it, the account on the release host is what ties a vehicle or a save to a person in a dispute or a takedown.
 
-Nothing reads the thread automatically today.
-If you see a listing whose thread is gone, report it with the takedown form.
+When the thread of a listing is gone on three daily checks in a row, clients stop offering it for new installs until its forums link names a thread that exists; installed copies stay, and an outage of the forum never counts.
+A banned author or a locked thread is still for a steward; report it with the takedown form.
 
 ## What a delisting does, and how fast
 
