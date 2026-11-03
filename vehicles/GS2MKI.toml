@@ -1,0 +1,14 @@
+spec_version = 1
+id = "GS2MKI"
+type = "vehicle"
+name = "GS-2 MK I"
+authors = ["Goddchen"]
+abstract = "Core of the Goddchen Station 2"
+license = "CC-BY-4.0"
+tags = ["station"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/GS2MKI"
+
+[releases]
+ksamods = "GS2MKI"
