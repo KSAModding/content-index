@@ -1,0 +1,13 @@
+spec_version = 1
+id = "ArgiziontMKI"
+type = "vehicle"
+name = "Argiziont MK I"
+authors = ["Goddchen"]
+abstract = "Our go-to vehicles when we test stuff on stream."
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/ArgiziontMKI"
+
+[releases]
+ksamods = "ArgiziontMKI"
