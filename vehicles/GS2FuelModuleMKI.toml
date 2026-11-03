@@ -1,0 +1,14 @@
+spec_version = 1
+id = "GS2FuelModuleMKI"
+type = "vehicle"
+name = "GS-2 Fuel Module MK I"
+authors = ["Goddchen"]
+abstract = "A fuel module for the Goddchen Station 2."
+license = "CC-BY-4.0"
+tags = ["station"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/GS2FuelModuleMKI"
+
+[releases]
+ksamods = "GS2FuelModuleMKI"
