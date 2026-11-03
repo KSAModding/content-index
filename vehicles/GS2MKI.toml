@@ -1,0 +1,35 @@
+spec_version = 1
+id = "GS2MKI"
+type = "vehicle"
+name = "GS-2 MK I"
+authors = ["Goddchen"]
+abstract = "Core of the Goddchen Station 2"
+description = '''
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-8)'''
+license = "CC-BY-4.0"
+tags = ["station"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/GS2MKI"
+
+[releases]
+ksamods = "GS2MKI"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/GS2MKI/icon-oAzLm5cYAEPXRWTt.webp"
+size = 26264
+width = 512
+height = 512
+sha256 = "22ff38aed5950269334faffee80fffddc5e1964ab1cbe9d7968191d8a92f01f2"
+
+[[images.description]]
+id = "screenshot-8"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/GS2MKI/PcjnCjuNleKrs6EU.webp"
+sha256 = "8248b65508880137419dbc32f69f435b52adb1f626e9e1a2b86e0769beefea01"
+width = 1920
+height = 1080
+size = 120254
