@@ -70,7 +70,6 @@ tags = ["user-interface"]
 
 [releases]
 github = "ghost225/KSAMainMenu"
-authority = "github"
 
 [links]
 forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/kitten-main-menu-0-1-0.1554/"
