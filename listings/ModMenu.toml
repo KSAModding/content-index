@@ -30,6 +30,7 @@ MIT
 """
 license = "MIT"
 tags = ["user-interface"]
+status = "deprecated"
 
 [releases]
 github = "MrJeranimo/ModMenu"
@@ -48,3 +49,4 @@ game_min = "2026.10.19.5638"
 [loader]
 id = "StarMap"
 min = "0.4.8"
+max = "0.4.8"
