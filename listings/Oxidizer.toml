@@ -1,0 +1,58 @@
+spec_version = 1
+id = "Oxidizer"
+type = "mod-loader"
+name = "Oxidizer"
+authors = ["SafeShows"]
+abstract = "Mod loader that runs Kitten Space Agency mods written in Rust or as Rhai scripts."
+description = """
+Oxidizer is a mod loader for Kitten Space Agency, written in Rust. It loads code mods written in Rust and mods written as Rhai scripts, so no C# is needed.
+
+![The two example mods, one in Rhai and one in Rust, drawing ImGui windows in game](ksa-image:example-mods)
+
+Mods can run code every frame, draw their own ImGui windows with the game's ImGui, read and change game objects by name, and patch game methods before or after they run.
+
+Rust mods use the `oxidizer_api` crate from crates.io. Rhai mods are plain `.rhai` files that need no compiling.
+
+Mods go in `Documents/My Games/Kitten Space Agency/mods/<ModName>/`. Oxidizer loads a mod when its `mod.toml` has an `[oxidizer]` section that names a `dll` or a `script`, and skips mods that are disabled in the game's manifest.
+
+You run `oxidizer.exe` rather than the game. The first run writes an `oxidizer.toml` next to it, where `game_path` points at the folder Kitten Space Agency was installed in.
+
+Oxidizer starts the game itself, so it does not run together with another launcher such as StarMap.
+"""
+license = "MIT"
+tags = ["library"]
+
+[releases]
+github = "SafeShows/Oxidizer"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/tools/oxidizer-write-ksa-mods-in-rust-or-rhai-scripts-mod-loader.1559/"
+repository = "https://github.com/SafeShows/Oxidizer"
+bugtracker = "https://github.com/SafeShows/Oxidizer/issues"
+
+[[images.description]]
+id = "example-mods"
+url = "https://raw.githubusercontent.com/SafeShows/Oxidizer/34da8b07db1ad53bae7c25a30180018ec296b8b2/docs/screenshot.png"
+sha256 = "cdebf92caf3ec659f7483ec2f16fdba031540ae1cbad98fecaa92fc010d65ead"
+width = 255
+height = 495
+size = 115860
+
+[compatibility]
+game_min = "2026.10.25.5707"
+os = ["windows"]
+
+[install]
+target = "standalone"
+uninstall = [
+  "Delete the Oxidizer directory. The game runs unmodded again with no further cleanup.",
+]
+
+[provides]
+launch = "oxidizer.exe"
+content-dir = "mods"
+
+[provides.configure]
+file = "oxidizer.toml"
+format = "toml"
+game-path = "game_path"
