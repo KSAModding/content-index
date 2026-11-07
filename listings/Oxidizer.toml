@@ -17,9 +17,9 @@ In game, **Mods > Oxidizer** in the menu bar shows the loaded mods, their errors
 
 Mods go in `Documents/My Games/Kitten Space Agency/mods/<ModName>/`. Oxidizer loads a mod when its `mod.toml` has an `[oxidizer]` section that names a `dll` or a `script`, and skips mods that are disabled in the game's manifest.
 
-You run `oxidizer.exe` rather than the game. The first run writes an `oxidizer.toml` next to it, where `game_path` points at the folder Kitten Space Agency was installed in.
+You run `oxidizer.exe` (`oxidizer` on Linux) rather than the game. The first run writes an `oxidizer.toml` next to it, where `game_path` points at the folder Kitten Space Agency was installed in.
 
-Oxidizer starts the game itself, so it does not run together with another launcher such as StarMap.
+Oxidizer runs on Windows and Linux. It starts the game itself, so it does not run together with another launcher such as StarMap.
 """
 license = "MIT"
 tags = ["library"]
@@ -42,7 +42,7 @@ size = 115860
 
 [compatibility]
 game_min = "2026.10.25.5707"
-os = ["windows"]
+os = ["windows", "linux"]
 
 [install]
 root = "Oxidizer"
@@ -59,6 +59,9 @@ content-dir = "mods"
 file = "oxidizer.toml"
 format = "toml"
 game-path = "game_path"
+
+[provides.platform.linux]
+launch = "oxidizer"
 
 [provides.instance]
 flag = "-InstancePath"
