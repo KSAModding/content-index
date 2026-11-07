@@ -9,17 +9,15 @@ Oxidizer is a mod loader for Kitten Space Agency, written in Rust. It loads code
 
 ![The two example mods, one in Rhai and one in Rust, drawing ImGui windows in game](ksa-image:example-mods)
 
-Mods can run code every frame, draw their own ImGui windows with the game's ImGui, read and change game objects by name, and patch game methods before or after they run.
+This is the standalone loader: you start the game through `oxidizer.exe` (`oxidizer` on Linux) instead of the game, and no StarMap is needed. If you use StarMap or other C# mods, install `Oxidizer.StarMap` instead: the same Oxidizer as a StarMap mod, and the same mods run with both.
 
-Rust mods use the `oxidizer_api` crate from crates.io. Rhai mods are plain `.rhai` files that need no compiling, and they reload while the game runs when you save them.
+Mods can run code every frame, draw their own ImGui windows with the game's ImGui, read and change game objects, patch game methods before or after they run and change what they return, react to hotkeys, keep their own settings, and add entries to a Mods menu in the game's menu bar. **Mods > Oxidizer** shows the loaded mods, their errors and the log.
 
-In game, **Mods > Oxidizer** in the menu bar shows the loaded mods, their errors and the log, and mods can add their own entries to the Mods menu.
+Rhai mods are plain `.rhai` files that need no compiling, and they reload while the game runs when you save them. Rust mods use the `oxidizer_api` crate from crates.io, and `oxidizer --bindgen` generates typed Rust bindings for the whole game, with autocomplete and compile-time checks.
 
-Mods go in `Documents/My Games/Kitten Space Agency/mods/<ModName>/`. Oxidizer loads a mod when its `mod.toml` has an `[oxidizer]` section that names a `dll` or a `script`, and skips mods that are disabled in the game's manifest.
+Mods go in `Documents/My Games/Kitten Space Agency/mods/<ModName>/`. Oxidizer loads a mod when its `mod.toml` has an `[oxidizer]` section that names a `dll` or a `script`, and skips mods that are disabled in the game's manifest. The first run writes an `oxidizer.toml` next to the executable, where `game_path` points at the folder Kitten Space Agency was installed in.
 
-You run `oxidizer.exe` (`oxidizer` on Linux) rather than the game. The first run writes an `oxidizer.toml` next to it, where `game_path` points at the folder Kitten Space Agency was installed in.
-
-Oxidizer runs on Windows and Linux. It starts the game itself, so it does not run together with another launcher such as StarMap.
+Oxidizer runs on Windows and Linux.
 """
 license = "MIT"
 tags = ["library"]
