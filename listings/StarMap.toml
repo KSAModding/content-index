@@ -27,7 +27,7 @@ repository = "https://github.com/StarMapLoader/StarMap"
 bugtracker = "https://github.com/StarMapLoader/StarMap/issues"
 
 [compatibility]
-game_min = "2026.8.3.5117"
+game_min = "2026.10.25.5707"
 
 [install]
 target = "standalone"
