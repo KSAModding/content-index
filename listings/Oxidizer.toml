@@ -11,7 +11,9 @@ Oxidizer is a mod loader for Kitten Space Agency, written in Rust. It loads code
 
 Mods can run code every frame, draw their own ImGui windows with the game's ImGui, read and change game objects by name, and patch game methods before or after they run.
 
-Rust mods use the `oxidizer_api` crate from crates.io. Rhai mods are plain `.rhai` files that need no compiling.
+Rust mods use the `oxidizer_api` crate from crates.io. Rhai mods are plain `.rhai` files that need no compiling, and they reload while the game runs when you save them.
+
+In game, **Mods > Oxidizer** in the menu bar shows the loaded mods, their errors and the log, and mods can add their own entries to the Mods menu.
 
 Mods go in `Documents/My Games/Kitten Space Agency/mods/<ModName>/`. Oxidizer loads a mod when its `mod.toml` has an `[oxidizer]` section that names a `dll` or a `script`, and skips mods that are disabled in the game's manifest.
 
@@ -57,3 +59,7 @@ content-dir = "mods"
 file = "oxidizer.toml"
 format = "toml"
 game-path = "game_path"
+
+[provides.instance]
+flag = "-InstancePath"
+variable = "OXIDIZER_INSTANCE_PATH"
