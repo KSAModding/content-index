@@ -5,7 +5,9 @@ name = "PrincipiaKSA"
 authors = ["SMOKE"]
 abstract = "Replaces the games Kepler based gravity, with more realistic N-body Gravity."
 description = """
-This mod replaces the game's simplified gravity model and replaces it with N-body simulation. Such a mod called Principia(https://github.com/mockingbirdnest/Principia) existed for KSP and now repo has ported it to KSA. N-body gravity works by calculating all the gravity forces acting on an object not just 2 like the default KSA one, so as a result the path of a vessel in sapce can be much more complicated and realistic than the normal game. Principia offers much more depth to game and is very fun for people who have mastered the games own physics. """
+This mod replaces the game's simplified gravity model and replaces it with N-body simulation. Such a mod called Principia(https://github.com/mockingbirdnest/Principia) existed for KSP and now repo has ported it to KSA. N-body gravity works by calculating all the gravity forces acting on an object not just 2 like the default KSA one, so as a result the path of a vessel in sapce can be much more complicated and realistic than the normal game. Principia offers much more depth to game and is very fun for people who have mastered the games own physics.
+
+![text](ksa-image:OrbitlLines)"""
 license = "MIT"
 tags = ["gameplay"]
 
@@ -22,3 +24,18 @@ game_min = "2026.10.25.5707"
 [loader]
 id = "StarMap"
 min = "0.4.8"
+
+[images.icon]
+url = "https://github.com/parsaes80/PrincipiaKSA/blob/master/pictures/Screenshot_20261106_215834.png"
+sha256 = "e6a90647068b95e3331b113fb05d7c32ec09fb043d18b053dc3b6bdbefdf43d4"
+width = 512
+height = 512
+size = 13277
+
+[[images.description]]
+id = "OrbitlLines"
+url = "https://github.com/parsaes80/PrincipiaKSA/blob/master/pictures/PrincipiaKSA.png"
+sha256 = "187766d7af6610a999c89975fac5f0e4590e2aa97eb2ebfde700e4f1d83a22ba"
+width = 1449
+height = 806
+size = 825736
