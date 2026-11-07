@@ -26,7 +26,7 @@ id = "StarMap"
 min = "0.4.8"
 
 [images.icon]
-url = "https://github.com/parsaes80/PrincipiaKSA/blob/master/pictures/Screenshot_20261106_215834.png"
+url = "https://github.com/parsaes80/PrincipiaKSA/blob/master/pictures/Screenshot_20261106_215834.png?raw=true"
 sha256 = "e6a90647068b95e3331b113fb05d7c32ec09fb043d18b053dc3b6bdbefdf43d4"
 width = 512
 height = 512
@@ -34,7 +34,7 @@ size = 13277
 
 [[images.description]]
 id = "OrbitlLines"
-url = "https://github.com/parsaes80/PrincipiaKSA/blob/master/pictures/PrincipiaKSA.png"
+url = "https://github.com/parsaes80/PrincipiaKSA/blob/master/pictures/PrincipiaKSA.png?raw=true"
 sha256 = "187766d7af6610a999c89975fac5f0e4590e2aa97eb2ebfde700e4f1d83a22ba"
 width = 1449
 height = 806
