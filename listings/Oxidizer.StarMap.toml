@@ -13,6 +13,8 @@ Mods can run code every frame, draw ImGui windows, read and change game objects,
 
 Mods for Oxidizer are listed with StarMap as their loader and this mod as a required dependency, so a mod manager installs everything they need.
 
+It runs on Windows, Linux and macOS. On a Mac it works with the [macOS port](https://github.com/renancamm/ksa-macos-port) of the game and the StarMap it installs (Apple Silicon).
+
 Prefer no StarMap? The standalone loader is listed as `Oxidizer`, and the same mods run with it too.
 """
 license = "MIT"
@@ -36,7 +38,7 @@ size = 115860
 
 [compatibility]
 game_min = "2026.10.25.5707"
-os = ["windows", "linux"]
+os = ["windows", "linux", "macos"]
 
 [loader]
 id = "StarMap"
