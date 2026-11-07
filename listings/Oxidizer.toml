@@ -43,6 +43,7 @@ game_min = "2026.10.25.5707"
 os = ["windows"]
 
 [install]
+root = "Oxidizer"
 target = "standalone"
 uninstall = [
   "Delete the Oxidizer directory. The game runs unmodded again with no further cleanup.",
