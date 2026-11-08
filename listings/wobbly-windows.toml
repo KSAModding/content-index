@@ -1,0 +1,63 @@
+spec_version = 1
+id = "wobbly-windows"
+type = "mod"
+name = "Wobbly Windows"
+authors = ["Alex", "tomservo"]
+abstract = "wobbly wobble wobble"
+description = """
+wobbly wobble wobble
+
+![wobbly_01](ksa-image:wobbly_01)
+
+![wobbly_02](ksa-image:wobbly_02)
+
+![wobbly_03](ksa-image:wobbly_03)"""
+license = "MIT"
+tags = ["user-interface"]
+
+[releases]
+github = "meow-sci/wobbly-windows"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/wobbly-windows.1566/"
+homepage = "https://github.com/meow-sci/wobbly-windows"
+repository = "https://github.com/meow-sci/wobbly-windows"
+bugtracker = "https://github.com/meow-sci/wobbly-windows/issues"
+
+[compatibility]
+game_min = "2026.10.25.5707"
+
+[loader]
+id = "StarMap"
+min = "0.5.2"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/meow-sci/wobbly-windows/ae89b97445c626214831c7b24c9d02cb0f865fa1/docs/media/wobbly_icon.webp"
+sha256 = "23d22299a76c3ddffc3d752a65c2a10a9feb8f92087221b00301f85c38bbcf50"
+width = 410
+height = 410
+size = 19724
+
+[[images.description]]
+id = "wobbly_01"
+url = "https://raw.githubusercontent.com/meow-sci/wobbly-windows/ae89b97445c626214831c7b24c9d02cb0f865fa1/docs/media/wobbly_01.webp"
+sha256 = "dda764592bc65d000234f95429f102ca6db12e4dabd5e1f376f859bb59f69dbe"
+width = 2000
+height = 1500
+size = 162038
+
+[[images.description]]
+id = "wobbly_02"
+url = "https://raw.githubusercontent.com/meow-sci/wobbly-windows/ae89b97445c626214831c7b24c9d02cb0f865fa1/docs/media/wobbly_02.webp"
+sha256 = "1ab4d8579ad6bda69692e9fc0a42aea3aad933f9eb2db1cba5e9a917b525deb4"
+width = 2000
+height = 1500
+size = 231344
+
+[[images.description]]
+id = "wobbly_03"
+url = "https://raw.githubusercontent.com/meow-sci/wobbly-windows/ae89b97445c626214831c7b24c9d02cb0f865fa1/docs/media/wobbly_03.webp"
+sha256 = "8868d40b9356b1ec35bbeca35d2b6478416bbc55328c071091bf4bc357883bd2"
+width = 2000
+height = 1500
+size = 204376
