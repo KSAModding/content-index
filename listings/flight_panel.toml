@@ -1,0 +1,48 @@
+spec_version = 1
+id = "flight_panel"
+type = "mod"
+name = "Flight Panel"
+authors = ["SafeShows"]
+abstract = "A window with live flight data, and a warp guard that limits time warp at low altitude."
+description = """
+Flight Panel adds a window with live flight data and a warp guard that keeps time warp in check at low altitude.
+
+![The Flight panel in orbit around Earth, with its settings open](ksa-image:panel)
+
+- **Flight data:** altitude, height above ground, vertical, surface and orbital speed, apoapsis and periapsis with countdowns, mass, propellant, throttle and time warp, plus the highest and fastest your vehicle has been.
+- **Warp guard:** below an altitude you set (70 km by default), time warp can't go past a speed you set (4x by default), and the game's auto-warp won't start.
+- **Settings** in the panel, saved across games.
+- **F7** shows and hides the panel, **F6** turns the warp guard on and off. Both are in the game's **Mods** menu too.
+
+Flight Panel is written in Rust and runs on [Oxidizer](https://github.com/SafeShows/Oxidizer), which mod managers install with it. It is also a worked example for modders: each source file shows one part of Oxidizer's API, and its MIT-0 license lets you copy any of it into your own mods.
+"""
+license = "MIT-0"
+tags = ["user-interface"]
+
+[releases]
+github = "SafeShows/oxidizer-flight-panel"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/flight-panel-1-0-0-live-flight-data-and-a-warp-guard-oxidizer-example-mod.1571/"
+repository = "https://github.com/SafeShows/oxidizer-flight-panel"
+bugtracker = "https://github.com/SafeShows/oxidizer-flight-panel/issues"
+
+[[images.description]]
+id = "panel"
+url = "https://raw.githubusercontent.com/SafeShows/oxidizer-flight-panel/98395ace2834eeb6ae9e2b8a0837a55e7f827110/docs/screenshot.png"
+sha256 = "b4f914aeeaf00231317a4f276229a1132fe6e02a60bc83f42f59cc2e85c46148"
+width = 760
+height = 740
+size = 436874
+
+[compatibility]
+game_min = "2026.10.25.5707"
+os = ["windows", "linux", "macos"]
+
+[loader]
+id = "StarMap"
+
+[[dependencies]]
+id = "Oxidizer.StarMap"
+kind = "required"
+min = "0.4.0"
