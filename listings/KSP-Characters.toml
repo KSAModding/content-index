@@ -13,9 +13,9 @@ What it includes and its known limitations are in the [README](https://github.co
 
 ## Credits and legal
 
-The Kerbals' models, textures, animations and name lists come from Kerbal Space Program and belong to its rights holders. The jetpack and its textures are Kitten Space Agency's. This is a fan port, not affiliated with or endorsed by either. Only the XML definitions and the documentation are MIT licensed; see LICENSE.
+The Kerbals' models, textures, animations and name lists come from Kerbal Space Program and belong to its rights holders. This is a fan port, not affiliated with or endorsed by them or by Kitten Space Agency's developers. Only the XML definitions and the documentation are MIT licensed; see LICENSE.
 """
-license = "MIT AND LicenseRef-KSP-Assets AND LicenseRef-KSA-Assets"
+license = "MIT AND LicenseRef-KSP-Assets"
 tags = ["visual"]
 
 [releases]
@@ -30,11 +30,12 @@ spacedock = "https://spacedock.info/mod/4753/KSP%20Characters"
 bugtracker = "https://github.com/paulo-santana/KSA-KSP-Characters/issues"
 
 [compatibility]
-game_min = "2026.10.19.5638"
+game_min = "2026.11.10.5801"
 
 [[dependencies]]
 id = "CharacterManager"
 kind = "suggests"
+min = "0.4.1"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/paulo-santana/KSA-KSP-Characters/b2ab2525fa3660e9b628698693b907cab762c08e/listing/icon.png"
