@@ -1,0 +1,48 @@
+spec_version = 1
+id = "rhai_studio"
+type = "mod"
+name = "Rhai Studio"
+authors = ["SafeShows"]
+abstract = "Write mods inside the game: an editor for Oxidizer's Rhai mods with syntax colors, hot reload, a new-mod wizard and a live console."
+description = """
+Rhai Studio is an in-game editor for Oxidizer's Rhai mods. Open a mod's script, change it, press **Ctrl+S**, and the mod reloads within a second while you keep flying. No compiler, no restarting the game.
+
+![Rhai Studio in game: the mod list, a script with syntax colors, and the console](ksa-image:studio)
+
+- **Editor with syntax colors:** keywords, strings, numbers, comments, calls and `ksa::` game modules each get their own color, with line numbers. Undo, select all, copy and paste work as usual.
+- **Hot reload:** SAVE (or Ctrl+S) writes the file and Oxidizer reloads the mod right away. Files changed in another editor show up in the open tab too.
+- **New mod wizard:** type a name and press CREATE: Rhai Studio makes the mod with a starter script that opens a window, and it starts running at once.
+- **Errors where you need them:** a mod that fails to load or stops on an error shows it above the editor, with the line number.
+- **Live console:** a drawer with the log as it comes in and a line that runs Rhai against your current game, e.g. `ksa::Program::controlled_vehicle().id`.
+
+**F9** or **Mods > Rhai Studio** opens it, and the × closes it. It is styled after the game's own dialogs.
+
+Rhai Studio is a Rust mod for [Oxidizer](https://github.com/SafeShows/Oxidizer), which a mod manager installs with it, and a full example of Oxidizer's API. MIT-0, so copy any of it into your own mods.
+"""
+license = "MIT-0"
+tags = ["tools"]
+
+[releases]
+github = "SafeShows/oxidizer-rhai-studio"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/tools/rhai-studio-1-0-0-write-mods-inside-the-game-oxidizer.1575/"
+repository = "https://github.com/SafeShows/oxidizer-rhai-studio"
+bugtracker = "https://github.com/SafeShows/oxidizer-rhai-studio/issues"
+
+[[images.description]]
+id = "studio"
+url = "https://raw.githubusercontent.com/SafeShows/oxidizer-rhai-studio/0a3a93673d5f9a8f74f5258cd4761de17c4f56cf/docs/screenshot.png"
+sha256 = "18f1c002fcf73ac3ee782183a53f9e8e83e4cecdc3f24eeec6f24f1651928c0f"
+width = 1104
+height = 722
+size = 153646
+
+[compatibility]
+game_min = "2026.10.25.5707"
+os = ["windows", "linux"]
+
+# Runs on standalone Oxidizer, which reads the same mods folder.
+[loader]
+id = "Oxidizer"
+min = "0.7.0"
