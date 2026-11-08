@@ -1,0 +1,54 @@
+spec_version = 1
+id = "KSAMultiplayer"
+type = "mod"
+name = "KSA Multiplayer"
+authors = ["Laurens"]
+abstract = "A shared world for Kitten Space Agency: several players, each in their own game, flying in one universe kept by a dedicated server. Rockets, rovers and kittens on EVA all sync."
+description = """
+A shared world for **Kitten Space Agency**: several players, each in their own game, flying in one universe kept by a **dedicated server**. The server runs on Linux, Windows or a Raspberry Pi, needs no copy of the game, and holds the world whether anybody is playing or not.
+
+Any craft syncs: rockets, rovers, kittens walking about on EVA. You see other players fly, stage, burn and crash in real time, each craft carrying its owner's name.
+
+### Playing together
+
+- **A craft is its owner's.** You can watch one somebody else is flying, ride along with it, and see its engines burn — but not take it, board it or empty it out. When its owner leaves, it comes free.
+- **One clock.** Everybody keeps the server's time. A game that falls behind catches up on its own, and nobody is left watching a world minutes out of date.
+- **Time warp is asked, not taken.** Changing the simulation speed is put to the room first, and only whoever asked can end it. A game that cannot keep up holds the speed down for everyone, so nothing runs away from the slowest machine.
+- **Hold Tab** for who is playing and their ping, **Enter** for a chat line.
+- Launchpads are shared out, so two players launching at one site do not land on top of each other.
+
+### The server
+
+One self-contained executable. Point it at a port and it waits; the first player to join gives it their world, and it hands that world to everyone who joins after. Or set `empty-world` and it starts with an empty one of its own, so nobody has to seed it.
+
+It keeps the world between runs, saves periodically, and has a console: `clear` sweeps up the spent stages a shared world fills with, `reload` hands the world out again without anybody reconnecting, and `fresh` throws it away and starts over. Players can be made admins and run those commands from inside the game.
+
+There is a server at **`mp.ksarmory.com`** to try it on.
+
+### What you need
+
+Everyone in a world needs **the same KSA build**, the same mod version, and every mod the world's craft use. The server turns away anyone who differs and says what is missing, rather than letting a mismatch corrupt the world quietly.
+
+### Honest status
+
+Two games on one machine have flown in one world through all of this: launching, EVA, chat, nametags, a voted warp, and an 89-part rocket staged while the other game watched and rebuilt the dropped stage as its own craft. Another player's engines are seen to burn even on a craft your game is not simulating, thousands of kilometres away.
+
+What a dozen players across the internet do to it is not known yet. Bug reports are welcome.
+"""
+license = "MIT"
+tags = ["gameplay", "user-interface"]
+
+[releases]
+github = "LaurensDeV/KSAMultiplayer"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/ksa-multiplayer.1578/"
+repository = "https://github.com/LaurensDeV/KSAMultiplayer"
+bugtracker = "https://github.com/LaurensDeV/KSAMultiplayer/issues"
+
+[compatibility]
+game_min = "2026.11.10.5801"
+
+[loader]
+id = "StarMap"
+min = "0.5.3"
