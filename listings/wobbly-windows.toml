@@ -25,11 +25,11 @@ repository = "https://github.com/meow-sci/wobbly-windows"
 bugtracker = "https://github.com/meow-sci/wobbly-windows/issues"
 
 [compatibility]
-game_min = "2026.10.25.5707"
+game_min = "2026.11.10.5801"
 
 [loader]
 id = "StarMap"
-min = "0.5.2"
+min = "0.5.4"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/meow-sci/wobbly-windows/ae89b97445c626214831c7b24c9d02cb0f865fa1/docs/media/wobbly_icon.webp"
