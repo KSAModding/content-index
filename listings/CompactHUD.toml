@@ -24,11 +24,11 @@ repository = "https://github.com/Restricted117/KSA-CompactHUD"
 bugtracker = "https://github.com/Restricted117/KSA-CompactHUD/issues"
 
 [compatibility]
-game_min = "2026.10.19.5638"
+game_min = "2026.11.10.5801"
 
 [loader]
 id = "StarMap"
-min = "0.4.8"
+min = "0.5.4"
 
 [images.icon]
 url = "https://github.com/Restricted117/KSA-CompactHUD/blob/master/images/icon.jpg?raw=true"
