@@ -43,6 +43,8 @@ What a steward does:
 3. Sets `delisted` with a reason when the takedown holds, or closes the issue with a reason when it does not.
 
 Grounds that hold: the content breaks the law or the license of what it contains, the archive carries something harmful, the release host has already taken the files down, or the required forums thread is gone (see below).
+The same grounds hold for a vehicle or a save.
+In a save, every file beside `meta.toml` and `universe.xml` is the state of a mod and installs as it is, so such a file that carries something harmful is grounds too.
 
 If you are the author and want your own listing gone, read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 A `deprecated` status or a yanked release keeps the id, the successor pointer and every stamped release for the people who installed it.
@@ -70,16 +72,18 @@ A retracted version stays installed where it is, and a client stops offering it,
 
 The id is the folder name the game installs a mod as, so two mods cannot share one, and the index gives an id to the first pull request that claims it and verifies.
 A pack id is given the same way, and a squatted pack id, such as a generic `StarterPack`, is an id dispute like any other.
+A vehicle or a save installs as the `name` in its `meta.toml` and not as its id, but its id is in the same namespace and is given the same way.
 
 Use the [id dispute form](https://github.com/KSAModding/content-index/issues/new?template=id-dispute.yml) when a listed id is one you believe is yours, or when the ownership of a listing is contested, for example after a handover.
 
 Who was first is decided by the forums thread.
-Every listing carries a required `links.forums`, tied to an Ahwoo forums account, and the thread that first announced the content under that folder name is the tiebreaker.
+Every mod, mod loader and pack carries a required `links.forums`, tied to an Ahwoo forums account, and the thread that first announced the content under that folder name is the tiebreaker.
+A vehicle or a save can have no thread, see [The forums link](#the-forums-link), and then the steward decides by the account on its release host, the account that proves control of the host the listing names.
 
 What a steward does:
 
 1. Sets `disputed` on the listing as soon as the dispute is filed, so clients warn while it is open.
-2. Asks both parties to answer on the issue, each with their forums thread.
+2. Asks both parties to answer on the issue, each with their forums thread, or for a vehicle or a save without one, with the account on its release host.
 3. Decides, and writes the decision on the issue.
 
 When the id goes to the other party, the previous holder's listing is `delisted` and its releases go with it, and the content that lost the id can list again under a new id.
@@ -104,13 +108,22 @@ A mention subscribes the owner to that one pull request, and they can unsubscrib
 ## Content on a share host
 
 A share host lets a player publish a vehicle or a save without a GitHub repository of their own, per [RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md).
-The stewards register each share host in [`hosts.toml`](hosts.toml), and its operator agrees at registration to transfer its storage repository to a successor the stewards name when it stops operating.
+The stewards register each share host in [`hosts.toml`](hosts.toml).
+A host keeps its files in a GitHub storage repository, or on its own servers under a `data` base URL with every data file signed by its Ed25519 `key`, per [RFC 0104](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0104-share-host-conformance.md).
+At registration its operator agrees to hand over to a successor the stewards name when it stops operating.
+A host with storage transfers that repository.
+A host with `data` gives the successor every data file, signature and archive, and transfers the domains of `data` and `downloads` or keeps them redirecting to the successor's copies for at least one year.
+
+The signing key of a host with `data` is never handed over.
+When the key changes, for a successor or for a new key of the same operator, the new key goes into `key` and the old one moves to `retired_keys` with a steward's pull request, so its signatures can still be checked, and the host signs every current data file again.
 
 For content on a share host, its operator handles takedowns, abuse reports and the privacy of its accounts, under the policy that its table in `hosts.toml` links:
 
-- No share host is registered yet.
+- [ksamods.gg](https://ksamods.gg/policy), the host in the table `[ksamods]`.
 
-A takedown on the host deletes the release in its storage repository, and the watcher then marks the release gone.
+A takedown on a host with storage deletes the release in its storage repository.
+A takedown on a host with `data` makes the `url` of the archive answer `410 Gone`, and the host signs the changed release list again.
+In both cases the watcher then marks the release gone.
 The index still owns its listing states, so a steward can delist content on a share host through `index-status.toml` as for any other listing, which is the faster path for content that must go at once.
 
 An id dispute between two accounts of one share host is settled by the first upload of that id on the host, which the records of the host show.
@@ -129,14 +142,17 @@ The process itself, including who the stewards are, is changed in the [design re
 
 ## The forums link
 
-`links.forums` is required on every listing, and it does three jobs here.
+`links.forums` is required on every mod, mod loader and pack, and it does three jobs here.
 
 - It ties the listing to an Ahwoo forums account, which is a person a steward can reach outside GitHub.
 - It is the tiebreaker in an id dispute, as above.
 - It is a tripwire: a thread the forum moderators took down, or an author who was banned there, is grounds to review the listing.
 
-Nothing reads the thread automatically today.
-If you see a listing whose thread is gone, report it with the takedown form.
+It is optional on a vehicle or a save, per [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md), which amends RFC 0079, because vehicles and saves are many more than mods and the forum may have no place for them.
+Without it, the account on the release host is what ties a vehicle or a save to a person in a dispute or a takedown.
+
+When the thread of a listing is gone on three daily checks in a row, clients stop offering it for new installs until its forums link names a thread that exists; installed copies stay, and an outage of the forum never counts.
+A banned author or a locked thread is still for a steward; report it with the takedown form.
 
 ## What a delisting does, and how fast
 

@@ -14,12 +14,9 @@ just a word that appears somewhere in it. A fragment of "id" alone is satisfied
 by any message containing "valid", which pins nothing.
 """
 
-import copy
 import sys
 import tomllib
 from pathlib import Path
-
-from jsonschema import Draft202012Validator
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -81,8 +78,6 @@ authors = ["Nobody"]
 abstract = "A vehicle that exists only in this test file."
 license = "CC-BY-4.0"
 """
-
-GATE = "is a type that the index does not accept yet, because no release host for it exists (RFC 0085 Rollout)"
 
 PACK_MEMBER = '[[mods]]\nid = "AdvancedFlightComputer"\nversion = "0.7.0"\n'
 
@@ -369,7 +364,7 @@ REJECTED = [
     ("a pack timestamp without a zone", pack(replace=("T12:00:00Z", "T12:00:00")), "released_at: '2026-08-05T12:00:00' is not a UTC date and time such as 2026-08-05T12:00:00Z"),
     ("a pack timestamp on no calendar", pack(replace=("2026-08-05T12:00:00Z", "2026-13-45T12:00:00Z")), "released_at: '2026-13-45T12:00:00Z' is not a real date"),
 
-    # Vehicles and saves (RFC 0085), refused by the rollout gate and by their own rules
+    # Vehicles and saves (RFC 0085), refused by their own rules
     ("a document without a type still needs links", MOD_KEYS.replace('type = "mod"\n', ""), "the document: 'links' is a required property"),
     ("a document without a type still needs compatibility", MOD_KEYS.replace('type = "mod"\n', ""), "the document: 'compatibility' is a required property"),
     ("a mod without links", MOD_KEYS + "\n[compatibility]\n" + GAME_MIN + "\n", "the document: 'links' is a required property"),
@@ -391,9 +386,8 @@ REJECTED = [
     ("a save with a loader", VEHICLE.replace('type = "vehicle"', 'type = "save"') + '\n[loader]\nid = "StarMap"\nmin = "0.4"\n', "loader: this key is not allowed here"),
 ]
 
-# Vehicles and saves that their own rules accept. While the rollout gate holds
-# their type, the gate line is their only error, and without the gate they pass.
-GATED_ACCEPTED = [
+# Vehicles and saves that their own rules accept.
+VEHICLES_AND_SAVES = [
     ("a minimal vehicle", VEHICLE),
     ("a minimal save", VEHICLE.replace('type = "vehicle"', 'type = "save"')),
     ("a vehicle with a forums link and a dependency", VEHICLE + "\n[links]\n" + FORUMS + '\n\n[[dependencies]]\nid = "TestMod"\nkind = "required"\nmin = "1.4"\n'),
@@ -525,27 +519,11 @@ def main():
         if errors:
             failures.append(f"{path.name} should be valid, but: " + "; ".join(errors))
 
-    for name, text in ACCEPTED:
+    for name, text in ACCEPTED + VEHICLES_AND_SAVES:
         checked += 1
         errors = failures_for(text, checker)
         if errors:
             failures.append(f"'{name}' should be accepted, but: " + "; ".join(errors))
-
-    schema = copy.deepcopy(checker.schema)
-    gate = schema["properties"]["type"].pop("not", None)
-    ungated = Draft202012Validator(schema)
-    for name, text in GATED_ACCEPTED:
-        checked += 1
-        content_type = tomllib.loads(text)["type"]
-        errors = failures_for(text, checker)
-        if gate and content_type in gate["enum"]:
-            if errors != [f"<case>: type: '{content_type}' {GATE}"]:
-                failures.append(f"'{name}' should be refused by the gate alone, but: " + "; ".join(errors))
-        elif errors:
-            failures.append(f"'{name}' should be accepted, but: " + "; ".join(errors))
-        errors = failures_for(text, ungated)
-        if errors:
-            failures.append(f"'{name}' should be accepted without the gate, but: " + "; ".join(errors))
 
     seen = set()
     for name, text, expected in REJECTED:

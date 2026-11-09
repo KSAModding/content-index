@@ -19,7 +19,7 @@ unscience lets you do *things* to KSA
 
 ![free-fallin](ksa-image:free-fallin_01)"""
 license = "MIT"
-tags = ["parts", "gameplay", "visual", "audio", "tools"]
+tags = ["parts", "gameplay", "user-interface", "visual", "audio", "tools"]
 
 [releases]
 github = "meow-sci/unscience"
@@ -30,7 +30,7 @@ repository = "https://github.com/meow-sci/unscience"
 bugtracker = "https://github.com/meow-sci/unscience/issues"
 
 [compatibility]
-game_min = "2026.9.10.5438"
+game_min = "2026.11.10.5801"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/meow-sci/unscience/main/docs/media/icon_1024.webp"

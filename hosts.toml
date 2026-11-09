@@ -4,7 +4,7 @@
 # `types`. schemas/hosts.schema.json says what a table may contain, and
 # tools/check_hosts.py checks this file and the listings that name a host.
 #
-# No host is registered yet. A table looks like this:
+# A table looks like this:
 #
 # [example]
 # kind = "share"
@@ -17,3 +17,36 @@
 # max_bytes = { vehicle = 10485760, save = 104857600 }
 # new_listings_per_day = 5
 # policy = "https://example.org/policy"
+#
+# A host that keeps its archives and data files outside GitHub (RFC 0104)
+# names data, downloads and key instead of storage and pages. key is the
+# Ed25519 public key that signs every data file, as base64 of its
+# SubjectPublicKeyInfo, and retired_keys keeps its earlier values:
+#
+# [example-cdn]
+# kind = "share"
+# name = "example.net"
+# data = "https://data.example.net/share/"
+# downloads = ["https://files.example.net/"]
+# key = "MCowBQYDK2VwAyEAAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="
+# retired_keys = []
+# bot = 98765433
+# api = "https://example.net/api/share/v1/"
+# types = ["vehicle", "save"]
+# max_bytes = { vehicle = 10485760, save = 104857600 }
+# new_listings_per_day = 5
+# policy = "https://example.net/policy"
+
+[ksamods]
+kind = "share"
+name = "ksamods.gg"
+data = "https://ksamods-share.fsn1.your-objectstorage.com/"
+downloads = ["https://ksamods.gg/share/files/", "https://ksamods-share.fsn1.your-objectstorage.com/archives/"]
+key = "MCowBQYDK2VwAyEAaCX9EfN/soDON+IExBZkzV2di0uBZagD+kqVctDwxaY="
+retired_keys = []
+bot = 314655007
+api = "https://ksamods.gg/api/share/v1/"
+types = ["vehicle", "save"]
+max_bytes = { vehicle = 10485760, save = 104857600 }
+new_listings_per_day = 5
+policy = "https://ksamods.gg/policy"

@@ -1,0 +1,15 @@
+spec_version = 1
+id = "TheGuy"
+type = "vehicle"
+name = "The Guy"
+authors = ["elevatorctln"]
+abstract = "A basic, aesthetically pleasing vehicle with a powerful sustainer core flanked by four liquid boosters with four lower thrust engines each."
+description = "A basic, aesthetically pleasing vehicle with a powerful sustainer core flanked by four liquid boosters with four lower thrust engines each for a total of seventeen engines on the first stage. Dead simple second stage."
+license = "CC-BY-4.0"
+tags = ["rocket"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/TheGuy"
+
+[releases]
+ksamods = "TheGuy"

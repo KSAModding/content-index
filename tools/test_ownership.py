@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: MIT
 """Tests for the ownership proofs. No token, no network."""
 
+import base64
 import io
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -14,6 +16,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import check_scope
 import ownership
+from test_signature import seed, spki
+
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 LISTING = {
     "id": "AutoStage",
@@ -1101,6 +1106,70 @@ def attested(changes, text=None):
     }
 
 
+SIGNER = Ed25519PrivateKey.from_private_bytes(seed("content-index ownership signer"))
+RETIRED = Ed25519PrivateKey.from_private_bytes(seed("content-index ownership retired"))
+DATA = "https://data.example.net/share/"
+DATA_TABLE = {
+    "kind": "share",
+    "name": "example.net",
+    "data": DATA,
+    "downloads": ["https://files.example.net/"],
+    "key": spki(SIGNER),
+    "retired_keys": [spki(RETIRED)],
+    "bot": BOT,
+    "types": ["vehicle", "save"],
+}
+DATA_REGISTRY = {"ksamods": DATA_TABLE}
+
+
+def signed(texts, signer=SIGNER):
+    """The files of a host with `data`: each text, and its .sig by `signer` unless that is None."""
+    files = {}
+    for path, text in texts.items():
+        files[path] = text.encode("utf-8")
+        if signer is not None:
+            files[path + ownership.SIGNATURE] = base64.b64encode(signer.sign(files[path]))
+    return files
+
+
+class DataHost:
+    """A host with `data` behind a patched urlopen, which keeps every request it gets."""
+
+    def __init__(self, files, final=None):
+        self.files = files
+        self.final = final
+        self.requests = []
+
+    def urlopen(self, request, timeout):
+        self.requests.append(request)
+        path = request.full_url.removeprefix(DATA)
+        if path not in self.files:
+            raise ownership.urllib.error.HTTPError(request.full_url, 404, "Not Found", {}, io.BytesIO(b""))
+        body = self.files[path]
+        answer = mock.MagicMock()
+        answer.__enter__.return_value.url = self.final or request.full_url
+        answer.__enter__.return_value.read.side_effect = lambda size=-1: body[:size] if size >= 0 else body
+        return answer
+
+    def patch(self):
+        return mock.patch.object(ownership.urllib.request, "urlopen", self.urlopen)
+
+    def urls(self):
+        return [request.full_url for request in self.requests]
+
+
+class DataApi(ShareApi):
+    """The lookups of decide.py, with a signed reader that reads a DataHost."""
+
+    def __init__(self, host, changes=None):
+        super().__init__(changes=changes)
+        self.host = host
+
+    def share_file_signed(self, table, path):
+        with self.host.patch():
+            return ownership.share_file_signed(table, path)
+
+
 class ShareHostAuthority(unittest.TestCase):
     def test_a_registered_key_is_a_share_host_with_its_table(self):
         kind, target, reason = ownership.authority(ROVER, REGISTRY)
@@ -1284,6 +1353,41 @@ class ShareHostProofs(unittest.TestCase):
         edited = dict(ROVER, name="Example Rover Mk2")
         self.assertEqual(ownership.verify_change(ROVER, edited, "owner", 54321, api, REGISTRY).state, ownership.VERIFIED)
 
+    def test_the_bot_with_a_signed_attestation_on_a_data_host_verifies(self):
+        changes = change("vehicles/ExampleRover.toml")
+        files = signed(attested(changes))
+        host = DataHost(files)
+        result = ownership.verify_change(None, ROVER, "ksamods-bot", BOT, DataApi(host, changes), DATA_REGISTRY)
+        self.assertEqual((result.state, result.proof), (ownership.VERIFIED, "attestation"))
+
+        path = ownership.ATTESTATION.format(digest=ownership.change_digest(changes))
+        evidence = ownership.Evidence(path, attestation(), files[path + ".sig"].decode("ascii"), DATA_TABLE["key"])
+        self.assertEqual(result.evidence, evidence)
+        self.assertEqual(result.as_dict()["evidence"], evidence._asdict())
+        self.assertEqual(
+            host.urls(), [DATA + RECORD_PATH, DATA + RECORD_PATH + ".sig", DATA + path, DATA + path + ".sig"]
+        )
+
+    def test_an_unsigned_owner_record_on_a_data_host_does_not_verify(self):
+        files = signed({RECORD_PATH: record(github_id=54321)}, signer=RETIRED)
+        result = ownership.verify(ROVER, "someone", 54321, DataApi(DataHost(files)), DATA_REGISTRY)
+        self.assertEqual(result.state, ownership.UNVERIFIED)
+        self.assertEqual(
+            result.reason,
+            f"{RECORD_PATH} in {DATA} has no valid signature by key, the signing key that hosts.toml "
+            "names for `ksamods`",
+        )
+
+    def test_the_release_flow_without_a_reader_refuses_a_bad_signature(self):
+        # content-index-releases passes lookups with neither reader, so the
+        # module's own signed reader is used.
+        files = signed({RECORD_PATH: record(github_id=54321)})
+        files[RECORD_PATH + ".sig"] = base64.b64encode(bytes(64))
+        with DataHost(files).patch():
+            result = ownership.verify(ROVER, "someone", 54321, GitHubOnlyApi(FakeApi()), DATA_REGISTRY)
+        self.assertEqual(result.state, ownership.UNVERIFIED)
+        self.assertIn("has no valid signature by key", result.reason)
+
 
 class ShareFile(unittest.TestCase):
     """How the owner record and the attestation are read from the storage repository."""
@@ -1344,6 +1448,48 @@ class ShareFile(unittest.TestCase):
         with mock.patch.object(ownership.urllib.request, "urlopen", return_value=self.answer(body)):
             with self.assertRaises(ownership.Unavailable):
                 ownership.share_file(TABLE, RECORD_PATH)
+
+    def test_a_data_file_with_a_valid_signature_is_its_text(self):
+        host = DataHost(signed({RECORD_PATH: record()}))
+        with host.patch():
+            self.assertEqual(ownership.share_file(DATA_TABLE, RECORD_PATH), record())
+            self.assertIsInstance(ownership.share_file_signed(DATA_TABLE, RECORD_PATH), ownership.SignedFile)
+        self.assertEqual(host.urls()[:2], [DATA + RECORD_PATH, DATA + RECORD_PATH + ".sig"])
+        self.assertFalse(any(request.has_header("Authorization") for request in host.requests))
+
+    def test_a_data_file_without_a_valid_signature_by_key_is_no_file(self):
+        wrong = signed({RECORD_PATH: record()})
+        wrong[RECORD_PATH + ".sig"] = base64.b64encode(bytes(64))
+        cases = {
+            "wrong": wrong,
+            "missing": signed({RECORD_PATH: record()}, signer=None),
+            "retired key": signed({RECORD_PATH: record()}, signer=RETIRED),
+        }
+        for name, files in cases.items():
+            with self.subTest(name), DataHost(files).patch():
+                self.assertIsNone(ownership.share_file(DATA_TABLE, RECORD_PATH))
+                self.assertIs(ownership.share_file_signed(DATA_TABLE, RECORD_PATH), ownership.UNSIGNED)
+
+    def test_a_data_file_that_ends_outside_https_is_unavailable(self):
+        host = DataHost(signed({RECORD_PATH: record()}), final="http://data.example.net/share/" + RECORD_PATH)
+        with host.patch(), self.assertRaises(ownership.Unavailable):
+            ownership.share_file_signed(DATA_TABLE, RECORD_PATH)
+
+
+class WithoutCryptography(unittest.TestCase):
+    def test_ownership_and_explain_import_and_a_data_read_is_unavailable(self):
+        # content-index-releases and decide.py import these on a runner that
+        # may have no package installed.
+        code = (
+            f"import sys; sys.path.insert(0, {str(Path(__file__).parent)!r}); "
+            "sys.modules['cryptography'] = None; import explain, ownership\n"
+            "try:\n"
+            f"    ownership.share_file_signed({DATA_TABLE!r}, 'owners/vehicle/A.json')\n"
+            "except ownership.Unavailable as error:\n"
+            "    print(error)\n"
+        )
+        result = subprocess.run([sys.executable, "-I", "-c", code], capture_output=True, text=True, check=True)
+        self.assertIn("the cryptography package is not installed", result.stdout)
 
 
 if __name__ == "__main__":

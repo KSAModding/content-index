@@ -1,0 +1,37 @@
+spec_version = 1
+id = "LunarLander"
+type = "vehicle"
+name = "Basic Lunar Lander"
+authors = ["BarneyTheGod"]
+abstract = "A basic Lunar Lander with ~1km/s of margin."
+description = '''
+This lunar lander is the most basic you can get; Shelter, power, food, water, air, and a clump of hairballs.
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-13)'''
+license = "CC-BY-SA-4.0"
+tags = ["lunar-lander", "life-support", "hunter-approved"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/LunarLander"
+
+[releases]
+ksamods = "LunarLander"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/LunarLander/icon-5b3EtjqM2dXGU0gE.webp"
+size = 9626
+width = 512
+height = 512
+sha256 = "086f6f1253f38f05538e28e2ef89a53ef55830ec49c5ce1df19af1f8f74c3957"
+
+[[images.description]]
+id = "screenshot-13"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/LunarLander/hR74J23ml6XYDov1.webp"
+sha256 = "2645053b2b0c9825058b262b6be1ea0d7d93fee86f850ac06ee3ea0c9ef0122c"
+width = 1024
+height = 1024
+size = 27480

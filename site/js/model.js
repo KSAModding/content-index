@@ -88,8 +88,8 @@ export function sectionsOf(type) {
   };
 }
 
-// The types the deployed schema accepts, so a type behind the rollout gate of
-// RFC 0085 is offered once the index lifts the gate, with no change here.
+// The types the deployed schema accepts. A type the schema lists under `not`
+// is not offered, so a new type can arrive behind such a gate with no change here.
 export function typeChoices(schema) {
   const type = schema && schema.properties ? schema.properties.type : null;
   const known = type && Array.isArray(type.enum) ? type.enum : [];

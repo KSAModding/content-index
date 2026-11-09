@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MIT
 """Tests for what the privileged half does about a verdict. No token, no network."""
 
-import copy
+import hashlib
 import json
 import re
 import sys
@@ -13,8 +13,6 @@ import urllib.error
 import urllib.parse
 from pathlib import Path
 from unittest import mock
-
-from jsonschema import Draft202012Validator
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -594,38 +592,92 @@ class Agreement(unittest.TestCase):
 class Comment(unittest.TestCase):
     def test_the_first_run_creates_one(self):
         api = RecordingApi()
-        decide.upsert_comment(api, 5, "Something to say")
+        decide.upsert_comment(api, 5, "Something to say", INDEX_APP)
         methods = [(method, path) for method, path, _, _ in api.sent]
         self.assertEqual(methods, [("POST", "/issues/5/comments")])
         self.assertIn(decide.COMMENT_MARKER, api.sent[0][2]["body"])
 
     def test_a_later_run_edits_the_same_one(self):
-        api = RecordingApi(comments=[{"id": 9, "body": f"{decide.COMMENT_MARKER}\nold"}])
-        decide.upsert_comment(api, 5, "new")
+        api = RecordingApi(
+            comments=[{"id": 9, "body": f"{decide.COMMENT_MARKER}\nold", "user": INDEX_BOT}]
+        )
+        decide.upsert_comment(api, 5, "new", INDEX_APP)
         self.assertEqual([m for m, _, _, _ in api.sent], ["PATCH"])
         self.assertIn("/issues/comments/9", api.sent[0][1])
 
     def test_an_unchanged_comment_is_left_alone(self):
         body = f"{decide.COMMENT_MARKER}\nsame"
-        api = RecordingApi(comments=[{"id": 9, "body": body}])
-        decide.upsert_comment(api, 5, "same")
+        api = RecordingApi(comments=[{"id": 9, "body": body, "user": INDEX_BOT}])
+        decide.upsert_comment(api, 5, "same", INDEX_APP)
         self.assertEqual(api.sent, [])
 
     def test_nothing_to_say_and_nothing_there_posts_nothing(self):
         api = RecordingApi()
-        decide.upsert_comment(api, 5, None)
+        decide.upsert_comment(api, 5, None, INDEX_APP)
         self.assertEqual(api.sent, [])
 
     def test_nothing_to_say_resolves_a_comment_that_is_there(self):
-        api = RecordingApi(comments=[{"id": 9, "body": f"{decide.COMMENT_MARKER}\nrejected"}])
-        decide.upsert_comment(api, 5, None)
+        api = RecordingApi(
+            comments=[{"id": 9, "body": f"{decide.COMMENT_MARKER}\nrejected", "user": INDEX_BOT}]
+        )
+        decide.upsert_comment(api, 5, None, INDEX_APP)
         self.assertEqual([m for m, _, _, _ in api.sent], ["PATCH"])
         self.assertIn("ownership verified", api.sent[0][2]["body"])
 
     def test_a_foreign_comment_is_not_touched(self):
         api = RecordingApi(comments=[{"id": 9, "body": "a human said something"}])
-        decide.upsert_comment(api, 5, "mine")
+        decide.upsert_comment(api, 5, "mine", INDEX_APP)
         self.assertEqual([m for m, _, _, _ in api.sent], ["POST"])
+
+    def test_a_comment_with_the_marker_by_someone_else_is_ignored(self):
+        """The App can not edit it, so an edit would fail with 403."""
+        stranger = {"login": "someone", "type": "User"}
+        other_bot = {"login": "ksadata[bot]", "type": "Bot"}
+        api = RecordingApi(
+            comments=[
+                {"id": 8, "body": f"{decide.COMMENT_MARKER}\nfake", "user": stranger},
+                {"id": 7, "body": f"{decide.COMMENT_MARKER}\nfake", "user": other_bot},
+            ]
+        )
+        decide.upsert_comment(api, 5, "mine", INDEX_APP)
+        self.assertEqual(
+            api.sent,
+            [("POST", "/issues/5/comments", {"body": f"{decide.COMMENT_MARKER}\nmine"}, None)],
+        )
+
+    def test_a_second_run_edits_the_comment_that_the_first_run_posted(self):
+        api = RecordingApi(
+            comments=[
+                {"id": 8, "body": f"{decide.COMMENT_MARKER}\nfake", "user": {"login": "someone", "type": "User"}}
+            ]
+        )
+        decide.upsert_comment(api, 5, "first", INDEX_APP)
+        [(_, _, posted, _)] = api.sent
+        api.sent.clear()
+        api.comments.append({"id": 9, "body": posted["body"], "user": INDEX_BOT})
+        decide.upsert_comment(api, 5, "second", INDEX_APP)
+        self.assertEqual(
+            api.sent,
+            [("PATCH", "/issues/comments/9", {"body": f"{decide.COMMENT_MARKER}\nsecond"}, None)],
+        )
+
+    def test_without_an_app_slug_no_comment_counts(self):
+        api = RecordingApi(
+            comments=[{"id": 9, "body": f"{decide.COMMENT_MARKER}\nold", "user": INDEX_BOT}]
+        )
+        decide.upsert_comment(api, 5, "new", "")
+        self.assertEqual(
+            api.sent,
+            [("POST", "/issues/5/comments", {"body": f"{decide.COMMENT_MARKER}\nnew"}, None)],
+        )
+
+    def test_nothing_to_say_leaves_a_comment_of_someone_else_alone(self):
+        stranger = {"login": "someone", "type": "User"}
+        api = RecordingApi(
+            comments=[{"id": 8, "body": f"{decide.COMMENT_MARKER}\nfake", "user": stranger}]
+        )
+        decide.upsert_comment(api, 5, None, INDEX_APP)
+        self.assertEqual(api.sent, [])
 
 
 class MissingLabelApi(RecordingApi):
@@ -1266,13 +1318,33 @@ class DecideArguments(unittest.TestCase):
 
     def test_every_argument_the_script_needs_is_passed(self):
         text = self.step()
-        for flag in ("--event", "--head-repository", "--head-branch", "--head-sha"):
+        flags = ("--event", "--head-repository", "--head-branch", "--head-sha", "--record-url", "--app-slug")
+        for flag in flags:
             self.assertIn(flag, text, f"ownership.yml does not pass {flag}")
+
+    def test_the_app_slug_comes_from_the_token_that_posts_the_record(self):
+        self.assertIn("APP_SLUG: ${{ steps.app-token.outputs.app-slug }}", self.step())
+        self.assertIn('--app-slug "$APP_SLUG"', self.step())
 
     def test_nothing_is_interpolated_into_a_shell_here(self):
         """A fork picks its own branch name, and this job holds the App token."""
         for line in run_block_lines(self.step()):
             self.assertNotIn("${{", line, f"interpolated into a command: {line.strip()}")
+
+    def test_the_verdict_artifact_can_not_replace_the_tools(self):
+        """A pull request can change checks.yml and so put any file into the
+        artifact, so it lands outside the checkout and after the install."""
+        lines = self.step().splitlines()
+        install = next(i for i, line in enumerate(lines) if "pip install" in line)
+        download = next(i for i, line in enumerate(lines) if "actions/download-artifact" in line)
+        self.assertLess(install, download, "the install must run before the download")
+        step = []
+        for line in lines[download + 1 :]:
+            if line.strip().startswith("- ") or not line.strip():
+                break
+            step.append(line.strip())
+        self.assertIn("path: ${{ runner.temp }}/verdict", step)
+        self.assertIn('--verdict "$RUNNER_TEMP/verdict/verdict.json"', self.step())
 
 
 class Act(unittest.TestCase):
@@ -1292,7 +1364,7 @@ class Act(unittest.TestCase):
         patch.start()
         self.addCleanup(patch.stop)
 
-    def act(self, document=None, write=True, event="pull_request"):
+    def act(self, document=None, write=True, event="pull_request", record_url=""):
         path = self.root / "verdict.json"
         if write:
             path.write_text(json.dumps(document if document is not None else verdict()),
@@ -1305,6 +1377,8 @@ class Act(unittest.TestCase):
             head_sha="abc",
             repository=self.api.repository,
             run_url="",
+            record_url=record_url,
+            app_slug=INDEX_APP,
             dry_run=False,
         )
         return decide.act(self.api, arguments)
@@ -1435,38 +1509,7 @@ class Act(unittest.TestCase):
         self.assertIn("could not be armed", comment["body"])
         self.assertIn("archive checked", comment["body"])
 
-    def test_a_vehicle_is_refused_and_not_merged_while_the_gate_holds(self):
-        checker = check_schema.validator()
-        if "vehicle" not in (checker.schema["properties"]["type"].get("not") or {}).get("enum", []):
-            self.skipTest("the rollout gate no longer holds vehicles")
-        path = "vehicles/ExampleRover.toml"
-        text = (
-            'spec_version = 1\nid = "ExampleRover"\ntype = "vehicle"\nname = "Example Rover"\n'
-            'authors = ["Maxi"]\nabstract = "A rover for the Moon."\nlicense = "CC-BY-4.0"\n'
-        )
-        changes = [check_scope.Change(path, "added")]
-        self.assertEqual(check_scope.evaluate(changes), (True, [path], ""))
-
-        errors = []
-        check_schema.check_parsed(path, tomllib.loads(text), checker, errors)
-        gate = (
-            f"{path}: type: 'vehicle' is a type that the index does not accept yet, because no "
-            "release host for it exists (RFC 0085 Rollout)"
-        )
-        self.assertEqual(errors, [gate])
-        checks = [validate.Check("schema", validate.REJECT, errors).as_dict()]
-        self.api.files = {(path, "abc"): text}
-        with mock.patch.object(decide, "changed_paths", lambda api, number: changes), \
-                mock.patch.object(decide.ownership, "verify", lambda *a, **k: VERIFIED):
-            self.assertEqual(self.act(verdict("reject", checks=checks, documents=[path])), 0)
-
-        self.assertEqual(self.api.graphql_calls, [])
-        self.assertEqual([status["state"] for status in self.statuses()], ["failure"])
-        comment = [p for _, where, p, _ in self.api.sent if where.endswith("/comments")][0]
-        self.assertIn(gate, comment["body"])
-        self.assertEqual(self.labelled(), ["vehicle"])
-
-    def test_a_vehicle_that_verifies_and_passes_is_armed_once_the_gate_is_lifted(self):
+    def test_a_vehicle_that_verifies_and_passes_is_armed(self):
         path = "vehicles/ExampleRover.toml"
         text = (
             'spec_version = 1\nid = "ExampleRover"\ntype = "vehicle"\nname = "Example Rover"\n'
@@ -1474,20 +1517,8 @@ class Act(unittest.TestCase):
             '[releases]\ngithub = "Maxi/KSA-Rovers"\ntag_prefix = "ExampleRover-"\n'
             '[[dependencies]]\nid = "ExamplePartsMod"\nkind = "required"\nmin = "1.4.0"\n'
         )
-        document = tomllib.loads(text)
-        # While the deployed schema refuses the type, this run lifts the gate on a copy,
-        # as the lift will. Once it is lifted, the copy equals the deployed schema.
-        deployed = check_schema.validator()
         errors = []
-        check_schema.check_parsed(path, document, deployed, errors)
-        self.assertLessEqual(len(errors), 1)
-        for error in errors:
-            self.assertIn("type that the index does not accept yet", error)
-
-        schema = copy.deepcopy(deployed.schema)
-        schema["properties"]["type"].pop("not", None)
-        errors = []
-        check_schema.check_parsed(path, document, Draft202012Validator(schema), errors)
+        check_schema.check_parsed(path, tomllib.loads(text), check_schema.validator(), errors)
         self.assertEqual(errors, [])
 
         changes = [check_scope.Change(path, "added")]
@@ -1979,13 +2010,10 @@ class ShareHostPullRequests(unittest.TestCase):
             {"filename": path, "status": "added", "sha": f"{index + 1:040x}"} for index, path in enumerate(paths)
         ]
 
-        # While the deployed schema refuses the type, this run lifts the gate on a copy.
-        schema = copy.deepcopy(check_schema.validator().schema)
-        schema["properties"]["type"].pop("not", None)
         for path, identifier in zip(paths, identifiers):
             text = share_vehicle(identifier)
             errors = []
-            check_schema.check_parsed(path, tomllib.loads(text), Draft202012Validator(schema), errors)
+            check_schema.check_parsed(path, tomllib.loads(text), check_schema.validator(), errors)
             self.assertEqual(errors, [])
             self.assertEqual(check_hosts.check_document(path, tomllib.loads(text), {"ksamods": SHARE_TABLE}), [])
             self.api.files[(path, "abc")] = text
@@ -2037,6 +2065,379 @@ class ShareHostPullRequests(unittest.TestCase):
         self.api.files = {(path, "main"): share_vehicle("MunRover"), (path, "abc"): share_vehicle("MunRover")}
         notes = decide.owner_notes(self.api, pull_request(), [check_scope.Change(path, "modified")], "abc")
         self.assertEqual(notes, [])
+
+
+DATA_KEY = "MCowBQYDK2VwAyEA" + "A" * 43 + "="
+DATA_TABLE = {
+    "kind": "share",
+    "data": "https://data.example.net/",
+    "downloads": ["https://files.example.net/"],
+    "key": DATA_KEY,
+    "bot": SHARE_BOT,
+    "types": ["vehicle"],
+}
+RECORD_URL = "https://github.com/KSAModding/content-index/actions/runs/42"
+INDEX_APP = "ksamodding-index"
+INDEX_BOT = {"login": f"{INDEX_APP}[bot]", "type": "Bot"}
+
+
+def fenced_blocks(text):
+    """The text of every code block in Markdown, read the way CommonMark closes a fence."""
+    blocks, lines, fence = [], [], None
+    for line in text.split("\n"):
+        if fence is None:
+            opened = re.match(r"(`{3,})", line)
+            if opened:
+                fence, lines = opened.group(1), []
+        elif re.fullmatch(f"{fence}`*", line):
+            blocks.append("\n".join(lines) + "\n")
+            fence = None
+        else:
+            lines.append(line)
+    return blocks
+
+
+class DataHostRecord(unittest.TestCase):
+    """A verified proof from a host with `data` leaves its attestation on the
+    pull request (RFC 0104, rule 30).
+    """
+
+    act = Act.act
+    statuses = Act.statuses
+
+    def setUp(self):
+        Act.setUp(self)
+        patch = mock.patch.object(ownership, "share_hosts", lambda *a, **k: {"ksadata": DATA_TABLE})
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.summary = self.root / "summary.md"
+        patch = mock.patch.dict("os.environ", {"GITHUB_STEP_SUMMARY": str(self.summary)})
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def test_a_verified_data_host_proof_is_recorded_in_the_comment_and_the_summary(self):
+        self.api.pulls = [dict(pull_request(), user={"login": "ksadata-bot", "id": SHARE_BOT})]
+        identifiers = ["Zephyr", "MunRover"]
+        paths = [f"vehicles/{identifier}.toml" for identifier in identifiers]
+        changes = [
+            check_scope.Change(path, "added", None, f"{index + 1:040x}") for index, path in enumerate(paths)
+        ]
+        for path, identifier in zip(paths, identifiers):
+            self.api.files[(path, "abc")] = share_vehicle(identifier).replace("ksamods", "ksadata")
+        attestation = ownership.ATTESTATION.format(digest=ownership.change_digest(changes))
+        text = json.dumps({"host": "ksadata", "accounts": {f"vehicle/{i}": f"u_{i}" for i in identifiers}})
+        files = {attestation: ownership.SignedFile(text, "c2lnbmF0dXJl\n", DATA_KEY)}
+        for identifier in identifiers:
+            record = json.dumps({"id": identifier, "type": "vehicle", "account": f"u_{identifier}"})
+            files[f"owners/vehicle/{identifier}.json"] = ownership.SignedFile(record, "b3duZXI=\n", DATA_KEY)
+        read = []
+
+        def share_file_signed(table, path, user_agent=None):
+            read.append(path)
+            return files.get(path)
+
+        checks = [validate.Check("schema", validate.PASS, []).as_dict()]
+        with mock.patch.object(decide, "changed_paths", lambda api, number: changes), mock.patch.object(
+            ownership, "share_file_signed", share_file_signed
+        ):
+            self.assertEqual(self.act(verdict(checks=checks, documents=paths), record_url=RECORD_URL), 0)
+
+        self.assertEqual(sorted(read), sorted(files))
+        self.assertEqual([status["state"] for status in self.statuses()], ["pending", "success"])
+        posted = [p["body"] for _, where, p, _ in self.api.sent if where == "/issues/5/comments"]
+        self.assertEqual(len(posted), 2)
+        record, comment = posted
+        self.assertTrue(record.startswith("<!-- content-index:ownership-record "))
+        self.assertIn(decide.EVIDENCE_POSTED, comment)
+        self.assertIn(f"[The ownership run]({RECORD_URL})", comment)
+        self.assertNotIn(text, comment)
+        entry = self.summary.read_text(encoding="utf-8")
+        for body in (record, entry):
+            self.assertIn(f"`{attestation}` of the share host `ksadata`", body)
+            self.assertIn(DATA_KEY, body)
+            self.assertEqual(fenced_blocks(body)[-2:], ["c2lnbmF0dXJl\n", text + "\n"])
+        self.assertEqual(entry.strip(), record)
+
+    def test_an_attestation_that_holds_a_fence_stays_inside_its_block(self):
+        text = json.dumps({"host": "ksadata", "accounts": {}, "note": "``` ```` end"}) + "\n"
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        [record] = decide.evidence_comments(5, result)
+        self.assertIn("\n`````json\n", record)
+        self.assertEqual(fenced_blocks(record), ["c2ln\n", text])
+
+    def test_an_attestation_of_the_largest_size_is_split_over_two_comments(self):
+        start, end, unit = '{"host": "ksadata", "accounts": {}, "note": "', '"}', "x" * 500 + "```` \u00fc "
+        room = ownership.MAX_SHARE_FILE - len(start) - len(end)
+        note = unit * (room // len(unit.encode("utf-8")))
+        text = start + note + "x" * (room - len(note.encode("utf-8"))) + end
+        self.assertEqual(len(text.encode("utf-8")), ownership.MAX_SHARE_FILE)
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        parts = decide.evidence_comments(5, result)
+        self.assertEqual(len(parts), 2)
+        for part in parts:
+            self.assertLessEqual(len(part.encode("utf-8")), decide.COMMENT_LIMIT)
+        # The text has no line break, so each block only adds the one that closes it.
+        joined = "".join(fenced_blocks(part)[-1][:-1] for part in parts)
+        self.assertEqual(joined, text)
+        self.assertIn(hashlib.sha256(text.encode("utf-8")).hexdigest(), parts[0])
+
+    def test_a_second_run_posts_only_what_is_missing_and_edits_nothing(self):
+        text = json.dumps({"host": "ksadata", "accounts": {}, "note": "x" * decide.COMMENT_LIMIT})
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        parts = decide.evidence_comments(5, result)
+        # A part that the author of the pull request posted is not the record.
+        api = RecordingApi(
+            comments=[
+                {"id": 1, "body": parts[0], "user": INDEX_BOT},
+                {"id": 2, "body": parts[1], "user": {"login": "someone", "type": "User"}},
+            ]
+        )
+        decide.post_evidence(api, 5, parts, INDEX_APP)
+        self.assertEqual(api.sent, [("POST", "/issues/5/comments", {"body": parts[1]}, None)])
+
+    def test_a_part_that_another_bot_posted_first_is_posted_again(self):
+        """The bot of a share host can be a GitHub App, post the markers first
+        and edit or delete its comments after the merge (rule 30).
+        """
+        text = json.dumps({"host": "ksadata", "accounts": {}, "note": "x" * decide.COMMENT_LIMIT})
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        parts = decide.evidence_comments(5, result)
+        other = {"login": "ksadata[bot]", "type": "Bot"}
+        # A person who authorized the App posts through it under their own account.
+        through_app = {"login": "someone", "type": "User"}
+        api = RecordingApi(
+            comments=[
+                {"id": 1, "body": parts[0], "user": other, "performed_via_github_app": {"slug": "ksadata"}},
+                {"id": 2, "body": parts[1], "user": through_app,
+                 "performed_via_github_app": {"slug": INDEX_APP}},
+                {"id": 3, "body": parts[1], "user": other},
+            ]
+        )
+        decide.post_evidence(api, 5, parts, INDEX_APP)
+        self.assertEqual(
+            api.sent,
+            [("POST", "/issues/5/comments", {"body": part}, None) for part in parts],
+        )
+
+    def test_without_an_app_slug_every_part_is_posted(self):
+        text = json.dumps({"host": "ksadata", "accounts": {}})
+        evidence = ownership.Evidence("attestations/a.json", text, "c2ln\n", DATA_KEY)
+        result = ownership.Result(ownership.VERIFIED, "", "attestation", evidence=evidence)
+        [part] = decide.evidence_comments(5, result)
+        api = RecordingApi(comments=[{"id": 1, "body": part, "user": INDEX_BOT}])
+        decide.post_evidence(api, 5, [part], "")
+        self.assertEqual(api.sent, [("POST", "/issues/5/comments", {"body": part}, None)])
+
+    def test_two_data_hosts_with_the_same_path_read_their_own_file(self):
+        other = dict(DATA_TABLE, data="https://data.example.org/")
+        path = "attestations/a.json"
+        read = []
+
+        def share_file_signed(table, path, user_agent=None):
+            read.append((table["data"], path))
+            return ownership.SignedFile(table["data"], "c2ln\n", DATA_KEY)
+
+        lookups = decide.OwnershipApi(RecordingApi())
+        with mock.patch.object(ownership, "share_file_signed", share_file_signed):
+            first = [lookups.share_file_signed(table, path) for table in (DATA_TABLE, other, DATA_TABLE, other)]
+            self.assertEqual(lookups.share_file(other, path), "https://data.example.org/")
+
+        self.assertEqual([found.text for found in first], [DATA_TABLE["data"], other["data"]] * 2)
+        self.assertEqual(read, [(DATA_TABLE["data"], path), (other["data"], path)])
+
+
+SHARE_BRANCH = "share/Boatmobile-20261102171548"
+BOATMOBILE = "vehicles/Boatmobile.toml"
+EARLIER_COMMIT = "d7e08c585b59e0274a875b75031814f4c0bd5e40"
+
+
+class EmptyChange(unittest.TestCase):
+    """A change that touches no file has nothing to merge, so it is closed."""
+
+    act = Act.act
+    statuses = Act.statuses
+    labelled = Act.labelled
+
+    def setUp(self):
+        Act.setUp(self)
+        patch = mock.patch.object(ownership, "share_hosts", lambda *a, **k: {"ksamods": SHARE_TABLE})
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.changed = []
+        self.counted = 0
+        self.commits = []
+        self.merged = []
+        answer = self.api.get
+
+        def get(path, **query):
+            if path == "/pulls/5":
+                return {"number": 5, "changed_files": self.counted}
+            if path.startswith("/commits?"):
+                self.api.asked.append((path, query))
+                return self.commits
+            if path == f"/commits/{EARLIER_COMMIT}/pulls":
+                return self.merged
+            return answer(path, **query)
+
+        self.api.get = get
+        patch = mock.patch.object(decide, "changed_paths", lambda api, number: list(self.changed))
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def from_share_host(self):
+        self.api.pulls = [
+            dict(pull_request(branch=SHARE_BRANCH), user={"login": "ksamods-gg[bot]", "id": SHARE_BOT})
+        ]
+        self.api.files = {(BOATMOBILE, "main"): share_vehicle("Boatmobile")}
+        return self.act_on(SHARE_BRANCH)
+
+    def act_on(self, branch):
+        """Act.act with another head branch than the fork branch it names."""
+        path = self.root / "verdict.json"
+        path.write_text(json.dumps(verdict(documents=[])), encoding="utf-8")
+        arguments = mock.Mock(
+            verdict=path, event="pull_request", head_repository=FORK, head_branch=branch,
+            head_sha="abc", repository=self.api.repository, run_url="", record_url="",
+            app_slug=INDEX_APP, dry_run=False,
+        )
+        return decide.act(self.api, arguments)
+
+    def closed(self):
+        return [payload for method, path, payload, _ in self.api.sent if (method, path) == ("PATCH", "/pulls/5")]
+
+    def comment(self):
+        return [p for _, where, p, _ in self.api.sent if where == "/issues/5/comments"][0]["body"]
+
+    def test_an_empty_change_from_a_share_host_closes_and_names_the_earlier_pull_request(self):
+        self.commits = [{"sha": EARLIER_COMMIT}]
+        self.merged = [
+            {"number": 279, "merged_at": None, "base": {"ref": "main"}},
+            {"number": 280, "merged_at": "2026-11-02T17:06:59Z", "base": {"ref": "main"}},
+        ]
+        self.assertEqual(self.from_share_host(), 0)
+
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        self.assertEqual([status["state"] for status in self.statuses()], ["success"])
+        self.assertIn(("/commits?path=vehicles%2FBoatmobile.toml&sha=main&per_page=1", {}), self.api.asked)
+        comment = self.comment()
+        self.assertIn("changes no file against `main`, so there is nothing to merge", comment)
+        self.assertIn(f"`main` already holds `{BOATMOBILE}`, which #280 last added or changed.", comment)
+        self.assertIn("is closed", comment)
+        self.assertEqual(self.labelled(), [decide.DUPLICATE_LABEL])
+        self.assertFalse(any(path.endswith("/requested_reviewers") for _, path, _, _ in self.api.sent))
+        self.assertEqual(self.api.graphql_calls, [])
+
+    def test_an_earlier_pull_request_that_cannot_be_found_is_not_named(self):
+        self.commits = [{"sha": EARLIER_COMMIT}]
+        self.merged = []
+        self.assertEqual(self.from_share_host(), 0)
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        comment = self.comment()
+        self.assertIn(f"`main` already holds `{BOATMOBILE}`.", comment)
+        self.assertNotIn("which #", comment)
+        self.assertEqual(self.labelled(), [decide.DUPLICATE_LABEL])
+
+    def test_a_failed_lookup_of_the_earlier_pull_request_still_closes(self):
+        def failing(path, **query):
+            raise urllib.error.HTTPError(path, 502, "bad gateway", {}, None)
+
+        get = self.api.get
+        self.api.get = lambda path, **query: failing(path) if path.startswith("/commits?") else get(path, **query)
+        self.assertEqual(self.from_share_host(), 0)
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        self.assertIn(f"`main` already holds `{BOATMOBILE}`.", self.comment())
+
+    def test_an_empty_change_from_anyone_else_closes_without_a_name(self):
+        self.assertEqual(self.act(), 0)
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        comment = self.comment()
+        self.assertIn("changes no file against `main`", comment)
+        self.assertNotIn("already holds", comment)
+        self.assertEqual(self.labelled(), [])
+        self.assertFalse(any(path.startswith("/commits") for path, _ in self.api.asked))
+
+    def test_a_share_host_branch_from_another_account_names_nothing(self):
+        self.api.files = {(BOATMOBILE, "main"): share_vehicle("Boatmobile")}
+        self.api.pulls = [pull_request(branch=SHARE_BRANCH)]
+        self.assertEqual(self.act_on(SHARE_BRANCH), 0)
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        self.assertNotIn("already holds", self.comment())
+
+    def test_a_listing_the_base_branch_does_not_hold_names_nothing(self):
+        self.api.pulls = [
+            dict(pull_request(branch=SHARE_BRANCH), user={"login": "ksamods-gg[bot]", "id": SHARE_BOT})
+        ]
+        self.api.files = {}
+        self.assertEqual(self.act_on(SHARE_BRANCH), 0)
+        self.assertEqual(self.closed(), [{"state": "closed"}])
+        self.assertNotIn("already holds", self.comment())
+        self.assertEqual(self.labelled(), [])
+
+    def test_a_count_of_changed_files_that_is_not_zero_goes_to_a_steward(self):
+        self.counted = 1
+        self.assertEqual(self.act(), 0)
+        self.assertEqual(self.closed(), [])
+        self.assertIn(decide.STEWARD_LABEL, self.labelled())
+        self.assertIn("touches no file at all", self.comment())
+
+    def test_a_pull_request_that_could_not_be_closed_goes_to_a_steward(self):
+        send = self.api.send
+
+        def refuse(method, path, payload, token=None):
+            if (method, path) == ("PATCH", "/pulls/5"):
+                raise urllib.error.HTTPError(path, 403, "forbidden", {}, None)
+            return send(method, path, payload, token)
+
+        self.api.send = refuse
+        self.assertEqual(self.act(), 0)
+        self.assertIn(decide.STEWARD_LABEL, self.labelled())
+        self.assertIn("could not be closed, so a steward closes it", self.comment())
+        self.assertNotIn("So this pull request is closed", self.comment())
+
+    def test_a_rejected_empty_change_is_not_closed(self):
+        self.assertEqual(self.act(verdict("reject")), 0)
+        self.assertEqual(self.closed(), [])
+        self.assertEqual([status["state"] for status in self.statuses()], ["failure"])
+
+    def test_a_change_that_touches_files_behaves_as_before(self):
+        self.changed = [check_scope.Change("listings/AutoStage.toml", "added")]
+        with mock.patch.object(decide.ownership, "verify", lambda *a, **k: UNVERIFIED):
+            self.assertEqual(self.act(), 0)
+        self.assertEqual(self.closed(), [])
+        self.assertFalse(any(path == "/pulls/5" for path, _ in self.api.asked))
+        self.assertEqual(self.labelled(), ["listing", decide.STEWARD_LABEL])
+        self.assertEqual([status["state"] for status in self.statuses()], ["success"])
+
+    def test_the_empty_decision_needs_a_passing_verdict(self):
+        empty = decide.Empty("main", BOATMOBILE, 280)
+        closing = decide.decide(verdict(), False, UNVERIFIED, empty=empty)
+        self.assertTrue(closing.close)
+        self.assertFalse(closing.needs_steward)
+        for outcome in ("reject", "could-not-evaluate"):
+            decision = decide.decide(verdict(outcome), False, UNVERIFIED, empty=empty)
+            self.assertFalse(decision.close)
+
+
+class RepeatedListing(unittest.TestCase):
+    def test_the_branch_names_the_listing_in_the_folder_of_each_type(self):
+        api = RecordingApi(files={("saves/Boatmobile.toml", "main"): share_vehicle("Boatmobile")})
+        pull = dict(pull_request(branch=SHARE_BRANCH), user={"login": "ksamods-gg[bot]", "id": SHARE_BOT})
+        table = dict(SHARE_TABLE, types=["vehicle", "save"])
+        found = decide.repeated_listing(api, pull, {"ksamods": table})
+        self.assertEqual(found, decide.Empty("main", "saves/Boatmobile.toml", None))
+        self.assertEqual(
+            [path for _, path, _ in api.reads], [BOATMOBILE, "saves/Boatmobile.toml"]
+        )
+
+    def test_a_branch_of_another_shape_names_nothing(self):
+        api = RecordingApi(files={(BOATMOBILE, "main"): share_vehicle("Boatmobile")})
+        for branch in ("share/Boatmobile", "Boatmobile-20261102171548", "share/../x-1", "share/a/b-1"):
+            pull = dict(pull_request(branch=branch), user={"login": "ksamods-gg[bot]", "id": SHARE_BOT})
+            self.assertEqual(decide.repeated_listing(api, pull, {"ksamods": SHARE_TABLE}), decide.Empty("main"))
 
 
 if __name__ == "__main__":

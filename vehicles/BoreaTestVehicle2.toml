@@ -1,0 +1,13 @@
+spec_version = 1
+id = "BoreaTestVehicle2"
+type = "vehicle"
+name = "Borea Test Vehicle 2"
+authors = ["SafeShows"]
+abstract = "Testing"
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/BoreaTestVehicle2"
+
+[releases]
+ksamods = "BoreaTestVehicle2"

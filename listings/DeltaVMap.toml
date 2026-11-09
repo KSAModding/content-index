@@ -109,11 +109,11 @@ spacedock = "https://spacedock.info/mod/4294/DeltaVMap"
 bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-DeltaVMap/issues"
 
 [compatibility]
-game_min = "2026.10.19.5638"
+game_min = "2026.11.10.5801"
 
 [loader]
 id = "StarMap"
-min = "0.4.5"
+min = "0.5.3"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-DeltaVMap/88b39f875e9f1e35f7921ab545aae28ab89d2656/images/listing/icon.png"

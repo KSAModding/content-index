@@ -2,7 +2,7 @@
 
 `authored.schema.json` is the machine-readable form of the authored document defined by [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md) and extended by [RFC 0035](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0035-content-install-descriptor.md), [RFC 0049](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0049-instance-handover.md), [RFC 0058](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0058-listing-images-and-dates.md) and [RFC 0067](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0067-per-platform-launch.md), and amended by [RFC 0065](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0065-icon-center-crop.md), [RFC 0072](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0072-version-forms.md) and [RFC 0079](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0079-author-freedom.md).
 
-It is JSON Schema 2020-12, and it covers the five types the format defines today: `mod`, `mod-loader`, `modpack`, and `vehicle` and `save` from [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md), which [the rollout gate](#the-rollout-gate) still refuses.
+It is JSON Schema 2020-12, and it covers the five types the format defines today: `mod`, `mod-loader`, `modpack`, and `vehicle` and `save` from [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md).
 
 `index-status.schema.json` covers `index-status.toml`, the index's own voice about a listing, per [RFC 0033](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0033-content-index.md).
 A state the snapshot builder cannot place fails the build, so a delisting written with a typo never reaches a client.
@@ -198,15 +198,7 @@ The document has the shared core of a mod, with these differences:
 
 The checks of the archive, such as the name rule below, the root folder and the game file, are the stamper's, and `tools/check_release.py` runs them.
 
-## The rollout gate
-
-RFC 0085 lets the index accept a `vehicle` only once a release host for it exists, and the listing checks, the watcher, the snapshot builder and a released Borea support the type, and later the same for a `save`.
-No file here can see whether those are ready, so the schema holds the gate itself: `properties.type.not` lists the types the index does not accept yet, and a document of such a type is refused with its title, "a type that the index does not accept yet, because no release host for it exists (RFC 0085 Rollout)".
-`tools/check_schema.py`, the listing page and Borea's `ListingValidator` all run this schema, so the gate refuses everywhere with the same words, and `tools/decide.py` never arms auto-merge for such a document.
-
-A steward lifts the gate by pull request ([#210](https://github.com/KSAModding/content-index/issues/210)): first `vehicle`, then `save`, each by removing it from the `enum` of the `not`, and the whole `not` once its `enum` is empty.
-No check reads `hosts.toml` of the generated repository for it.
-A vector of `vectors.json` for a gated type carries `"gated": "vehicle"` or `"gated": "save"`. While the schema holds that type, both runners expect the gate line, and they also run each such vector against a copy of the schema without the gate and expect its `accepted`, `noted` and `says`, so a lift changes the schema alone.
+RFC 0085 let the index accept each type only once a release host and the tools supported it, so the schema refused both behind a rollout gate until [#210](https://github.com/KSAModding/content-index/issues/210) lifted it, first for `vehicle` and then for `save`.
 
 ## Share hosts
 
@@ -215,7 +207,14 @@ The table name is the key a listing names the host with under `[releases]`: 2 to
 That is `HOST_KEY` of `tools/authored.py` in content-index-releases, which the watcher, the download counts and the snapshot read, so a change of the form is a change there too.
 A `storage` repository of the KSAModding organization is refused, because the index never hosts files.
 
-`tools/check_hosts.py` runs the schema and adds the rules it cannot express: every type in `types` has a size in `max_bytes`, a host with `data` and no `storage` is refused while the watcher and the ownership check read only a storage repository, and `pages` is the GitHub Pages address of `storage`.
+A host names `storage`, with an optional `pages`, or it keeps its archives outside GitHub by [RFC 0104](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0104-share-host-conformance.md) and names `data`, `downloads` and `key`, with an optional `retired_keys`, and never keys of both forms.
+`data` and every prefix in `downloads` are https URLs that end with `/`.
+`key` is the Ed25519 public key that signs the data files, as padded standard base64 of its 44-byte SubjectPublicKeyInfo, so it starts with `MCowBQYDK2VwAyEA`.
+`retired_keys` holds the earlier values of `key` in the same form, and they only check signatures that an ownership record on a pull request already holds (rule 30 of [spec/share-host.md](https://github.com/KSAModding/content-manager-design/blob/main/spec/share-host.md)).
+A data file that is read now must carry a signature by `key`.
+
+`tools/check_hosts.py` runs the schema and adds the rules it cannot express: every type in `types` has a size in `max_bytes`, `pages` is the GitHub Pages address of `storage`, `retired_keys` does not list the current `key`, and no key is a point of small order, because under such a key one signature fits every file.
+It reads a key only as text and checks no signature.
 
 `authored.schema.json` cannot read `hosts.toml`, so under `[releases]` it takes any key of the host key form with a listing id as its value, and `authority` takes such a key too.
 `tools/check_hosts.py` then refuses, for the documents a pull request changes, a key that `hosts.toml` does not register, a host whose `types` does not hold the type of the document, a value that is not the id of the document, a share host next to another host without `authority`, and an `authority` that names no host of the section.
@@ -270,7 +269,6 @@ They are collected here so any one of them can be argued down on its own.
 | `superseded_by` requires `status = "deprecated"` | RFC 0031 calls it "only meaningful together with" a deprecation. Alone it is a successor no client will ever show, which is more likely a forgotten `status` line than an intention. |
 | A `mod` may not set `install.target` or `install.path` | RFC 0035: "a mod's install location is not the author's to choose in the first place", because the folder name is the identity `Mod.MakeUsing` assigns, and "stating it as a default rather than an authorable field keeps it that way". The stamper refuses both keys on a mod, so the schema refuses even `target = "mods"`, which only repeats the default. |
 | A `modpack` may not carry `[releases]`, `[loader]` or `[[dependencies]]` | RFC 0031 lists these under what a pack does not have, and RFC 0035 already makes `[install]` on a pack invalid. A section that does nothing is a section its author believed in. |
-| A `vehicle` or a `save` is refused until the rollout gate lifts its type | RFC 0085 makes a release host and support in the watcher, the snapshot builder and the clients the condition, and says nothing about how the index enforces it. The gate in the schema is that enforcement, see [The rollout gate](#the-rollout-gate). |
 | A `mod-loader` carrying `[install]` must state `target` | RFC 0035's Relationship section claims every RFC 0031 file stays valid, but its own table requires `target` on a type with no default, and `mod-loader` has none. The normative table wins. |
 | Authored version bounds reject a leading `v` | Only a release tag gets its `v` stripped, and that happens at stamp time. An authored bound is not a tag. |
 | Game bounds reject a suffix or a `+hash`, take a four-digit year, and take a month of 1 to 12 | RFC 0017 puts builds carrying a suffix outside the compatibility model, and a bound has to resolve to a revision. |

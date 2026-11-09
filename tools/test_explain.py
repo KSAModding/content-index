@@ -988,7 +988,7 @@ class Constants(unittest.TestCase):
         # decide.py imports explain on a runner with no pip install.
         code = (
             f"import sys; sys.path.insert(0, {str(Path(__file__).parent)!r}); import explain; "
-            "print(sorted(set(sys.modules) & {'jsonschema', 'license_expression', 'markdown_it'}))"
+            "print(sorted(set(sys.modules) & {'cryptography', 'jsonschema', 'license_expression', 'markdown_it'}))"
         )
         result = subprocess.run(
             [sys.executable, "-I", "-c", code], capture_output=True, text=True, check=True

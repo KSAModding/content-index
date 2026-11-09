@@ -1,0 +1,34 @@
+spec_version = 1
+id = "OctoSmokeMonster"
+type = "vehicle"
+name = "Octo Smoke Monster"
+authors = ["Beik"]
+abstract = "How much smoke do you want? Yes."
+description = '''
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-7)'''
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/OctoSmokeMonster"
+
+[releases]
+ksamods = "OctoSmokeMonster"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/OctoSmokeMonster/icon-kBV8rIswxKxaBXAn.webp"
+size = 7300
+width = 512
+height = 512
+sha256 = "671fd5ca82f018cd829e3afa471aea6240d67b8c34bc5d9a0ccc5e25d3df8d3c"
+
+[[images.description]]
+id = "screenshot-7"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/OctoSmokeMonster/vRZtaENsFEx5Hcf4.webp"
+sha256 = "a54b81f83311e5f8ca7449046e9ff8e74763a4865105c5a226a01b2d31925d1e"
+width = 1024
+height = 1024
+size = 26524

@@ -7,6 +7,7 @@ The privileged half of RFC 0033's listing flow.
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
@@ -15,6 +16,7 @@ import tomllib
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import namedtuple
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -34,11 +36,13 @@ TREE_KINDS = {"tree": "dir", "blob": "file", "commit": "submodule"}
 STATUS_CONTEXT = "validate"
 STEWARD_LABEL = "needs-steward"
 STEWARD_TEAM = "content-manager-stewards"
+DUPLICATE_LABEL = "duplicate"
 
 # The labels this workflow writes, each with the colour and the description a
 # missing one is created from.
 LABELS = {
     STEWARD_LABEL: ("d93f0b", "waiting on a steward"),
+    DUPLICATE_LABEL: ("cfd3d7", "repeats what the base branch already holds"),
     check_scope.LISTING_KIND: ("0e8a16", "changes a listing document"),
     check_scope.PACK_KIND: ("0e8a16", "changes a pack document"),
     check_scope.VEHICLE_KIND: ("0e8a16", "changes a vehicle document"),
@@ -64,6 +68,11 @@ LISTING_FOLDERS = {
     "vehicles": check_scope.VEHICLE_KIND,
     "saves": check_scope.SAVE_KIND,
 }
+FOLDER_OF_KIND = {kind: folder for folder, kind in LISTING_FOLDERS.items()}
+
+# The head branch a share host opens a pull request from, which names the
+# listing and a timestamp, such as share/Boatmobile-20261102171548.
+SHARE_BRANCH = re.compile(r"share/([A-Za-z0-9._-]+)-[0-9]+")
 
 PASS = "pass"
 REJECT = "reject"
@@ -71,12 +80,15 @@ COULD_NOT_EVALUATE = "could-not-evaluate"
 
 
 class Decision:
-    def __init__(self, status, description, auto_merge=False, needs_steward=False, comment=None):
+    def __init__(
+        self, status, description, auto_merge=False, needs_steward=False, comment=None, close=False
+    ):
         self.status = status
         self.description = description
         self.auto_merge = auto_merge
         self.needs_steward = needs_steward
         self.comment = comment
+        self.close = close
 
 
 PUSH_AGAIN = "Push a fix and the checks run again."
@@ -96,6 +108,20 @@ FIX_OR_RUN_AGAIN = (
     "way, the checks run again."
 )
 PROOF_AGAIN = "When the proof is in place, comment here, so a steward runs the checks again."
+
+# GitHub keeps at most 65536 characters in one comment. A comment of the
+# ownership record stays within this many UTF-8 bytes, which are never fewer
+# than the characters GitHub counts, so a record of any size fits in parts.
+COMMENT_LIMIT = 65536
+# Starts each comment of an ownership record. The record id and the part make
+# a second run of the check find the parts it posted before. A record holds
+# nothing of the run that posts it, so every run makes the same parts.
+EVIDENCE_MARKER = "<!-- content-index:ownership-record {record} part {part}/{parts} -->"
+# What the upserted comment says about the record, which is not in it.
+EVIDENCE_POSTED = (
+    "The attestation and its signature are recorded in their own comments, which no later run "
+    "of this check edits."
+)
 
 
 def _findings(verdict):
@@ -195,11 +221,108 @@ def _ownership_paragraphs(result):
     return paragraphs
 
 
-def decide(verdict, candidate, ownership_result, run_url="", advice=()):
+def _fenced(text, info=""):
+    """`text` in a code block whose fence is one backtick longer than the
+    longest run of backticks in it, so that no line of the text can close it.
+    """
+    runs = re.findall(r"`+", text)
+    fence = "`" * max(3, 1 + max(map(len, runs), default=0))
+    ending = "" if text.endswith("\n") else "\n"
+    return f"{fence}{info}\n{text}{ending}{fence}"
+
+
+def evidence_comments(number, result, limit=COMMENT_LIMIT):
+    """The record of the attestation that a verified proof rests on (RFC 0104,
+    rule 30), so that a merged proof outlives the host, as comment bodies.
+
+    The record names the pull request, the host, the key that verified the
+    signature, the path and the SHA-256 of the attestation, and holds the
+    signature and the attestation verbatim. When it is larger than `limit`
+    bytes, the attestation continues in more comments, and the SHA-256
+    confirms a copy that joins the parts again. A `limit` of None keeps the
+    record in one part.
+    """
+    evidence = result.evidence
+    try:
+        host = json.loads(evidence.text).get("host")
+    except (ValueError, AttributeError):
+        host = None
+    attestation = evidence.text.encode("utf-8")
+    record = hashlib.sha256(attestation + b"\0" + evidence.signature.encode("utf-8")).hexdigest()
+    first = "\n\n".join(
+        [
+            f"Ownership record of pull request #{number}: the attestation `{evidence.path}` "
+            f"of the share host `{host}` has a valid signature by the key `{evidence.key}`. "
+            f"The SHA-256 of the attestation is `{hashlib.sha256(attestation).hexdigest()}`.",
+            f"Its signature, `{evidence.path}{ownership.SIGNATURE}`:",
+            _fenced(evidence.signature),
+            "The attestation:",
+        ]
+    )
+    later = f"Ownership record of pull request #{number}, the attestation continues:"
+    heads, chunks, rest = [], [], evidence.text
+    while not chunks or rest:
+        head = later if chunks else first
+        size = len(rest) if limit is None else _longest_fit(head, rest, limit)
+        heads.append(head)
+        chunks.append(rest[:size])
+        rest = rest[size:]
+    return [
+        _evidence_marker(record, index + 1, len(chunks)) + "\n" + head + "\n\n" + _fenced(chunk, "json")
+        for index, (head, chunk) in enumerate(zip(heads, chunks))
+    ]
+
+
+def _longest_fit(head, text, limit):
+    """How many characters of `text` fit after `head` in a comment of at most
+    `limit` UTF-8 bytes, found by halving. The size only grows with the
+    length, because a longer text never needs a shorter fence, and one
+    character always fits.
+    """
+    low, high = 1, len(text)
+    while low < high:
+        middle = (low + high + 1) // 2
+        if _part_size(head, text[:middle]) <= limit:
+            low = middle
+        else:
+            high = middle - 1
+    return low
+
+
+def _evidence_marker(record, part, parts):
+    return EVIDENCE_MARKER.format(record=record, part=part, parts=parts)
+
+
+def _part_size(head, chunk):
+    """The UTF-8 size of a comment with this head and chunk, with a marker of
+    the longest form."""
+    marker = _evidence_marker("0" * 64, 99, 99)
+    return len(f"{marker}\n{head}\n\n{_fenced(chunk, 'json')}".encode("utf-8"))
+
+
+def empty_paragraphs(empty, closed=True):
+    """Why an empty change does not merge, and the listing it repeats when one
+    is known. `closed` says whether this run closed it or left it to a steward.
+    """
+    lines = [f"This pull request changes no file against `{empty.base}`, so there is nothing to merge."]
+    if empty.path and empty.number:
+        lines.append(f"`{empty.base}` already holds `{empty.path}`, which #{empty.number} last added or changed.")
+    elif empty.path:
+        lines.append(f"`{empty.base}` already holds `{empty.path}`.")
+    if closed:
+        lines.append("So this pull request is closed. A change to the listing comes in a new pull request.")
+    else:
+        lines.append("This pull request could not be closed, so a steward closes it.")
+    return [" ".join(lines)]
+
+
+def decide(verdict, candidate, ownership_result, run_url="", advice=(), empty=None):
     """The status reports validation alone. Ownership is a separate axis, so a
     listing that validates but cannot prove it is green and waits for a steward.
 
-    `advice` goes into the comment whatever the outcome.
+    `advice` goes into the comment whatever the outcome. `empty` is an Empty
+    when the change touches no file, and such a change that validates is
+    closed, because there is nothing a steward could merge.
     """
     outcome = verdict.get("verdict")
 
@@ -231,6 +354,14 @@ def decide(verdict, candidate, ownership_result, run_url="", advice=()):
                 [_sentence(ownership_result.reason)],
                 rerun=True,
             ),
+        )
+
+    if empty is not None:
+        return Decision(
+            "success",
+            "validated, and the change touches no file, so it is closed",
+            close=True,
+            comment=comment("Validated.", empty_paragraphs(empty)),
         )
 
     if not candidate:
@@ -416,8 +547,10 @@ class OwnershipApi:
     """`ownership.verify` talks to the target repository through this.
 
     `changes` are the changed files of the pull request, which the share host
-    proof hashes. The files of a storage repository are read once per run, so a
-    grouped pull request reads its attestation once.
+    proof hashes. The files of a share host are read once per run, so a grouped
+    pull request reads its attestation once. They are cached by the storage
+    repository or the data URL of the host and the path, so two hosts never
+    share a file.
     """
 
     def __init__(self, api, changes=None, share_files=None):
@@ -437,11 +570,24 @@ class OwnershipApi:
     def spacedock_mod(self, mod_id):
         return self.api.spacedock_mod(mod_id)
 
-    def share_file(self, table, path):
-        key = (table.get("storage"), path)
+    def _cached(self, table, path, read):
+        key = (table.get("storage") or table.get("data"), path)
         if key not in self.share_files:
-            self.share_files[key] = ownership.share_file(table, path, USER_AGENT)
+            self.share_files[key] = read(table, path, USER_AGENT)
         return self.share_files[key]
+
+    def share_file(self, table, path):
+        """The text of a share host file, or None. A file of a host with `data`
+        goes through the signed cache, so one path is never cached twice.
+        """
+        if isinstance(table.get("data"), str):
+            found = self.share_file_signed(table, path)
+            return found.text if isinstance(found, ownership.SignedFile) else None
+        return self._cached(table, path, ownership.share_file)
+
+    def share_file_signed(self, table, path):
+        """A file of a host with `data` as a SignedFile, None, or ownership.UNSIGNED."""
+        return self._cached(table, path, ownership.share_file_signed)
 
     def change(self):
         if self.changes is None:
@@ -472,11 +618,18 @@ def post_status(api, sha, decision, run_url):
     )
 
 
-def upsert_comment(api, number, body):
-    """One comment per pull request, edited in place, never a second one."""
+def upsert_comment(api, number, body, app_slug):
+    """One comment per pull request, edited in place, never a second one.
+
+    Only a comment by the App of this check, named by `app_slug`, counts.
+    Anyone else can post the marker first, and the App can not edit that
+    comment. Without `app_slug` no comment counts and a new one is posted.
+    Only the first 100 comments are looked at, so on a longer pull request a
+    new comment can be posted on a later run. This loses nothing.
+    """
     existing = None
     for comment in api.get(f"/issues/{number}/comments", per_page=100) or []:
-        if COMMENT_MARKER in (comment.get("body") or ""):
+        if COMMENT_MARKER in (comment.get("body") or "") and _posted_by_app(comment, app_slug):
             existing = comment
             break
 
@@ -494,6 +647,47 @@ def upsert_comment(api, number, body):
         api.send("POST", f"/issues/{number}/comments", payload)
     elif (existing.get("body") or "") != payload["body"]:
         api.send("PATCH", f"/issues/comments/{existing['id']}", payload)
+
+
+def _posted_by_app(comment, app_slug):
+    """Whether the bot account of the App with this slug posted the comment.
+
+    The login decides, because only the installation token of the App posts
+    as `<slug>[bot]`. `performed_via_github_app` alone does not, because a
+    person who authorizes the App also posts through it under their own
+    account and can edit that comment later.
+    """
+    if not app_slug:
+        return False
+    user = comment.get("user") or {}
+    login = (user.get("login") or "").casefold()
+    return user.get("type") == "Bot" and login == f"{app_slug}[bot]".casefold()
+
+
+def post_evidence(api, number, comments, app_slug):
+    """Post each comment of an ownership record that the pull request does not
+    hold yet, and never edit or delete one, so that no later run of the check
+    can erase the record.
+
+    The marker of each part says whether an earlier run posted it, so a run
+    again posts only what is missing. Only a comment by the App of this check,
+    named by `app_slug`, counts. Anyone else can post the same marker first
+    and edit or delete that comment after the merge, and that includes the
+    bot of a share host, which can be a GitHub App too. Without `app_slug` no
+    comment counts and every part is posted. Only the first 100 comments are
+    looked at, so on a longer pull request a part can be posted twice. Both
+    of these lose nothing.
+    """
+    existing = api.get(f"/issues/{number}/comments", per_page=100) or []
+    posted = [
+        comment.get("body") or ""
+        for comment in existing
+        if _posted_by_app(comment, app_slug)
+    ]
+    for body in comments:
+        marker = body.split("\n", 1)[0]
+        if not any(text.startswith(marker) for text in posted):
+            api.send("POST", f"/issues/{number}/comments", {"body": body})
 
 
 def _labels(api, number):
@@ -617,6 +811,95 @@ def changed_paths(api, number):
         page += 1
 
 
+# A change that touches no file. `path` is the listing on the base branch that
+# it repeats, and `number` the merged pull request that last added or changed
+# that listing, each None when it is not known.
+Empty = namedtuple("Empty", "base path number", defaults=[None, None])
+
+
+def changes_nothing(api, number):
+    """Whether GitHub counts no changed file in the pull request itself.
+
+    An empty file list closes the pull request, so the count of the pull
+    request has to agree with it. A count that could not be read is not zero.
+    """
+    try:
+        answer = api.get(f"/pulls/{number}")
+    except (urllib.error.HTTPError, OSError, ValueError) as error:
+        api.log(f"the pull request could not be read again: {error}")
+        return False
+    return isinstance(answer, dict) and answer.get("changed_files") == 0
+
+
+def last_pull_request(api, path, base_ref):
+    """The merged pull request that last changed `path` on `base_ref`, or None.
+
+    Only a best effort, so any failure names no pull request.
+    """
+    try:
+        # Api.get takes the path of the call as `path`, so the query goes into it here.
+        query = urllib.parse.urlencode({"path": path, "sha": base_ref, "per_page": 1})
+        commits = api.get(f"/commits?{query}") or []
+        sha = commits[0].get("sha") if commits and isinstance(commits[0], dict) else None
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+            return None
+        pulls = api.get(f"/commits/{sha}/pulls") or []
+    except (urllib.error.HTTPError, OSError, ValueError, AttributeError) as error:
+        api.log(f"the pull request that changed {path} could not be found: {error}")
+        return None
+    for pull in pulls if isinstance(pulls, list) else []:
+        if not isinstance(pull, dict) or not pull.get("merged_at"):
+            continue
+        if ((pull.get("base") or {}).get("ref")) != base_ref:
+            continue
+        if type(pull.get("number")) is int:
+            return pull["number"]
+    return None
+
+
+def repeated_listing(api, pull, registry=None):
+    """What an empty change repeats, as an Empty.
+
+    A share host (RFC 0094) names the listing in its head branch, so for a pull
+    request from the account of a host the listing of that name on the base
+    branch is looked up, in the folder of each type the host takes. Nothing is
+    named for anyone else, and nothing when the listing is not there.
+    """
+    base_ref = (pull.get("base") or {}).get("ref") or ""
+    empty = Empty(base_ref or "the base branch")
+    author_id = (pull.get("user") or {}).get("id")
+    branch = (pull.get("head") or {}).get("ref") or ""
+    found = SHARE_BRANCH.fullmatch(branch)
+    if not base_ref or type(author_id) is not int or not found:
+        return empty
+
+    hosts = ownership.share_hosts() if registry is None else registry
+    for table in hosts.values():
+        bot = table.get("bot")
+        if table.get("kind") != ownership.SHARE_KIND or type(bot) is not int or bot != author_id:
+            continue
+        types = table.get("types")
+        for kind in types if isinstance(types, list) else []:
+            folder = FOLDER_OF_KIND.get(kind)
+            path = f"{folder}/{found.group(1)}.toml"
+            if not folder or not PLAIN_LISTING.fullmatch(path):
+                continue
+            document, _ = authored_document(api, path, base_ref)
+            if document is not None:
+                return Empty(base_ref, path, last_pull_request(api, path, base_ref))
+    return empty
+
+
+def close_pull_request(api, number):
+    """Whether the pull request is closed. False leaves it to a steward."""
+    try:
+        api.send("PATCH", f"/pulls/{number}", {"state": "closed"})
+    except (urllib.error.HTTPError, OSError, ValueError) as error:
+        api.log(f"the pull request could not be closed: {error}")
+        return False
+    return True
+
+
 def authored_document(api, path, ref):
     """One authored document at `ref`, and what stopped the read.
 
@@ -656,7 +939,10 @@ def ownership_for_all(api, pull, paths, head_sha, changes=None):
         proof = pack_ownership.PROOF if all(
             result.proof == pack_ownership.PROOF for _, result in results
         ) else None
-        return ownership.Result(ownership.VERIFIED, worst.reason, proof)
+        # The documents of a grouped pull request rest on one attestation, so
+        # the first record is the record of all of them.
+        evidence = next((result.evidence for _, result in results if result.evidence), None)
+        return ownership.Result(ownership.VERIFIED, worst.reason, proof, evidence=evidence)
 
     if len(results) == 1:
         return worst
@@ -946,6 +1232,10 @@ def parse_arguments(argv):
     parser.add_argument("--head-branch", required=True, help="from the workflow_run event")
     parser.add_argument("--repository", default=os.environ.get("GITHUB_REPOSITORY"))
     parser.add_argument("--run-url", default="")
+    parser.add_argument("--record-url", default="", help="this ownership run, which holds the record")
+    parser.add_argument(
+        "--app-slug", default="", help="the App whose token posts the record, from create-github-app-token"
+    )
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
 
@@ -974,6 +1264,18 @@ def main(argv=None):
         except Exception as second:
             print(f"and the status could not be posted: {second!r}", file=sys.stderr)
         return 1
+
+
+def record_evidence(number, result):
+    """Print the full record of the attestation, and add it to the job summary
+    of this run when GitHub names one, so that the run holds it in one piece.
+    """
+    entry = evidence_comments(number, result, limit=None)[0]
+    print(entry)
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        with open(summary, "a", encoding="utf-8") as handle:
+            handle.write(entry + "\n\n")
 
 
 def act(api, arguments):
@@ -1023,9 +1325,29 @@ def act(api, arguments):
         *owner_advice(pull, pack_ownership.missing_records(api, pull, changes)),
         *owner_notes(api, pull, changes, arguments.head_sha),
     ]
+    if result.evidence is not None:
+        # Before auto-merge is armed, so that no proof merges without its record.
+        record_evidence(number, result)
+        post_evidence(api, number, evidence_comments(number, result), arguments.app_slug)
+        advice.append(EVIDENCE_POSTED)
+        if arguments.record_url:
+            advice.append(f"[The ownership run]({arguments.record_url})")
+    # A change that touches no file has nothing to merge, so it is closed and
+    # not queued for a steward.
+    empty = repeated_listing(api, pull) if not changes and changes_nothing(api, number) else None
     decision = decide(
-        {**verdict, "scope_reason": reason}, candidate, result, arguments.run_url, advice
+        {**verdict, "scope_reason": reason}, candidate, result, arguments.run_url, advice, empty
     )
+
+    if decision.close and not close_pull_request(api, number):
+        decision = Decision(
+            decision.status,
+            "validated, and the change touches no file, but it could not be closed",
+            needs_steward=True,
+            comment=_comment(
+                "Validated.", verdict, [*empty_paragraphs(empty, closed=False), *advice], arguments.run_url
+            ),
+        )
 
     if decision.auto_merge:
         # Auto-merge cannot be armed once GitHub calls the pull request mergeable.
@@ -1046,8 +1368,10 @@ def act(api, arguments):
             )
 
     post_status(api, arguments.head_sha, decision, arguments.run_url)
-    upsert_comment(api, number, decision.comment)
+    upsert_comment(api, number, decision.comment, arguments.app_slug)
     sync_document_labels(api, number, check_scope.kinds(changes))
+    if empty is not None and empty.path and DUPLICATE_LABEL not in _labels(api, number):
+        _put_label(api, number, DUPLICATE_LABEL)
 
     if decision.needs_steward:
         add_steward_label(api, number)

@@ -12,7 +12,7 @@ Its Dependencies section shows what the `mod.toml` of your newest stamped releas
 1. Write your authored document following [RFC 0031](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0031-content-metadata-format.md).
    The worked examples in [`examples/`](https://github.com/KSAModding/content-manager-design/tree/main/examples) are real listings you can copy from.
 2. Put it at `listings/<id>.toml`, where `<id>` is the folder name your content installs as.
-   A mod pack goes to `packs/<id>/<version>.toml`.
+   A mod pack goes to `packs/<id>/<version>.toml`, a vehicle to `vehicles/<id>.toml` and a save to `saves/<id>.toml`, see [Listing a vehicle or a save](#listing-a-vehicle-or-a-save).
 3. Check it before you open anything, which saves you a round trip through CI:
 
    ```sh
@@ -124,6 +124,75 @@ The platform names are `windows`, `linux` and `macos`.
 Leave out `runtime` when your loader has its own executable on that platform.
 Every `launch` must be in your release archive, or the release is rejected.
 
+## Archives for one platform
+
+A mod or a mod loader that you release on GitHub can add a smaller archive for each platform, for example when its runtime files differ between Windows and Linux.
+Name each one `<stem>-windows.zip`, `<stem>-linux.zip` or `<stem>-macos.zip`, where `<stem>.zip` is the archive of the release, and add it to the same release.
+An underscore instead of the hyphen works too, and the case does not matter.
+Add only one archive per platform, because two for the same platform reject the release.
+The archive for every platform, `<stem>.zip`, stays required, because it is the file for a platform that has no archive of its own and for a manager that does not read platform archives.
+A manager downloads the archive of its own platform when the release has one that is not gone from its host, and otherwise `<stem>.zip`, per [RFC 0112](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0112-per-platform-downloads.md).
+
+Each platform archive must hold the same mod folder as `<stem>.zip`, and for a mod, the same dependencies in its `mod.toml`.
+For a mod loader, it must also hold every `launch` file that applies to its platform.
+The index rejects the release when one of these differs.
+A listing on SpaceDock, a release by pull request, a vehicle and a save take no platform archives, and their releases keep today's rules for which zip is used.
+
+## Listing a vehicle or a save
+
+A vehicle or a save is a folder the game wrote, shared with the mods it needs, per [RFC 0085](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0085-vehicles-and-saves.md).
+Its document goes to `vehicles/<id>.toml` or `saves/<id>.toml`.
+The id follows the same rules as every id and is in the same namespace, and it is never compared with `name` in the `meta.toml` of the folder, because a real name has spaces.
+
+The document is a mod listing without `[loader]`:
+
+```toml
+spec_version = 1
+id = "ExampleRover"
+type = "vehicle"
+name = "Example Rover"
+authors = ["Maxi"]
+abstract = "A six-wheel rover for the Moon."
+license = "CC-BY-4.0"
+
+[releases]
+github = "Maxi/KSA-Rovers"
+tag_prefix = "ExampleRover-"
+
+[[dependencies]]
+id = "ExamplePartsMod"
+kind = "required"
+min = "1.4.0"
+```
+
+- `links.forums` is optional, because the forum may have no place for vehicles and saves. Without it, the account on the release host ties the listing to you, see [POLICY.md](POLICY.md#the-forums-link).
+- `[compatibility]` is optional. Without `game_min`, the watcher takes it from `version` in the `meta.toml` in your zip, which is the game build that wrote the folder. A new game build often breaks older vehicle and save files, so lower `game_min` only when you know that an older build loads the file.
+- `[[dependencies]]` names the mods the vehicle or the save needs, and only mods. A client that shares one fills this list from the mods of its instance, with `min` at the version it installed and no `max`. Check the list, because the index cannot read it out of the file, and add a mod that only changes how parts behave as `recommends`.
+- `[install]` takes only `root`, `steps` and `uninstall`. The game decides where the folder goes, and `name` in its `meta.toml` decides the name of the folder.
+
+When a game build or an update of a mod breaks a released vehicle or save, set `game_max` or a dependency `max` on that release with an [amendment](https://github.com/KSAModding/content-index-releases/blob/main/CONTRIBUTING.md#an-amendment) in content-index-releases.
+
+The zip holds the folder as the game wrote it: one top-level directory named after `name` in its `meta.toml`, with `meta.toml` and `vehicle.xml` in it, or `universe.xml` for a save.
+The checks and the watcher refuse a release when:
+
+- `meta.toml` does not parse as TOML, because the game then does not start.
+- `name` breaks the [name rule](schemas/README.md#save-and-vehicle-names) of the game.
+- The top-level directory has another name than `name`, also in another case.
+- `vehicle.xml` or `universe.xml` is missing, has another case, or is not well-formed XML.
+- The listing has no `game_min`, and `version` in `meta.toml` is not a game build.
+- Another listing of the same type already installs a folder with the same name, compared without case, because a player could not have both.
+
+Other files in a vehicle folder get a note, because the game drops them when it saves the vehicle again.
+A save is different: the game writes only `meta.toml` and `universe.xml` when it saves, and a mod writes its own state beside them, so every other file in a save folder is the state of a mod.
+It installs as it is, with no note, so a save that carries something harmful in such a file is grounds for a [takedown](POLICY.md#filing-a-takedown).
+The [listing page](https://ksamodding.github.io/content-index/) checks a zip you select with the same rules, except the folder of another listing, which only the checks and the watcher compare.
+
+A vehicle or a save needs a release host that proves who shares it, and you have these paths:
+
+- A GitHub repository of your own under `[releases] github`. One repository can hold many vehicles and saves, each with a `tag_prefix` of its own, see [A repository with other releases](#a-repository-with-other-releases). The proof is the same as for any repository, and a marker file that names only your username covers every vehicle and save in it.
+- A share host that [`hosts.toml`](hosts.toml) registers for the type, named under `[releases]` by its key with the id of the listing as the value. You publish through the host, and it opens the pull request, see [Proving you control the release host](#proving-you-control-the-release-host).
+- No `[releases]` at all. Each release then enters by a [release pull request](https://github.com/KSAModding/content-index-releases/blob/main/CONTRIBUTING.md#a-release) in content-index-releases.
+
 ## Claiming and updating a pack
 
 A pack id is first come, first served, as a listing id is, per [RFC 0080](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0080-pack-claims-and-members.md).
@@ -184,7 +253,7 @@ When a pinned mod has newer releases, test them and publish a new pack version.
 When a mod author asks to leave your pack, publish a version without that mod, see [POLICY.md](POLICY.md#leaving-a-pack).
 
 Checks then validate the document, inspect your latest release archive, and verify that you control the release host the listing points at.
-The pull request is then labelled `listing` or `pack`, which says which kind of document it changes, and one that changes both carries both labels.
+The pull request is then labelled `listing`, `vehicle`, `save` or `pack`, which says which kind of document it changes, and one that changes several kinds carries each of their labels.
 
 When everything is green and ownership verified, the pull request merges itself.
 When ownership cannot be verified automatically, a steward looks instead.
@@ -200,6 +269,7 @@ Any one of the three is enough, and the first that applies is used:
    So `Maximilian-Nesslauer` sets `ksa-index-maximilian-nesslauer`.
    One topic covers every listing that points at that repository, and it is the easy path for an organization-owned repository.
 3. The repository contains `.github/ksa-content-index.toml` naming the listing id and your username.
+   A file that names only your username covers every listing that points at that repository, such as several vehicles or saves with a `tag_prefix` each.
 
 A fork proves control through the first two proofs only, per [RFC 0079](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0079-author-freedom.md).
 The owner of a fork is the account that forked it, and GitHub copies no topic to a fork.
@@ -218,7 +288,10 @@ When SpaceDock does not answer, the check reaches no verdict, and the pull reque
 Release and amendment pull requests in content-index-releases use the same proof.
 
 A listing on a share host, a host that [`hosts.toml`](hosts.toml) registers per [RFC 0094](https://github.com/KSAModding/content-manager-design/blob/main/rfcs/0094-share-host.md), needs no proof that you set up.
-The host proves the owner in one of two ways: it opens the pull request from its own account and places an attestation of the exact change in its storage repository, or you link your GitHub account to your account on the host and open the pull request yourself.
+The host proves the owner in one of two ways.
+It opens the pull request from its own account and publishes an attestation of the exact change, in its storage repository or, for a host without GitHub storage, under its `data` URL with the signature in a `.sig` file beside it.
+Or you link your GitHub account to your account on the host and open the pull request yourself.
+For a host with `data`, the ownership check accepts the attestation only when the signature is valid for the `key` of the host, and copies the attestation and its signature into comments of their own on the pull request, which no later run edits, so the proof stays readable after the host is gone.
 A pull request that changes one byte after the host attested it does not verify.
 An edit is verified against the host that the listing already names, as for every other host.
 
@@ -310,7 +383,7 @@ Do not ask for a delisting instead. That leaves a tombstone carrying the id and 
 ## Takedowns and disputes
 
 Use the issue forms, and read [POLICY.md](POLICY.md) for what a steward does with them.
-A steward decides, and the required forums link is the tiebreaker for who claimed an id first.
+A steward decides, and the forums link is the tiebreaker for who claimed an id first, or for a vehicle or a save without one, the account on its release host.
 
 ## Licensing your contribution
 

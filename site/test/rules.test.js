@@ -238,15 +238,6 @@ test("a schema message is placed at the field it names", () => {
   assert.equal(missing.field, "links.forums");
 });
 
-const saveGated = (JSON.parse(read("../../schemas/authored.schema.json")).properties.type.not?.enum || []).includes("save");
-
-test("the rollout gate refuses a save with its title, as check_schema.explain words it", { skip: !saveGated && "the gate no longer holds saves" }, () => {
-  const save = { spec_version: 1, id: "ExampleSave", type: "save", name: "Example Save", authors: ["Example Author"], abstract: "A save.", license: "CC-BY-4.0" };
-  assert.deepEqual(texts(checker.offline(save), ERROR), [
-    "type: 'save' is a type that the index does not accept yet, because no release host for it exists (RFC 0085 Rollout)",
-  ]);
-});
-
 test("the tags of a vehicle or a save are free-form and give no note", () => {
   for (const type of ["vehicle", "save"]) {
     for (const tags of [[], ["rover"], ["parts", "rover"]]) {
@@ -298,6 +289,21 @@ test("hosts.toml gives its tables", () => {
   assert.deepEqual(Object.keys(HOSTS), ["ksamods"]);
   assert.deepEqual(shareHosts(""), {});
   assert.deepEqual(shareHosts("# no host yet\n"), {});
+});
+
+// A host without GitHub storage by RFC 0104, with the fixed keys of DATA_HOST in tools/test_check_hosts.py.
+test("a host with data, downloads and key is offered like a host with storage", () => {
+  const hosts = shareHosts(
+    '[ksamods]\nkind = "share"\ndata = "https://data.ksamods.gg/share/"\ndownloads = ["https://files.ksamods.gg/"]\n' +
+      'key = "MCowBQYDK2VwAyEAAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="\n' +
+      'retired_keys = ["MCowBQYDK2VwAyEAICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8="]\ntypes = ["vehicle"]\n',
+  );
+  assert.deepEqual(hosts.ksamods.downloads, ["https://files.ksamods.gg/"]);
+  assert.equal(hosts.ksamods.retired_keys.length, 1);
+  assert.deepEqual(hostLines(vehicle({ ksamods: "ExampleRover" }), hosts), []);
+  assert.deepEqual(hostLines({ id: "ExampleRover", type: "save", releases: { ksamods: "ExampleRover" } }, hosts), [
+    "releases.ksamods: the share host 'ksamods' takes vehicle, and this document is a save",
+  ]);
 });
 
 test("a vehicle on a registered share host passes", () => {
