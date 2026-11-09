@@ -23,8 +23,8 @@ description = """
 安装方法
 
 先正常退出游戏，确认版本为 2026.11.10.5801。
-从 Release 页面下载 KSA-zh-CN-2026.11.10.5801.zip，完整解压。不要在压缩包内直接运行。
-双击 简体中文启动.cmd。
+从 Release 页面下载 KSA-Simplified-Chinese-Localization-1.0.0.zip，完整解压，得到 KSA-Simplified-Chinese-Localization 文件夹。不要在压缩包内直接运行。用 Borea 等管理器安装时，安装完成后打开本 mod 的文件夹。
+双击文件夹中的 简体中文启动.cmd。管理器不会替你运行它，这一步必须手动完成，否则汉化不会生效。
 首次运行时，粘贴包含 KSA.exe 的文件夹路径并按回车。安装器会校验游戏版本、备份原始文件、安装汉化，然后以中文启动游戏。
 
 切换与还原
@@ -44,13 +44,28 @@ description = """
 链接
 
 项目仓库：https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization
-下载地址：https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/releases/tag/2026.11.10.5801
+下载地址：https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/releases/latest
 
 汉化免费使用，欢迎反馈问题和提出翻译建议，最好通过 GitHub Issues 提交。安装出错时，可以运行 检查汉化包.cmd 检查汉化包，它会给出详细报错，反馈时请一并附上。
+
+如果这份汉化对你有帮助，欢迎扫码赞赏支持：
+
+![赞赏码](ksa-image:donate-qrcode)
 
 祝大家飞行愉快！🚀🐱"""
 license = "MIT"
 tags = ["user-interface"]
+
+[install]
+steps = [
+  "正常退出游戏，确认游戏版本为 2026.11.10.5801。",
+  "打开本 mod 的安装文件夹 KSA-Simplified-Chinese-Localization，双击“简体中文启动.cmd”。",
+  "首次运行时粘贴包含 KSA.exe 的文件夹路径并按回车。安装器会校验版本、备份原始文件、安装汉化，并以中文启动游戏。",
+]
+uninstall = [
+  "正常退出游戏，在本 mod 文件夹中双击“还原原始游戏.cmd”，恢复被汉化替换的原始文件。",
+  "还原完成后再删除本 mod 文件夹。",
+]
 
 [releases]
 github = "fchvvjchvccj-cmyk/KSA-Chinese-Localization"
