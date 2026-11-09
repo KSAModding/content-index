@@ -44,13 +44,9 @@ description = """
 链接
 
 项目仓库：https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization
-下载地址：https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/releases/latest
+下载地址：https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/releases/tag/2026.11.10.5801
 
 汉化免费使用，欢迎反馈问题和提出翻译建议，最好通过 GitHub Issues 提交。安装出错时，可以运行 检查汉化包.cmd 检查汉化包，它会给出详细报错，反馈时请一并附上。
-
-如果这份汉化对你有帮助，欢迎扫码赞赏支持：
-
-![赞赏码](ksa-image:donate-qrcode)
 
 祝大家飞行愉快！🚀🐱"""
 license = "MIT"
