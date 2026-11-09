@@ -1,0 +1,95 @@
+spec_version = 1
+id = "KSA-Simplified-Chinese-Localization"
+type = "mod"
+name = "KSA-Chinese-Localization"
+authors = ["fchvvjchvccj-cmyk"]
+abstract = "KSA 2026.11.10.5801 简体中文差分汉化（不含游戏本体）。下载 ZIP 解压后双击“简体中文启动.cmd”，选择含 KSA.exe 的目录；安装、英文切换和还原详见 README。"
+description = """
+大家好！
+
+我为 Kitten Space Agency（KSA） 制作了一份免费的简体中文汉化补丁，适用于游戏版本 2026.11.10.5801（Windows）。
+
+汉化内容
+
+共 4,149 条词典记录，覆盖游戏全部 277 条原生本地化文本
+编辑器中全部 258 个部件模板均有中文名，包括指令舱、探测器核心、储箱、分离器、姿态控制推进器、太阳能电池板、服务舱和物资储物柜等
+66 条资源描述和 104 条资源提示
+89 条游戏运行时拼接的动态文本，包括辐射与生命保障警告、太空天气告警、舱外活动提示和部件详情
+设置、按键绑定、存档读档、飞行界面、轨道与转移规划，以及 5801 新增的生命保障、辐射、太空天气、舱外物资转移、编辑器撤销与重做等系统
+中文字体（使用 Windows 黑体）和中文换行
+
+本版还完成了一轮完整的二次审校，修正了多处错译、部件规格标注错误和前后不一致的术语。
+
+安装方法
+
+先正常退出游戏，确认版本为 2026.11.10.5801。
+从 Release 页面下载 KSA-Simplified-Chinese-Localization-1.0.0.zip，完整解压，得到 KSA-Simplified-Chinese-Localization 文件夹。不要在压缩包内直接运行。用 Borea 等管理器安装时，安装完成后打开本 mod 的文件夹。
+双击文件夹中的 简体中文启动.cmd。管理器不会替你运行它，这一步必须手动完成，否则汉化不会生效。
+首次运行时，粘贴包含 KSA.exe 的文件夹路径并按回车。安装器会校验游戏版本、备份原始文件、安装汉化，然后以中文启动游戏。
+
+切换与还原
+
+原版英文启动.cmd：以英文启动，汉化保留
+还原原始游戏.cmd：恢复原始文件
+原始文件备份在游戏目录的 .ksa-zh-backup 文件夹中
+
+说明
+
+汉化包不含游戏本体、原始 DLL 和字体。程序修改以差分补丁形式提供，安装时用你自己的游戏文件在本机生成。
+不修改存档、飞行物理或游戏数据。
+安装器会拒绝其他游戏版本和未知文件，不会覆盖它无法识别的文件。
+部分固定的仪表刻字、型号、技术缩写和底层调试信息保留英文。
+补丁通过了自动化检查：中英文各 2,088 项运行库检查，以及安装、升级、还原测试。不过我没有逐个人工检查游戏内的画面，发现问题欢迎反馈。
+
+链接
+
+项目仓库：https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization
+下载地址：https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/releases/latest
+
+汉化免费使用，欢迎反馈问题和提出翻译建议，最好通过 GitHub Issues 提交。安装出错时，可以运行 检查汉化包.cmd 检查汉化包，它会给出详细报错，反馈时请一并附上。
+
+如果这份汉化对你有帮助，欢迎扫码赞赏支持：
+
+![赞赏码](ksa-image:donate-qrcode)
+
+祝大家飞行愉快！🚀🐱"""
+license = "MIT"
+tags = ["user-interface"]
+
+[install]
+steps = [
+  "正常退出游戏，确认游戏版本为 2026.11.10.5801。",
+  "打开本 mod 的安装文件夹 KSA-Simplified-Chinese-Localization，双击“简体中文启动.cmd”。",
+  "首次运行时粘贴包含 KSA.exe 的文件夹路径并按回车。安装器会校验版本、备份原始文件、安装汉化，并以中文启动游戏。",
+]
+uninstall = [
+  "正常退出游戏，在本 mod 文件夹中双击“还原原始游戏.cmd”，恢复被汉化替换的原始文件。",
+  "还原完成后再删除本 mod 文件夹。",
+]
+
+[releases]
+github = "fchvvjchvccj-cmyk/KSA-Chinese-Localization"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/kitten-space-agency-simplified-chinese-localization-for-game-version-2026-11-10-5801-free-no-game-files-included.1599/"
+homepage = "https://forums.ahwoo.com/members/huishou-kong-chun.4924/"
+repository = "https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization"
+bugtracker = "https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/issues"
+
+[compatibility]
+game_min = "2026.11.10.5801"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/main/icon-512.png"
+sha256 = "e70e81454d3880e7c95b207357231f9b1023a9ce6bdef250681bd4ff1875f3eb"
+width = 512
+height = 512
+size = 134630
+
+[[images.description]]
+id = "donate-qrcode"
+url = "https://raw.githubusercontent.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/975ef3357f3f7f6ccaf85742e792c08566de0a86/%E7%BB%99%E6%88%91%E6%89%93%E8%B5%8F%E4%B8%80%E7%82%B9%E5%90%A7%EF%BC%8C%E6%B1%89%E5%8C%96%E4%B8%8D%E6%98%93.jpg"
+sha256 = "8d3379d95357bdad18d072f9f28785a30b7e12ac0ea99a484374d6a0d099a37f"
+width = 1171
+height = 1171
+size = 189602
