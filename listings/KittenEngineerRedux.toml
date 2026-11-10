@@ -7,9 +7,6 @@ abstract = "Utility mod for KSA that mirrors KSP's Kerbal Engineer Redux."
 description = """
 Kitten Engineer Redux is a utility readout mod for Kitten Space Agency. It aims to mirror the KSP mod "Kerbal Engineer Redux" by providing the player with useful vehicle data inside of the VAB and during flight.
 
-Dependencies:
- - [ModMenu](https://github.com/MrJeranimo/ModMenu/)
-
 ![editor](ksa-image:editor)
 ![flight-01](ksa-image:flight-01)
 ![flight-02](ksa-image:flight-02)
@@ -30,16 +27,11 @@ spacedock = "https://spacedock.info/mod/4043/Kitten%20Engineer%20Redux"
 bugtracker = "https://github.com/BarneyCompiler/Kitten-Engineer-Redux/issues"
 
 [compatibility]
-game_min = "2026.10.7.5541"
+game_min = "2026.11.10.5801"
 
 [loader]
 id = "StarMap"
-min = "0.4.7"
-
-[[dependencies]]
-id = "ModMenu"
-kind = "required"
-min = "0.2.2"
+min = "0.5.4"
 
 [images.icon]
 url = "https://i.imgur.com/YQXQrtm.png"
