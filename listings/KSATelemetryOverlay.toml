@@ -49,8 +49,6 @@ enabled = true
 ## Dependencies:
 StarMap is required for this mod. Borea provides Starmap by default.
 
-[ModMenu](https://ksamodding.github.io/Borea/mod/ModMenu/) is optional but recommended, it provides the settings dropdown menu. If modmap is not installed, the settings menu can be accessed through a keybind that brings up a dedicated window, by default **numpad backslash**
-
 ## Settings
 
 Toggle the overlay on and off using the **numpad period** key by default. This can be configured in the config file or the settings menu.
@@ -77,12 +75,7 @@ game_min = "2026.10.19.5638"
 
 [loader]
 id = "StarMap"
-min = "0.4.8"
-
-[[dependencies]]
-id = "ModMenu"
-kind = "recommends"
-min = "0.2.3"
+min = "0.5.0"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/elevatorctln/KSA-Public-Telemetry/refs/heads/main/images/icon.png"
