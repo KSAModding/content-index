@@ -5,6 +5,8 @@ name = "ModMenu"
 authors = ["MrJeranimo"]
 abstract = "This mod adds a \"Mods\" menu tab to the Main Menu Bar at the top of the screen for mods to put menu entries in."
 description = """
+# ModMenu is deprecated for StarMap 0.5.0+
+
 # ModMenu
 
 A modding framework for Kitten Space Agency that allows mods to easily add menu entries.
