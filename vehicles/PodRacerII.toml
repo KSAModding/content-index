@@ -1,0 +1,13 @@
+spec_version = 1
+id = "PodRacerII"
+type = "vehicle"
+name = "Pod Racer II"
+authors = ["Beik"]
+abstract = "\"Now this is podracing!\""
+license = "CC0-1.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/PodRacerII"
+
+[releases]
+ksamods = "PodRacerII"
