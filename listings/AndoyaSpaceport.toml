@@ -51,7 +51,6 @@ tags = ["gameplay", "visual"]
 
 [releases]
 github = "Maximilian-Nesslauer/KSA-AndoyaSpaceport"
-authority = "github"
 
 [links]
 forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/andoya-spaceport.1635/"

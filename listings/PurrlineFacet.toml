@@ -55,7 +55,6 @@ tags = ["parts"]
 
 [releases]
 github = "Maximilian-Nesslauer/KSA-PurrlineFacet"
-authority = "github"
 
 [links]
 forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/facet-by-purrline-rocketworks.1634/"
