@@ -1,0 +1,131 @@
+spec_version = 1
+id = "CineCam"
+type = "mod"
+name = "CineCam"
+authors = ["Maxi"]
+abstract = "A camera mod for Kitten Space Agency: one-click quick cameras, takes with a timeline, and a flight replay to direct the cameras afterward."
+description = '''
+![A chase camera follows a rocket above the clouds](ksa-image:chase-ascent)
+
+A camera mod for Kitten Space Agency. Pick a camera with one click, or build a take with a timeline and film your flight.
+
+This mod is written against the [StarMap loader](https://github.com/StarMapLoader/StarMap). It is tested against KSA build 2026.11.10.5801 only.
+
+## Features
+
+- **Quick cameras.** Flyby, Chase, Orbit, Onboard and Ground tracker. One click, no setup, on the pad, in the air and in orbit.
+- **Takes with a timeline.** A take is a list of shots. Fly the free camera to a good place and press Add key here, or add a shot from a preset. No numbers to type.
+- **Events.** A shot can start at a time, after the shot before, or on a flight event such as lift-off, a stage or a docking.
+- **Slow motion and speed keys.** A button sets the sim speed, and a take can change the sim speed on a timeline.
+- **Flight recording and replay (experimental).** Record a flight, then play a take on it afterward and edit its shots while you watch.
+- **Render to pictures.** Save every frame as a numbered picture, so the video has the exact speed at any render speed. This works for a live take and for a replay.
+- **Event log.** Each run writes the time of every event, with a tool that turns it into markers for a video editor.
+
+![The Editor page with a take and the timeline dock](ksa-image:editor-timeline)
+
+## Installation
+
+1. Install [StarMap](https://github.com/StarMapLoader/StarMap) 0.5.3 or later.
+2. Extract the mod into `Documents\My Games\Kitten Space Agency\mods\CineCam\`.
+3. The game finds new mods and asks to enable them. You can also add this to `Documents\My Games\Kitten Space Agency\manifest.toml`:
+
+```toml
+[[mods]]
+id = "CineCam"
+enabled = true
+```
+
+## Quick start
+
+1. Load a flight and select a vehicle. The mod does not work in the vehicle editor.
+2. Open the window with the **CineCam** item of the **Mods** menu, or press **Insert**.
+3. On the **Quick** page, click a camera. Click **Stop** to give the camera back.
+4. To make a take, open the **Editor** page and press **New take**. Fly the free camera to a good place, press **Add key here** and pick a shot type. Press **Save**.
+5. Press **Start take** (or **Pause** on the keyboard) to run it. Press the key again to stop it.
+6. To direct a flight afterward, turn on **Replay of recorded flights** under **Experimental** in Settings. On the Editor page choose **Record and replay**, press **Record flight**, fly, press **Stop recording**, select the recording and press **Open replay**.
+
+![A replay shot of the launch: the rocket lifts off from the pad with its engines burning, seen from the ground](ksa-image:replay-shot)
+
+The repository has a player guide, a flight replay and render guide, and a shot file reference in its `docs` folder.
+
+## Known limits
+
+- The flight replay is experimental. It draws the recorded vehicles through patches of the game renderer, so a game update can break it. It is off until you turn it on.
+- A replay does not show audio, crew, kittens on EVA, parachute canopies, dents, plume trails, smoke and particles. For a launch video with engine sound, use a live take.
+- A replay opens only on the game build of the recording, in the same star system, with its parts installed.
+- A recording holds 20 minutes of game time at 1x speed and follows the controlled vehicle and a limited number of other vehicles.
+- The mod patches game methods that are not a public modding interface, so a game update can break a feature until the mod is updated. It writes a warning in the log on another build.
+- The import of the marker file into DaVinci Resolve has not been tested.
+
+## How this mod was made
+
+I did not write a single line of this mod myself. All of the code, the tests and the documentation were written by an AI model (Claude), which I directed and tested in the game. I do not know the codebase in detail. It has worked really well for me so far and I find it useful, so I am publishing it.
+
+If you find a problem, please open an issue on GitHub or message me on the KSA Discord (Maxi).
+
+## Dependencies
+
+- [StarMap](https://github.com/StarMapLoader/StarMap): mod loader, required at runtime. Version 0.5.3 or later.
+
+## Build dependencies
+
+Required only to build the mod from source.
+
+- [StarMap.API](https://github.com/StarMapLoader/StarMap) from NuGet, tested version 0.5.2.
+- [Lib.Harmony](https://www.nuget.org/packages/Lib.Harmony) from NuGet, tested version 2.4.2.
+
+## Check out my other mods
+
+- [AdvancedFlightComputer](https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer) - maneuver planning, burn execution, automatic staging and closed-loop guidance ([forum thread](https://forums.ahwoo.com/threads/advanced-flight-computer.783/))
+- [DeltaVMap](https://github.com/Maximilian-Nesslauer/KSA-DeltaVMap) - interactive delta-v subway map and transfer-window planner, auto-generated from the loaded system ([forum thread](https://forums.ahwoo.com/threads/deltavmap.978/))
+- [MeasureTools](https://github.com/Maximilian-Nesslauer/KSA-MeasureTools) - click-to-measure ruler and protractor tools ([forum thread](https://forums.ahwoo.com/threads/measuretools.992/))
+'''
+license = "MIT"
+tags = ["user-interface"]
+
+[releases]
+github = "Maximilian-Nesslauer/KSA-CineCam"
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/cinecam.1636/"
+repository = "https://github.com/Maximilian-Nesslauer/KSA-CineCam"
+bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-CineCam/issues"
+
+[compatibility]
+game_min = "2026.11.10.5801"
+
+[loader]
+id = "StarMap"
+min = "0.5.3"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-CineCam/ef76ac3f828b8488aaa1f88344f27787fbebc3d7/images/listing/icon.png"
+sha256 = "04cae59951a7e4acbe31bfea5cc0bce8a9e24c16e6f283b1bf847dfec5de3ca1"
+width = 512
+height = 512
+size = 31739
+
+[[images.description]]
+id = "chase-ascent"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-CineCam/ef76ac3f828b8488aaa1f88344f27787fbebc3d7/docs/images/chase-ascent.jpg"
+sha256 = "eafb1a7579e237c6027c5cdfb290600cc897810e4858cfa99ac59e97c4e12c4a"
+width = 1600
+height = 900
+size = 167185
+
+[[images.description]]
+id = "editor-timeline"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-CineCam/ef76ac3f828b8488aaa1f88344f27787fbebc3d7/docs/images/editor-timeline.jpg"
+sha256 = "dd0c11dedd7843a34a3fdadcb8bf27568c79878489a693995f044f2ccc44c933"
+width = 1600
+height = 900
+size = 198757
+
+[[images.description]]
+id = "replay-shot"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-CineCam/ef76ac3f828b8488aaa1f88344f27787fbebc3d7/docs/images/replay-shot.jpg"
+sha256 = "98fbe925c8bb5e82f6c60b64d95f6610afc7568e465339f06718b2ec859c58b3"
+width = 1600
+height = 900
+size = 74522
