@@ -1,0 +1,117 @@
+spec_version = 1
+id = "PurrlineFacet"
+type = "mod"
+name = "Facet by Purrline Rocketworks"
+authors = ["Maxi"]
+abstract = "Satellite parts for small launchers: a rideshare rack with 3U, 6U and 12U cube satellites, and a kit to build small satellites and probes, with a bus, solar wings, instruments, antennas and the Alcor kick engine."
+description = '''
+![Facet cube satellites on the rack](ksa-image:hero)
+
+**Facet** is a set of satellite parts for small launchers in Kitten Space Agency, from the fictional rocket maker **Purrline Rocketworks**: a rideshare rack with cube satellites, and a kit to build small satellites and probes.
+
+## Parts
+
+- **Facet Cube Rack**: rideshare rack for cube satellites inside a fairing; bare, gold foil, white cloth.
+- **Facet Cube Adapter 1 m to 0.5 m**: adapter from 1 m to 0.5 m; bare, gold foil, white cloth.
+- **Facet Cube 3U**, **6U** and **12U**: cube satellites, two layouts each; the 12U unfolds its wings.
+- **Facet Bus**: core of a small satellite or probe; bare, gold foil, white cloth.
+- **Facet Battery Pack**: battery pack for the Bus; bare, gold foil, white cloth.
+- **Facet RCS Pod**: attitude control thrusters with their own tank.
+- **Facet Wing 2** and **Wing 3**: folding solar wings with two or three panels.
+- **Facet Eye Imager**: Earth observation telescope; bare or with foil.
+- **Facet Camera Pod**, **Star Tracker**, **Horn Antenna** and **Patch Antenna**.
+- **Facet Dish**: deploying dish antenna.
+- **Facet Science Boom**: deploying science boom.
+- **Facet Voyager Tank**: propellant tank of a small probe; bare or in silver foil.
+- **Alcor Kick Engine**: kick engine on stock MMH and NTO.
+
+Sizes and texture density follow the stock parts. A cube satellite leaves the rack with its decoupler and tumbles unless something controls it. A Bus rides on a stock 0.5 m decoupler.
+
+![All parts and finishes](ksa-image:all-parts)
+
+![Facet Eye](ksa-image:eye)
+
+![Facet Voyager with the Alcor kick engine](ksa-image:voyager)
+
+![Rideshare with white cloth](ksa-image:rideshare-cloth)
+
+## Requirements
+
+No other mod needed. Facet works with any launcher that has a fairing. [Prisma by Purrline Rocketworks](https://github.com/Maximilian-Nesslauer/KSA-PurrlinePrisma) is a small launcher with a fairing for Facet.
+
+## Install
+
+- Borea: install Facet from the content list.
+- By hand: copy `PurrlineFacet` from the release zip into `Documents/My Games/Kitten Space Agency/mods/` and enable it.
+
+To remove the mod, delete its folder. Vehicles with its parts do not load without it.
+
+Made for KSA build 2026.11.10.5801.
+
+Code and game data are MIT. Meshes, textures, logo and pictures are CC BY 4.0.
+'''
+license = "MIT AND CC-BY-4.0"
+tags = ["parts"]
+
+[releases]
+github = "Maximilian-Nesslauer/KSA-PurrlineFacet"
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/facet-by-purrline-rocketworks.1634/"
+repository = "https://github.com/Maximilian-Nesslauer/KSA-PurrlineFacet"
+bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-PurrlineFacet/issues"
+
+[compatibility]
+game_min = "2026.11.10.5801"
+
+[[dependencies]]
+id = "PurrlinePrisma"
+kind = "suggests"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/listing/icon.png"
+sha256 = "33c4a5743a6069ed0265ce1f21584096c54041f6d3d571a35a8cb2f738c7e729"
+width = 512
+height = 512
+size = 31550
+
+[[images.description]]
+id = "hero"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/listing/hero.jpg"
+sha256 = "37a79857e7f51d62726b4173d0ef2425313074bbe68f4101f0464c3226c72d25"
+width = 1536
+height = 1536
+size = 307710
+
+[[images.description]]
+id = "eye"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/listing/eye.jpg"
+sha256 = "04cef4082b92a429a6236402f168e0359a1e8144fa350adf2f358e8af9bc7758"
+width = 1536
+height = 1536
+size = 184240
+
+[[images.description]]
+id = "voyager"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/listing/voyager.jpg"
+sha256 = "6f98f1be595ae9f6e591d535456389fc122e1f4b4a89cc29b9a336259d58d1dc"
+width = 1536
+height = 1536
+size = 179079
+
+[[images.description]]
+id = "rideshare-cloth"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/listing/rideshare-cloth.jpg"
+sha256 = "45212ade84c4ea08ca0353b1a3ce5473f4c54c409c3fb9394f44b930528d1dc6"
+width = 1536
+height = 1536
+size = 179813
+
+[[images.description]]
+id = "all-parts"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/parts/all-parts.jpg"
+sha256 = "1bf02b143f2f3dba85e67b67337d537d28314f7216930e44c92afdcb3643ccc6"
+width = 2048
+height = 1601
+size = 311156

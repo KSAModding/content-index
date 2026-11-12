@@ -1,0 +1,126 @@
+spec_version = 1
+id = "PurrlinePrisma"
+type = "mod"
+name = "Prisma by Purrline Rocketworks"
+authors = ["Maxi"]
+abstract = "A two-stage small satellite launcher kit with a nine-engine first stage, an upper stage, a fairing and a launch ground set, built to fit beside the stock parts."
+description = '''
+![Prisma on the pad](ksa-image:pad-hero)
+
+**Prisma** is a two-stage small satellite launcher for Kitten Space Agency, from the fictional rocket maker **Purrline Rocketworks**. It is inspired by Spectrum from Isar Aerospace.
+
+The rocket is about 28 m tall. Sizes and texture density follow the stock parts, so Prisma mixes with stock tanks and engines. The engines burn liquid oxygen and propane.
+
+## Parts
+
+- **Prisma Fairing Half**: fairing half; place two.
+- **Prisma Fairing Base**: fairing base ring with the 1 m payload adapter.
+- **Prisma Payload Mass Simulator (1 t)**: 1000 kg dummy payload for test flights.
+- **Prisma Stage 2**: upper stage with a tank, an Altair Vac and four RCS blocks.
+- **Prisma Interstage**: interstage with its own decoupler; the Altair Vac sits inside.
+- **Prisma Stage 1 Tank**: the 2 m first stage tank.
+- **Altair Engine Bay**: nine Altair engines, each with its own gimbal.
+- **Altair**: single sea level engine.
+- **Altair Vac**: single vacuum engine with the long nozzle.
+- **Prisma Hold-down Ring**: holds the rocket on the pad and releases at lift-off.
+- **Prisma Strongback**: tower beside the rocket; stays on the pad.
+
+![All parts](ksa-image:all-parts)
+
+![The engine bay](ksa-image:engine-bay)
+
+![Ascent at dusk](ksa-image:ascent-dusk)
+
+![Prisma in orbit](ksa-image:in-orbit)
+
+## Requirements
+
+[Extended Propellants](https://github.com/Maximilian-Nesslauer/KSA-ExtendedPropellants) is required. Without it the engines do not load.
+
+Works well with [Andoya Spaceport](https://github.com/Maximilian-Nesslauer/KSA-AndoyaSpaceport) (a pad for Prisma) and [Facet](https://github.com/Maximilian-Nesslauer/KSA-PurrlineFacet) (satellites for the fairing).
+
+## Install
+
+- Borea: install Prisma from the content list. Borea adds Extended Propellants.
+- By hand: copy `PurrlinePrisma` and `ExtendedPropellants` from the release zips into `Documents/My Games/Kitten Space Agency/mods/` and enable both.
+
+To remove the mod, delete its folder. Vehicles with its parts do not load without it.
+
+Made for KSA build 2026.11.10.5801.
+
+Code and game data are MIT. Meshes, textures, logo and pictures are CC BY 4.0.
+'''
+license = "MIT AND CC-BY-4.0"
+tags = ["parts"]
+
+[releases]
+github = "Maximilian-Nesslauer/KSA-PurrlinePrisma"
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/prisma-by-purrline-rocketworks.1633/"
+repository = "https://github.com/Maximilian-Nesslauer/KSA-PurrlinePrisma"
+bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-PurrlinePrisma/issues"
+
+[compatibility]
+game_min = "2026.11.10.5801"
+
+[[dependencies]]
+id = "ExtendedPropellants"
+kind = "required"
+min = "1.0.0"
+
+[[dependencies]]
+id = "AndoyaSpaceport"
+kind = "suggests"
+
+[[dependencies]]
+id = "PurrlineFacet"
+kind = "suggests"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlinePrisma/2c8e262b86d9a897d9b275e8162ae9b778443072/images/listing/icon.png"
+sha256 = "92aab2677e067732cedd6750f5354f9e7396cfcb1bebdda6719cc89bc9aab4a1"
+width = 512
+height = 512
+size = 35305
+
+[[images.description]]
+id = "pad-hero"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlinePrisma/2c8e262b86d9a897d9b275e8162ae9b778443072/images/listing/pad-hero.jpg"
+sha256 = "515a946563c2a0d3d78df1c6643244773668cf1918982f6a5583efce789af015"
+width = 2048
+height = 1114
+size = 277578
+
+[[images.description]]
+id = "engine-bay"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlinePrisma/2c8e262b86d9a897d9b275e8162ae9b778443072/images/listing/engine-bay.jpg"
+sha256 = "ae5d8e2b0efdbfcfde2a8dc9e95bd912e94a7d98fb11bceeb80d1cbae23de40b"
+width = 1536
+height = 1536
+size = 142135
+
+[[images.description]]
+id = "ascent-dusk"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlinePrisma/2c8e262b86d9a897d9b275e8162ae9b778443072/images/listing/ascent-dusk.jpg"
+sha256 = "47ae2de2d29561ca194db7f8dd25e90426e4534ae2aa7c1214a5ed384f784151"
+width = 2048
+height = 1114
+size = 304406
+
+[[images.description]]
+id = "in-orbit"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlinePrisma/2c8e262b86d9a897d9b275e8162ae9b778443072/images/listing/in-orbit.jpg"
+sha256 = "27ba2ee253517f669c036e40b56cc2357e690c815d576d5174525d864f41eb0e"
+width = 1536
+height = 1536
+size = 314865
+
+[[images.description]]
+id = "all-parts"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlinePrisma/2c8e262b86d9a897d9b275e8162ae9b778443072/images/parts/all-parts.jpg"
+sha256 = "fe3f198c447ee6155d63175f2fc0d6419fc3be255271e0bb7febaafbe90f7057"
+width = 1440
+height = 1182
+size = 135715

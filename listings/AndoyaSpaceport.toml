@@ -1,0 +1,109 @@
+spec_version = 1
+id = "AndoyaSpaceport"
+type = "mod"
+name = "Andoya Spaceport"
+authors = ["Maxi"]
+abstract = "A sixth launch site on Earth: a launch pad on a quay at Andoya in northern Norway, with a tower, tank farm, pipe racks, a hall, lamps at night and sun shadows."
+description = '''
+![The pad and the tank farm in low sun](ksa-image:pad-and-tanks)
+
+**Andoya Spaceport** is a launch site for Kitten Space Agency at Andoya, an island in northern Norway at 69 degrees north. It adds "Andoya Spaceport" to the launch site list of the vehicle editor. No stock launch site is changed.
+
+## What is in it
+
+- One launch pad on a quay, with a flame trench to the sea, rock armour and a road.
+- Access tower, light masts, pipe racks, valve skids, tank farm, containers, a hall, a trailer and a wheel loader.
+- Lamps that light the pad at night and fade in when the sun sinks below 8 degrees.
+- Sun shadows of the whole site when the vessel shadows are on in the graphics settings. The game draws no shadows for launch sites, so the mod adds them.
+- A kitten can walk the tower stairs and the open flame trench.
+
+![The site in low sun](ksa-image:site-low-sun)
+
+![Night at the site](ksa-image:night)
+
+## Launching
+
+Keep legs, fins and boosters within about 15 m of the vehicle axis; a base wider than about 28 m does not fit the pad. At 69 degrees north the sun does not rise for some weeks around the winter solstice, so a new game can start in the dark.
+
+The layout of the pad and the tank farm follows public aerial pictures; the other sizes are estimates. The site stands about 1 km west-north-west of the real pad, because the game terrain there is a hillside.
+
+![The tank farm from above](ksa-image:tank-farm)
+
+## Requirements
+
+[StarMap](https://github.com/StarMapLoader/StarMap) is required for the lamps and the shadows. Without it the site exists, but stays dark and has no shadows.
+
+Works well with [Prisma by Purrline Rocketworks](https://github.com/Maximilian-Nesslauer/KSA-PurrlinePrisma), a small launcher that fits the pad.
+
+## Install
+
+- Borea: install Andoya Spaceport from the content list.
+- By hand: copy `AndoyaSpaceport` from the release zip into `Documents/My Games/Kitten Space Agency/mods/` and enable it.
+
+To remove the mod, delete its folder.
+
+Made for KSA build 2026.11.10.5801.
+
+Code and game data are MIT. Meshes, textures and pictures are CC BY 4.0.
+'''
+license = "MIT AND CC-BY-4.0"
+tags = ["gameplay", "visual"]
+
+[releases]
+github = "Maximilian-Nesslauer/KSA-AndoyaSpaceport"
+authority = "github"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/andoya-spaceport.1635/"
+repository = "https://github.com/Maximilian-Nesslauer/KSA-AndoyaSpaceport"
+bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-AndoyaSpaceport/issues"
+
+[compatibility]
+game_min = "2026.11.10.5801"
+
+[loader]
+id = "StarMap"
+min = "0.5.3"
+
+[[dependencies]]
+id = "PurrlinePrisma"
+kind = "suggests"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-AndoyaSpaceport/ee68cfdcce18774cfd3b59c044c957829df98ea3/images/listing/icon.png"
+sha256 = "a8461cbb47b918e665552f7c3f7f3cf2f6b9acd27bd344343e7c09c7256ae46e"
+width = 512
+height = 512
+size = 24917
+
+[[images.description]]
+id = "pad-and-tanks"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-AndoyaSpaceport/ee68cfdcce18774cfd3b59c044c957829df98ea3/images/listing/pad-and-tanks.jpg"
+sha256 = "27e8e91797ba2bcbc3473ea3bc96b04445829037e96188426a2dffa81e3f6099"
+width = 2048
+height = 1114
+size = 467148
+
+[[images.description]]
+id = "site-low-sun"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-AndoyaSpaceport/ee68cfdcce18774cfd3b59c044c957829df98ea3/images/listing/site-low-sun.jpg"
+sha256 = "b38bbce532e96660feb2997445beba6c84b7618ecb2cbdcd4027a3ebee8ae4cf"
+width = 2048
+height = 1114
+size = 472271
+
+[[images.description]]
+id = "night"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-AndoyaSpaceport/ee68cfdcce18774cfd3b59c044c957829df98ea3/images/listing/night.jpg"
+sha256 = "6bae6d1fffb5e5a5e3b1c8f80f2f33038fb16c665ed276b5a0ad72b5a4fd2b8d"
+width = 2048
+height = 1114
+size = 331078
+
+[[images.description]]
+id = "tank-farm"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-AndoyaSpaceport/ee68cfdcce18774cfd3b59c044c957829df98ea3/images/listing/tank-farm.jpg"
+sha256 = "8f593b77170ca8870034aa0b497c9fc5acc172c5eb57865d4967579da87502b6"
+width = 2048
+height = 1114
+size = 547528
