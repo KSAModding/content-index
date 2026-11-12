@@ -55,7 +55,6 @@ tags = ["parts"]
 
 [releases]
 github = "Maximilian-Nesslauer/KSA-PurrlinePrisma"
-authority = "github"
 
 [links]
 forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/prisma-by-purrline-rocketworks.1633/"
