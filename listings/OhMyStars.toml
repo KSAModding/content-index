@@ -13,6 +13,27 @@ Features:
 - Star names and informational window  
 - Vehicle orientation mode to point towards stars  
 
+---
+
+`*** NEW - as of 1.7.0!`
+
+- DSO (deep sky objects) catalog added with it's own mod tab menu similar to the existing Stars and Multi tabs!
+- Space Telescope part modeled after the Hubble Space Telescope added!
+- Telescope tab added to the mod window (only when the currently active vehicle includes it as a part) and when active and powered it gives a zoomed and brightened viewport!
+
+
+`*** NEW - as of 1.6.0!`
+
+- Created a new catalog of stars incorporating several different catalogs information, primarily AT-HYG 4.0, WDS (Washington Double Stars), Sixth Catalog of Orbits of Visual Binary Stars
+- Added Multiple star systems as  clickable and filterable things to select from the background when in a new 'Multi' window tab!
+- In the new 'Multi' tab stars which are Multiple star systems show the various star components within it as the catalog lists including a visual plot if data supports it!
+
+`*** NEW - as of 1.5.0!`
+
+- Added a star selector method by clicking with cursor / mouse!
+- Added a stars binary generator from catalog files with filters, as well as exporting binaries as the game currently has loaded and set for stars color and size!
+- Added a constellations (sky cultures) adding and editing feature to the editor window!  You can make your own constellations between stars!
+
 ![OMShunter](ksa-image:OMSHunter)
 
 A pointer can be enabled showing the direction to a currently selected star.  A navball marker can be enabled showing the orientation where the selected star is in relation to your vehicle's pointing!
