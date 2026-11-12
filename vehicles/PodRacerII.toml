@@ -1,0 +1,34 @@
+spec_version = 1
+id = "PodRacerII"
+type = "vehicle"
+name = "Pod Racer II"
+authors = ["Beik"]
+abstract = "\"Now this is podracing!\""
+description = '''
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-15)'''
+license = "CC0-1.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/PodRacerII"
+
+[releases]
+ksamods = "PodRacerII"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/PodRacerII/icon-L4PLBeWRDry5TEKa.webp"
+size = 6120
+width = 512
+height = 512
+sha256 = "027c002644564f08d80296ea3d01351484fb9f464d82ce778d5912e4d3cdb667"
+
+[[images.description]]
+id = "screenshot-15"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/PodRacerII/OmNJhq6ikdIMqYnJ.webp"
+sha256 = "34f8007f164ceb517234ff9ca1c298c1e7e81a7c209f9776c4eaeb3566e013bf"
+width = 1024
+height = 1024
+size = 21470
