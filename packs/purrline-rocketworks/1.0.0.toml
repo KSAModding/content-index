@@ -1,0 +1,56 @@
+spec_version = 1
+id = "purrline-rocketworks"
+type = "modpack"
+name = "Purrline Rocketworks"
+authors = ["Maxi"]
+version = "1.0.0"
+released_at = "2026-11-13T12:00:00Z"
+abstract = "The Purrline Rocketworks part mods in one pack: the Prisma launcher, the Facet satellite kit, the Andoya Spaceport launch site and the propane they burn."
+description = '''
+Everything you need to fly the Prisma launcher from its own launch site and put Facet satellites into orbit.
+
+**Prisma by Purrline Rocketworks** 1.0.0 by Maxi
+A two-stage small satellite launcher, about 28 m tall and 2 m wide: stage 1 with nine Altair engines, an upper stage with RCS, a fairing, a payload mass simulator and a ground set. It follows the stock size classes and mixes with stock parts.
+
+**Facet by Purrline Rocketworks** 1.0.2 by Maxi
+Satellite parts for small launchers: a rideshare rack with 3U, 6U and 12U cube satellites, and a kit for small satellites and probes with a bus, solar wings, instruments, antennas and the Alcor kick engine. Many parts come bare, in gold foil or in white cloth.
+
+**Andoya Spaceport** 1.0.0 by Maxi
+A launch site in northern Norway with a pad on a quay, a tower, a tank farm, lamps at night and sun shadows. The lamps and shadows need StarMap.
+
+**Extended Propellants** 1.0.0 by Maxi
+Liquid propane and the liquid oxygen and propane reaction that the Prisma engines burn.
+
+The pack follows the newest releases of these mods: when one of them updates, a new version of the pack follows.
+'''
+license = "MIT AND CC-BY-4.0"
+tags = ["parts"]
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/purrline-rocketworks-mod-pack.1647/"
+
+[compatibility]
+game_min = "2026.11.10.5801"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlinePrisma/6b1759fd9ce509088c9f00fa43d552ff92e3d6e2/images/logo/purrline-pack-icon.png"
+sha256 = "af2810d4c2e9ab4b3b8a5006a505cd042ed71e3f0b8064a26b0f22140fa77909"
+width = 512
+height = 512
+size = 18720
+
+[[mods]]
+id = "PurrlinePrisma"
+version = "1.0.0"
+
+[[mods]]
+id = "ExtendedPropellants"
+version = "1.0.0"
+
+[[mods]]
+id = "PurrlineFacet"
+version = "1.0.2"
+
+[[mods]]
+id = "AndoyaSpaceport"
+version = "1.0.0"
