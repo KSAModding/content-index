@@ -31,6 +31,7 @@ sha256 = "af9d006cef0b51e423ffa474f32f344cc57d32fade1e9cc0597270dc6392ce78"
 width = 512
 height = 512
 size = 164676
+license = "MIT"
 
 [[images.description]]
 id = "OrbitlLines"
@@ -39,3 +40,4 @@ sha256 = "187766d7af6610a999c89975fac5f0e4590e2aa97eb2ebfde700e4f1d83a22ba"
 width = 1449
 height = 806
 size = 825736
+license = "MIT"
