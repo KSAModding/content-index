@@ -69,7 +69,7 @@ id = "PurrlinePrisma"
 kind = "suggests"
 
 [images.icon]
-url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/2aa830a2a6e4f2c3a77ad39a2749e0f762c3c271/images/listing/icon.png"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/listing/icon.png"
 sha256 = "33c4a5743a6069ed0265ce1f21584096c54041f6d3d571a35a8cb2f738c7e729"
 width = 512
 height = 512
@@ -77,7 +77,7 @@ size = 31550
 
 [[images.description]]
 id = "hero"
-url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/2aa830a2a6e4f2c3a77ad39a2749e0f762c3c271/images/listing/hero.jpg"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/listing/hero.jpg"
 sha256 = "37a79857e7f51d62726b4173d0ef2425313074bbe68f4101f0464c3226c72d25"
 width = 1536
 height = 1536
@@ -85,23 +85,23 @@ size = 307710
 
 [[images.description]]
 id = "eye"
-url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/2aa830a2a6e4f2c3a77ad39a2749e0f762c3c271/images/listing/eye.jpg"
-sha256 = "7248a94ca66c7d51c35e70632df2790a856762bb9b9140702be146f2a054dd80"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/listing/eye.jpg"
+sha256 = "04cef4082b92a429a6236402f168e0359a1e8144fa350adf2f358e8af9bc7758"
 width = 1536
 height = 1536
-size = 185768
+size = 184240
 
 [[images.description]]
 id = "voyager"
-url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/2aa830a2a6e4f2c3a77ad39a2749e0f762c3c271/images/listing/voyager.jpg"
-sha256 = "04ccca4e0e05c0435414ee61e8bab342732c7614d4a9de07f9ed28e3b6e5fada"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/listing/voyager.jpg"
+sha256 = "6f98f1be595ae9f6e591d535456389fc122e1f4b4a89cc29b9a336259d58d1dc"
 width = 1536
 height = 1536
-size = 167432
+size = 179079
 
 [[images.description]]
 id = "rideshare-cloth"
-url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/2aa830a2a6e4f2c3a77ad39a2749e0f762c3c271/images/listing/rideshare-cloth.jpg"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/listing/rideshare-cloth.jpg"
 sha256 = "45212ade84c4ea08ca0353b1a3ce5473f4c54c409c3fb9394f44b930528d1dc6"
 width = 1536
 height = 1536
@@ -109,8 +109,8 @@ size = 179813
 
 [[images.description]]
 id = "all-parts"
-url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/2aa830a2a6e4f2c3a77ad39a2749e0f762c3c271/images/parts/all-parts.jpg"
-sha256 = "a56cce1b1fc85ddde5647bf92e4ade9ec7095174a2f8f7b0595643b77c2085aa"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlineFacet/4f7022ff6fe2bb173c2c6757dd9e93ee60b7ce9c/images/parts/all-parts.jpg"
+sha256 = "1bf02b143f2f3dba85e67b67337d537d28314f7216930e44c92afdcb3643ccc6"
 width = 2048
 height = 1601
-size = 309807
+size = 311156
