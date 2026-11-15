@@ -9,6 +9,8 @@ license = "GPL-3.0-only"
 tags = ["gameplay", "user-interface"]
 
 description = '''
+![Kitten Intelligent Trajectory Navigator UI](ksa-image:banner)
+
 Kitten Intelligent Trajectory Navigator. Pick a target orbit and start KITN to automate your flight.
 
 - Ascent guidance, gravity turns and staging.
@@ -46,3 +48,14 @@ size = 54544
 license = "GPL-3.0-only AND ISC"
 attribution = "KITN logo by steve-787. Cat icon from Lucide, ISC License; copyright Lucide Contributors and Cole Bemis."
 source = "https://github.com/steve-787/KITN/blob/f201ffd0f6ee52821375fae25f5fe955e4e4da6f/KITN/Assets/Icons/LICENSE"
+
+[[images.description]]
+id = "banner"
+url = "https://raw.githubusercontent.com/steve-787/KITN/19d77c5fa743b35f0bfaf0c5b3d5b5462163fb83/docs/artwork/kitn-banner-borea.png"
+sha256 = "a513c80508b7178d95b35ad44971f4db315315e33894f67438eafcbb2829ecf8"
+width = 2048
+height = 1024
+size = 642709
+license = "GPL-3.0-only AND ISC"
+attribution = "KITN artwork by steve-787, composed from KITN UI renders. Cat icon from Lucide, ISC License; copyright Lucide Contributors and Cole Bemis."
+source = "https://github.com/steve-787/KITN/blob/19d77c5fa743b35f0bfaf0c5b3d5b5462163fb83/docs/artwork/README.md"
