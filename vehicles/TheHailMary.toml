@@ -7,7 +7,11 @@ abstract = "The Hail Mary ship from Project Hail Mary"
 description = '''
 The movie version
 Has no engines it just looks cool
-put it on display near the pad or smth idk'''
+put it on display near the pad or smth idk
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-16)'''
 license = "CC-BY-4.0"
 
 [links]
@@ -15,3 +19,20 @@ homepage = "https://ksamods.gg/vehicles/TheHailMary"
 
 [releases]
 ksamods = "TheHailMary"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/TheHailMary/icon-AHRWgqJcV6LiF7uj.webp"
+size = 25526
+width = 512
+height = 512
+sha256 = "7898bded809cd106ff1797c0eed138601152077aab71084341f207a40dc87003"
+
+[[images.description]]
+id = "screenshot-16"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/TheHailMary/J7ljvRsQr5J0FRuk.webp"
+sha256 = "b6b411949ee6ee5b54f55bf35bc666991bc1789b70f0e29b9b845fd429eae2da"
+width = 1611
+height = 884
+size = 121844
