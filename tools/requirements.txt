@@ -6,7 +6,7 @@ cryptography==50.0.2
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 license-expression==30.4.4
-markdown-it-py==4.2.0
+markdown-it-py==4.3.0
 mdurl==0.1.2
 pycparser==3.12
 referencing==0.37.0
