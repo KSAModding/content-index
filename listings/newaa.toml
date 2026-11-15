@@ -1,0 +1,45 @@
+spec_version = 1
+id = "newaa"
+type = "mod"
+name = "New AA (Anti Aliasing)"
+authors = ["Arden Arrison"]
+abstract = "Adds the DLAA, SMAA and FXAA options to the Kitten Space Agency (KSA) anti-aliasing settings."
+description = '''
+New AA adds three anti-aliasing options to Settings > Display > Anti-Aliasing:
+
+- **DLAA** (RTX 20 series or newer) uses AI to smooth the image. Quality: High (better than MSAA 8X in my opinion and much more performant).
+- **SMAA** uses edge detection and pattern detection to then blur the edge. Quality: Medium (better than MSAA 2X and slightly worse than MSAA 4X with almost no performance impact).
+- **FXAA** uses edge detection to then blur the edges. Quality: Low (better than nothing, with almost no performance impact).
+
+DLAA needs an NVIDIA RTX GPU and a current driver. SMAA and FXAA work on any GPU. Windows only for now.
+
+## Installation
+
+1. Install [StarMap](https://github.com/StarMapLoader/StarMap). Start Kitten Space Agency with `StarMap.exe`, and currently you need StarMap version 0.5.4.
+2. Download the latest release from [Releases](https://github.com/ardenarrison/New-AA/releases/latest).
+3. Extract the zip and place the extracted `newaa` folder into `Documents/My Games/Kitten Space Agency/mods/`. KSA then prompts you to enable the mod.
+
+If you have any issues with the mod, post an issue on the [GitHub repository](https://github.com/ardenarrison/New-AA/issues).
+
+## Credits and licenses
+
+DLAA is powered by NVIDIA DLSS. NVIDIA, DLSS and RTX are trademarks of NVIDIA Corporation. New AA is a free community mod and is not affiliated with or endorsed by NVIDIA or the game's developers. The release includes NVIDIA's DLSS runtime and NGX code under NVIDIA's license, which is included in the download. SMAA is by Jimenez et al. (MIT) and FXAA is by Timothy Lottes. See `THIRD_PARTY_NOTICES.md` in the repository.
+'''
+license = "Apache-2.0"
+tags = ["visual"]
+
+[releases]
+github = "ardenarrison/New-AA"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/new-aa-new-anti-aliasing-types-for-ksa.1693/"
+repository = "https://github.com/ardenarrison/New-AA"
+bugtracker = "https://github.com/ardenarrison/New-AA/issues"
+
+[compatibility]
+game_min = "2026.11.10.5801"
+os = ["windows"]
+
+[loader]
+id = "StarMap"
+min = "0.5.4"
