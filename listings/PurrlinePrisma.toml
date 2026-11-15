@@ -13,8 +13,8 @@ The rocket is about 28 m tall. Sizes and texture density follow the stock parts,
 
 ## Parts
 
-- **Prisma Fairing Half**: fairing half; place two.
-- **Prisma Fairing Base**: fairing base ring with the 1 m payload adapter.
+- **Fairing Half 2 m Medium**: fairing half, 6.10 m long; place two; white or black carbon (press V).
+- **Fairing Base 2 m**: fairing base ring with the 1 m payload adapter.
 - **Prisma Payload Mass Simulator (1 t)**: 1000 kg dummy payload for test flights.
 - **Prisma Stage 2**: upper stage with a tank, an Altair Vac and four RCS blocks.
 - **Prisma Interstage**: interstage with its own decoupler; the Altair Vac sits inside.
@@ -24,6 +24,8 @@ The rocket is about 28 m tall. Sizes and texture density follow the stock parts,
 - **Altair Vac**: single vacuum engine with the long nozzle.
 - **Prisma Hold-down Ring**: holds the rocket on the pad and releases at lift-off.
 - **Prisma Strongback**: tower beside the rocket; stays on the pad.
+
+The fairing is the 2 m fairing of Fairings by Purrline Rocketworks, with a quilted acoustic blanket inside. Prisma contains it, so you do not need Fairings for it, and you can install both mods together.
 
 ![All parts](ksa-image:all-parts)
 
@@ -37,12 +39,12 @@ The rocket is about 28 m tall. Sizes and texture density follow the stock parts,
 
 [Extended Propellants](https://github.com/Maximilian-Nesslauer/KSA-ExtendedPropellants) is required. Without it the engines do not load.
 
-Works well with [Andoya Spaceport](https://github.com/Maximilian-Nesslauer/KSA-AndoyaSpaceport) (a pad for Prisma) and [Facet](https://github.com/Maximilian-Nesslauer/KSA-PurrlineFacet) (satellites for the fairing).
+Works well with [Andoya Spaceport](https://github.com/Maximilian-Nesslauer/KSA-AndoyaSpaceport) (a pad for Prisma), [Facet](https://github.com/Maximilian-Nesslauer/KSA-PurrlineFacet) (satellites for the fairing) and [Fairings by Purrline Rocketworks](https://github.com/Maximilian-Nesslauer/KSA-PurrlineFairings) (3 m fairings and hammerhead bases).
 
 ## Install
 
 - Borea: install Prisma from the content list. Borea adds Extended Propellants.
-- By hand: copy `PurrlinePrisma` and `ExtendedPropellants` from the release zips into `Documents/My Games/Kitten Space Agency/mods/` and enable both.
+- By hand: copy `PurrlinePrisma` and `ExtendedPropellants` from the release zips into `Documents/My Games/Kitten Space Agency/mods/` and enable both. If you also use Fairings by Purrline Rocketworks and have Prisma 1.0.0, update Prisma first: Prisma 1.0.0 and Fairings together do not load the fairing.
 
 To remove the mod, delete its folder. Vehicles with its parts do not load without it.
 
@@ -68,6 +70,10 @@ game_min = "2026.11.10.5801"
 id = "ExtendedPropellants"
 kind = "required"
 min = "1.0.0"
+
+[[dependencies]]
+id = "PurrlineFairings"
+kind = "suggests"
 
 [[dependencies]]
 id = "AndoyaSpaceport"
@@ -118,8 +124,8 @@ size = 314865
 
 [[images.description]]
 id = "all-parts"
-url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlinePrisma/2c8e262b86d9a897d9b275e8162ae9b778443072/images/parts/all-parts.jpg"
-sha256 = "fe3f198c447ee6155d63175f2fc0d6419fc3be255271e0bb7febaafbe90f7057"
-width = 1440
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlinePrisma/745e72048cbf6c45bf0b532f859015f033a62425/images/parts/all-parts.jpg"
+sha256 = "4645cef7c8c6a3c5216f23e5f7ba4d75e231bb3ce899da9060633e82c6f14354"
+width = 1800
 height = 1182
-size = 135715
+size = 148542
