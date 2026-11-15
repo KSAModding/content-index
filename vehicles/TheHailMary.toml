@@ -6,7 +6,7 @@ authors = ["Nova"]
 abstract = "The Hail Mary ship from Project Hail Mary"
 description = '''
 The movie version
-Has no engines it just looks cool
+Has enough dV for LEO (~13.5km/s)
 put it on display near the pad or smth idk
 
 ## Screenshots
