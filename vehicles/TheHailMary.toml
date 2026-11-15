@@ -1,0 +1,17 @@
+spec_version = 1
+id = "TheHailMary"
+type = "vehicle"
+name = "The Hail Mary"
+authors = ["Nova"]
+abstract = "The Hail Mary ship from Project Hail Mary"
+description = '''
+The movie version
+Has no engines it just looks cool
+put it on display near the pad or smth idk'''
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/TheHailMary"
+
+[releases]
+ksamods = "TheHailMary"
