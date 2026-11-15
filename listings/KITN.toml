@@ -1,0 +1,48 @@
+# Listing for KSAModding/content-index/listings/KITN.toml.
+spec_version = 1
+id = "KITN"
+type = "mod"
+name = "KITN"
+authors = ["steve-787"]
+abstract = "Automatic ascent, transfer planning, rendezvous, docking and landing for Kitten Space Agency."
+license = "GPL-3.0-only"
+tags = ["gameplay", "user-interface"]
+
+description = '''
+Kitten Intelligent Trajectory Navigator. Pick a target orbit and start KITN to automate your flight.
+
+- Ascent guidance, gravity turns and staging.
+- Transfer planning and maneuver execution.
+- Automated rendezvous and docking.
+- Return-to-pad landing.
+- Flight instruments and remote vessel control.
+
+Updated regularly and still in development. Absolutely not stable right now. Save your game before flying.
+'''
+
+[links]
+homepage = "https://github.com/steve-787/KITN"
+sourcecode = "https://github.com/steve-787/KITN"
+bugtracker = "https://github.com/steve-787/KITN/issues"
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/kitn-autopilot-for-kitten-space-agency.1683/"
+
+[releases]
+github = "steve-787/KITN"
+
+[compatibility]
+game_min = "2026.11.10.5801"
+os = ["windows"]
+
+[loader]
+id = "StarMap"
+min = "0.5.4"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/steve-787/KITN/f201ffd0f6ee52821375fae25f5fe955e4e4da6f/docs/artwork/kitn-logo-preview.png"
+sha256 = "3e8c65df0b3339f4d06b0626bee9c7b2efc238e490519183d5b7e65ed37990b3"
+width = 1024
+height = 1024
+size = 54544
+license = "GPL-3.0-only AND ISC"
+attribution = "KITN logo by steve-787. Cat icon from Lucide, ISC License; copyright Lucide Contributors and Cole Bemis."
+source = "https://github.com/steve-787/KITN/blob/f201ffd0f6ee52821375fae25f5fe955e4e4da6f/KITN/Assets/Icons/LICENSE"
