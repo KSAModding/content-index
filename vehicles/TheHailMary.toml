@@ -15,7 +15,9 @@ put it on display near the pad or smth idk
 
 ![Screenshot 2](ksa-image:screenshot-17)
 
-![Screenshot 3](ksa-image:screenshot-18)'''
+![Screenshot 3](ksa-image:screenshot-18)
+
+![Screenshot 4](ksa-image:screenshot-19)'''
 license = "CC-BY-4.0"
 
 [links]
@@ -27,7 +29,7 @@ ksamods = "TheHailMary"
 [images]
 
 [images.icon]
-url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/TheHailMary/icon-6gRefGtJ4dQ4ucYc.webp"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/TheHailMary/icon-yynw2ROLUVQbfigm.webp"
 size = 25526
 width = 512
 height = 512
@@ -56,3 +58,11 @@ sha256 = "3b8006033b0806ab79709f45f6394f62dcd1638514e5fb0bfd363d3bd68e5d9d"
 width = 1298
 height = 600
 size = 58904
+
+[[images.description]]
+id = "screenshot-19"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/TheHailMary/hzTG1TKDt8BVUNBl.webp"
+sha256 = "a18a78f7377ead8241a175f192a207957d9a727d64a5c6bd2319f4b8da26ff1f"
+width = 1115
+height = 689
+size = 52912
