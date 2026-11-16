@@ -11,15 +11,15 @@ put it on display near the pad or smth idk
 
 ## Screenshots
 
-![Screenshot 1](ksa-image:screenshot-16)
+![Screenshot 1](ksa-image:screenshot-22)
 
-![Screenshot 2](ksa-image:screenshot-18)
+![Screenshot 2](ksa-image:screenshot-16)
 
-![Screenshot 3](ksa-image:screenshot-19)
+![Screenshot 3](ksa-image:screenshot-18)
 
-![Screenshot 4](ksa-image:screenshot-21)
+![Screenshot 4](ksa-image:screenshot-19)
 
-![Screenshot 5](ksa-image:screenshot-22)'''
+![Screenshot 5](ksa-image:screenshot-21)'''
 license = "CC-BY-4.0"
 
 [links]
@@ -31,11 +31,19 @@ ksamods = "TheHailMary"
 [images]
 
 [images.icon]
-url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/TheHailMary/icon-tEteNTuyD8Pcmnxv.webp"
-size = 25526
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/TheHailMary/icon-o7DZSghJBPrnCukJ.webp"
+size = 7782
 width = 512
 height = 512
-sha256 = "7898bded809cd106ff1797c0eed138601152077aab71084341f207a40dc87003"
+sha256 = "8447aadc7825a8de0de7547f1d3dec51c2901c563564a86436362287d6fda63f"
+
+[[images.description]]
+id = "screenshot-22"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/TheHailMary/4m2JlsW6pqVOKPUa.webp"
+sha256 = "f6740c1811646c9f716ae9d8551451db3853e6d45e5c49e3a9b9646cb895a906"
+width = 1475
+height = 730
+size = 23614
 
 [[images.description]]
 id = "screenshot-16"
@@ -68,11 +76,3 @@ sha256 = "a96969083985e30a84d9f469cf674e1cea9bd54f381c7eaebc81bf1bc8b6bff5"
 width = 1203
 height = 551
 size = 88476
-
-[[images.description]]
-id = "screenshot-22"
-url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/TheHailMary/4m2JlsW6pqVOKPUa.webp"
-sha256 = "f6740c1811646c9f716ae9d8551451db3853e6d45e5c49e3a9b9646cb895a906"
-width = 1475
-height = 730
-size = 23614
