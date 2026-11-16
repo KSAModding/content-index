@@ -3,15 +3,16 @@ id = "newaa"
 type = "mod"
 name = "New AA (Anti Aliasing)"
 authors = ["Arden Arrison"]
-abstract = "Adds the DLAA, SMAA and FXAA options to the Kitten Space Agency (KSA) anti-aliasing settings."
+abstract = "Adds the DLAA, FSR Native AA, SMAA and FXAA options to the Kitten Space Agency (KSA) anti-aliasing settings."
 description = '''
-New AA adds three anti-aliasing options to Settings > Display > Anti-Aliasing:
+New AA adds four anti-aliasing options to Settings > Display > Anti-Aliasing:
 
 - **DLAA** (RTX 20 series or newer) uses AI to smooth the image. Quality: High (better than MSAA 8X in my opinion and much more performant).
+- **FSR Native AA** (new in 1.1) uses AMD FSR at native resolution to smooth the image over several frames. Quality: High (almost as good as DLAA, and it also works on GPUs that cannot run DLAA, such as the GTX 10 series).
 - **SMAA** uses edge detection and pattern detection to then blur the edge. Quality: Medium (better than MSAA 2X and slightly worse than MSAA 4X with almost no performance impact).
 - **FXAA** uses edge detection to then blur the edges. Quality: Low (better than nothing, with almost no performance impact).
 
-DLAA needs an NVIDIA RTX GPU and a current driver. SMAA and FXAA work on any GPU. Windows only for now.
+DLAA needs an NVIDIA RTX GPU and a current driver. FSR Native AA works on NVIDIA, AMD and Intel GPUs that AMD's FSR runtime supports. SMAA and FXAA work on any GPU. Windows only for now.
 
 ## Installation
 
@@ -23,7 +24,7 @@ If you have any issues with the mod, post an issue on the [GitHub repository](ht
 
 ## Credits and licenses
 
-DLAA is powered by NVIDIA DLSS. NVIDIA, DLSS and RTX are trademarks of NVIDIA Corporation. New AA is a free community mod and is not affiliated with or endorsed by NVIDIA or the game's developers. The release includes NVIDIA's DLSS runtime and NGX code under NVIDIA's license, which is included in the download. SMAA is by Jimenez et al. (MIT) and FXAA is by Timothy Lottes. See `THIRD_PARTY_NOTICES.md` in the repository.
+DLAA is powered by NVIDIA DLSS and FSR Native AA by AMD FSR. NVIDIA, DLSS and RTX are trademarks of NVIDIA Corporation. AMD, FidelityFX, FSR and Radeon are trademarks of Advanced Micro Devices, Inc. New AA is a free community mod and is not affiliated with or endorsed by NVIDIA, AMD or the game's developers. The release includes NVIDIA's DLSS runtime and NGX code under NVIDIA's license, and AMD's FSR SDK 2.4.0 runtime under the MIT license; both licenses are included in the download. SMAA is by Jimenez et al. (MIT) and FXAA is by Timothy Lottes. See `THIRD_PARTY_NOTICES.md` in the repository.
 '''
 license = "Apache-2.0"
 tags = ["visual"]
