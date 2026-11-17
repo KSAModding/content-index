@@ -15,10 +15,11 @@ This mod is written against the [StarMap loader](https://github.com/StarMapLoade
 
 - **Quick cameras.** Flyby, Chase, Orbit, Onboard and Ground tracker. One click, no setup, on the pad, in the air and in orbit.
 - **Takes with a timeline.** A take is a list of shots. Fly the free camera to a good place and press Add key here, or add a shot from a preset. No numbers to type.
-- **Events.** A shot can start at a time, after the shot before, or on a flight event such as lift-off, a stage or a docking.
+- **Events and cues.** Start a shot on flight events such as lift-off, staging, docking or max Q. Use a cue to show an overlay from a companion mod.
 - **Slow motion and speed keys.** A button sets the sim speed, and a take can change the sim speed on a timeline.
-- **Flight recording and replay (experimental).** Record a flight, then play a take on it afterward and edit its shots while you watch.
-- **Render to pictures.** Save every frame as a numbered picture, so the video has the exact speed at any render speed. This works for a live take and for a replay.
+- **Flight recording and replay (experimental).** Record the flight and edit the shots afterward. Replay crew, EVA kittens, parachutes, fireballs and optional engine sounds.
+- **Pictures and sound.** Render numbered PNGs with overlays or a clean scene, save supersampled stills, and record the game mix of a real-time take to WAV.
+- **Language.** Choose English or German in Settings.
 - **Event log.** Each run writes the time of every event, with a tool that turns it into markers for a video editor.
 
 ![The Editor page with a take and the timeline dock](ksa-image:editor-timeline)
@@ -51,15 +52,15 @@ The repository has a player guide, a flight replay and render guide, and a shot 
 ## Known limits
 
 - The flight replay is experimental. It draws the recorded vehicles through patches of the game renderer, so a game update can break it. It is off until you turn it on.
-- A replay does not show audio, crew, kittens on EVA, parachute canopies, dents, plume trails, smoke and particles. For a launch video with engine sound, use a live take.
-- A replay opens only on the game build of the recording, in the same star system, with its parts installed.
+- Replay reconstructs engine and thruster sound. Record a real-time take for the full game mix. Canopies use the recorded deploy state and target shape. Cloth flutter, dents, plume trails, smoke and particles are outside the recording.
+- A replay needs the same star system and the recorded parts. You can confirm an older game build recording after reading the warning. Part changes can affect how it looks.
 - A recording holds 20 minutes of game time at 1x speed and follows the controlled vehicle and a limited number of other vehicles.
 - The mod patches game methods that are not a public modding interface, so a game update can break a feature until the mod is updated. It writes a warning in the log on another build.
 - The import of the marker file into DaVinci Resolve has not been tested.
 
 ## How this mod was made
 
-I did not write a single line of this mod myself. All of the code, the tests and the documentation were written by an AI model (Claude), which I directed and tested in the game. I do not know the codebase in detail. It has worked really well for me so far and I find it useful, so I am publishing it.
+I directed AI tools to write the code, tests and documentation, and I tested the mod in the game. I do not know the codebase in detail. It has worked really well for me so far and I find it useful, so I am publishing it.
 
 If you find a problem, please open an issue on GitHub or message me on the KSA Discord (Maxi).
 
