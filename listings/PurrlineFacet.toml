@@ -14,10 +14,11 @@ description = '''
 - **Facet Cube Rack**: rideshare rack for cube satellites inside a fairing; bare, gold foil, white cloth.
 - **Facet Cube Adapter 1 m to 0.5 m**: adapter from 1 m to 0.5 m; bare, gold foil, white cloth.
 - **Facet Cube 3U**, **6U** and **12U**: cube satellites, two layouts each; the 12U unfolds its wings.
-- **Facet Bus**: core of a small satellite or probe; bare, gold foil, white cloth.
+- **Facet Bus**: battery-powered core of a small satellite or probe, with a status light and radiation protection; bare, gold foil, white cloth.
 - **Facet Battery Pack**: battery pack for the Bus; bare, gold foil, white cloth.
 - **Facet RCS Pod**: attitude control thrusters with their own tank.
 - **Facet Wing 2** and **Wing 3**: folding solar wings with two or three panels.
+- **Facet Tracking Wing 2** and **Tracking Wing 3**: folding wings that turn towards the Sun after deployment, rated at 138 W and 207 W.
 - **Facet Eye Imager**: Earth observation telescope; bare or with foil.
 - **Facet Camera Pod**, **Star Tracker**, **Horn Antenna** and **Patch Antenna**.
 - **Facet Dish**: deploying dish antenna.
@@ -25,9 +26,9 @@ description = '''
 - **Facet Voyager Tank**: propellant tank of a small probe; bare or in silver foil.
 - **Alcor Kick Engine**: kick engine on stock MMH and NTO.
 
-Sizes and texture density follow the stock parts. A cube satellite leaves the rack with its decoupler and tumbles unless something controls it. A Bus rides on a stock 0.5 m decoupler.
+Sizes and texture density follow the stock parts. The cube satellites have their own battery-powered control and radiation protection. A Bus rides on a stock 0.5 m decoupler.
 
-![All parts and finishes](ksa-image:all-parts)
+![Original parts and finishes](ksa-image:all-parts)
 
 ![Facet Eye](ksa-image:eye)
 

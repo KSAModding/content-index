@@ -7,11 +7,11 @@ abstract = "A modular lunar lander kit: decks, wall and solar panels, a thrust c
 description = '''
 ![A lander built from Tessera parts](ksa-image:hero)
 
-**Tessera** is a modular lunar lander kit for Kitten Space Agency, from the fictional rocket maker **Purrline Rocketworks**. Build a robotic lander the size of the real ones, from a small hopper to a cargo lander, out of decks, panels, tanks, engines and legs that snap together at their edges.
+**Tessera** is a modular lunar lander kit for Kitten Space Agency, from the fictional rocket maker **Purrline Rocketworks**. Build a robotic hopper, a cargo lander or a lander for two kittens from decks, panels, tanks, engines and legs that snap together at their edges.
 
 ## Parts
 
-The kit has 18 parts with 38 variants.
+The kit has 21 editor entries.
 
 - **Tessera Hex Deck** and **Oct Deck**: the floors of a lander, with seats for tanks and engines and six or eight edges for panels; open or closed.
 - **Tessera Wall Panel**, **Half Panel** and **Taper Panel**: walls and skirts in isogrid, skin, radiator, gold foil and silver foil looks; wall and half panels have leg pads at their lower corners.
@@ -20,10 +20,13 @@ The kit has 18 parts with 38 variants.
 - **Tessera Sphere Tank**, **Capsule Tank** and **Drum Tank**: Methalox tanks in bare, gold blanket and silver blanket looks; the sphere also as a carbon bottle.
 - **Mizar** and **Mizar Fixed**: the descent engine, 3.1 kN, with a gimbal or on a fixed mount.
 - **Tessera Landing Leg** in a short and a long form, and the **Tessera Lattice Ramp**: they deploy from the part menu.
+- **Tessera Avionics Box**: uncrewed control with a battery, a power switch and radiation protection.
+- **Tessera Floodlight**: surface-mounted light with a switch and a 90-degree tilt range.
+- **Tessera Crew Cabin**: two seats, an interior, EVA exits and radiation shielding.
 
-Each part is one entry in the editor; press V to change its variant. Masses count the structure only, so add a stock probe core and a battery. The tanks hold the true volume of their shape, so a stock tank of the same size holds about four times as much.
+Press V to change the variant of a part that has more than one look. Use the Avionics Box for an uncrewed build or assign crew to the cabin. The tanks hold the true volume of their shape, so a stock tank of the same size holds about four times as much.
 
-![All parts and looks](ksa-image:all-parts)
+![Original parts and looks](ksa-image:all-parts)
 
 ![A tall hex lander](ksa-image:tall-lander)
 

@@ -32,7 +32,7 @@ A data-only mod cannot declare a dependency in its `mod.toml`, so list this mod 
 
 On its own the mod changes nothing in the game.
 
-Made for KSA build 2026.11.10.5801.
+Validated against KSA build 2026.11.16.5901.
 '''
 license = "MIT"
 tags = ["library"]
