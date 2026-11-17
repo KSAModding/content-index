@@ -16,11 +16,11 @@ The rocket is about 28 m tall. Sizes and texture density follow the stock parts,
 - **Fairing Half 2 m Medium**: fairing half, 6.10 m long; place two; white or black carbon (press V).
 - **Fairing Base 2 m**: fairing base ring with the 1 m payload adapter.
 - **Prisma Payload Mass Simulator (1 t)**: 1000 kg dummy payload for test flights.
-- **Prisma Stage 2**: upper stage with a tank, an Altair Vac and four RCS blocks.
+- **Prisma Stage 2**: upper stage with a tank, four RCS blocks and a battery-powered probe core with radiation protection. The Altair Vac attaches underneath.
 - **Prisma Interstage**: interstage with its own decoupler; the Altair Vac sits inside.
 - **Prisma Stage 1 Tank**: the 2 m first stage tank.
 - **Altair Engine Bay**: nine Altair engines, each with its own gimbal.
-- **Altair**: single sea level engine.
+- **Altair**: single sea level engine. It and the engine bay use the stock atmospheric exhaust trail.
 - **Altair Vac**: single vacuum engine with the long nozzle.
 - **Prisma Hold-down Ring**: holds the rocket on the pad and releases at lift-off.
 - **Prisma Strongback**: tower beside the rocket; stays on the pad.
