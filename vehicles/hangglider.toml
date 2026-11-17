@@ -1,0 +1,17 @@
+spec_version = 1
+id = "hangglider"
+type = "vehicle"
+name = "Pararocket"
+authors = ["LefTab"]
+abstract = "A paraglider, with a rocket attached!"
+description = '''
+Works surprisingly well.
+Pretty fun to fly!'''
+license = "CC-BY-4.0"
+tags = ["aircraft"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/hangglider"
+
+[releases]
+ksamods = "hangglider"
