@@ -1,0 +1,14 @@
+spec_version = 1
+id = "BlipA"
+type = "vehicle"
+name = "Blip-A V1"
+authors = ["Nova"]
+abstract = "Blip-A from Project Hail Mary"
+description = "Movie version, not to scale with the hail mary ship i made."
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/BlipA"
+
+[releases]
+ksamods = "BlipA"
