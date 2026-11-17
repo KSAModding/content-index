@@ -8,7 +8,11 @@ description = '''
 It has little fuel but it does appear to work pretty wel!
 Maneuvers by engine gimbal so it needs thrust to work.
 
-Give full throttle and activate the stage. Fly vertically until your high enough and enjoy!'''
+Give full throttle and activate the stage. Fly vertically until your high enough and enjoy!
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-24)'''
 license = "CC-BY-4.0"
 tags = ["aircraft"]
 
@@ -17,3 +21,20 @@ homepage = "https://ksamods.gg/vehicles/airplane"
 
 [releases]
 ksamods = "airplane"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/airplane/icon-f0VVySho4Nk7YdZY.webp"
+size = 12606
+width = 512
+height = 512
+sha256 = "4dfec3408f274d049eaf15023a0b86eef49cf9caa96305db0f89da55011b1b55"
+
+[[images.description]]
+id = "screenshot-24"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/airplane/FAkbD6nMHYPLF9LI.webp"
+sha256 = "0086b438e4172efdfd15e6fa889f605ac55af35715f84bcf6ce3f5ffb36f5e10"
+width = 1535
+height = 789
+size = 72904
