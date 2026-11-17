@@ -7,10 +7,10 @@ abstract = "A mod for Kitten Space Agency that allows users to select only one p
 description = """
 # Lonely Planets
 If you do not have sufficient VRAM to load the full Solar System, now you can select individual planets to load.  
-Currently Jupiter Saturn and Mars are available, Venus is in the files, but do not work in the current version of KSA.
+Currently only Jupiter is available, Saturn, Mars and Venus are in the files, but do not work in the current version of KSA.
 
 # Current Issues
-As mentioned above Venus does not currently load. In addition the vehicle creator does not work in Jupiter, Saturn or Mars Only, the game must be loaded in 'Testing' mode (rather than 'Sandbox').
+As mentioned above Saturn, Mars and Venus do not currently load. In addition the vehicle creator does not work in Jupiter Only, the game must be loaded in 'Testing' mode (rather than 'Sandbox'). Conversely the mod interferes with 'Testing' mode for Earth Only. 
 
 # License
 © 2026 Jared Melchers  
@@ -32,4 +32,4 @@ spacedock = "https://spacedock.info/mod/4671/Lonely%20Planets"
 bugtracker = "https://github.com/Jared-Melchers/LonelyPlanets/issues"
 
 [compatibility]
-game_min = "2026.10.10.5554"
+game_min = "2026.11.16.5901"
