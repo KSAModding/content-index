@@ -1,0 +1,32 @@
+spec_version = 1
+id = "inf_fuel"
+type = "mod"
+name = "Infinite Fuel"
+authors = ["SafeShows"]
+abstract = "Keeps your vehicle's tanks full, even while the engines burn. Toggle it in the Mods menu."
+description = '''
+Turn on **Mods > Infinite Fuel** and the vehicle you control never runs dry: its tanks are topped up every frame, during burns too. Click it again to turn it off. A check mark shows while it is on, and the setting is remembered between sessions. It starts off.
+
+Needs [Oxidizer](https://github.com/SafeShows/Oxidizer) (StarMap or standalone).
+
+**Limits**
+- Only the vehicle you control is refilled.
+- Every tank is refilled, life support gases included, not only propellant.
+'''
+license = "MIT-0"
+tags = ["gameplay"]
+
+[releases]
+github = "SafeShows/oxidizer-inf-fuel"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/infinite-fuel-tanks-that-never-run-dry-oxidizer.1715/"
+repository = "https://github.com/SafeShows/oxidizer-inf-fuel"
+bugtracker = "https://github.com/SafeShows/oxidizer-inf-fuel/issues"
+
+[compatibility]
+game_min = "2026.11.16.5901"
+
+[loader]
+id = "StarMap"
+min = "0.5.3"
