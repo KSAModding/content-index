@@ -1,0 +1,15 @@
+spec_version = 1
+id = "fighterjettest"
+type = "vehicle"
+name = "Jet"
+authors = ["LefTab"]
+abstract = "Looks cool, doesn't fly great but it is functional"
+description = "More throttle means more control, but be sure to keep it under the g-limit!"
+license = "CC-BY-4.0"
+tags = ["aircraft"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/fighterjettest"
+
+[releases]
+ksamods = "fighterjettest"
