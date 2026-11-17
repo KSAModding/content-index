@@ -6,7 +6,7 @@ authors = ["LefTab"]
 abstract = "A paraglider, with a rocket attached!"
 description = '''
 Works surprisingly well.
-Pretty fun to fly!
+Turn by rolling with Q and E, then pitching with W and S
 
 ## Screenshots
 
