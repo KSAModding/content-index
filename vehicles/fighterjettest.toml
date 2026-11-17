@@ -1,0 +1,47 @@
+spec_version = 1
+id = "fighterjettest"
+type = "vehicle"
+name = "Jet"
+authors = ["LefTab"]
+abstract = "Looks cool, doesn't fly great but it is functional"
+description = '''
+More throttle means more control, but be sure to keep it under the g-limit!
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-25)
+
+![Screenshot 2](ksa-image:screenshot-26)'''
+license = "CC-BY-4.0"
+tags = ["aircraft"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/fighterjettest"
+
+[releases]
+ksamods = "fighterjettest"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/fighterjettest/icon-sXgojo6lFEu5fglN.webp"
+size = 12630
+width = 512
+height = 512
+sha256 = "2ce0d3771ebd39d291c9aac3ca8eed27d7a6f1cc63f38c98f903b1a4dfb0c0cd"
+
+[[images.description]]
+id = "screenshot-25"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/fighterjettest/ziF03kfqw5MUTvaq.webp"
+sha256 = "45071eca01f2f3dd72dc57fb19026153e59b2c3257b00297e917af96ea215ac7"
+width = 1920
+height = 1080
+size = 66512
+
+[[images.description]]
+id = "screenshot-26"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/fighterjettest/2iNuNTETrHup6U9p.webp"
+sha256 = "a4241132fb38d2a90a3c2571d14203471ed006c591d14999a54787d88d58dd06"
+width = 1920
+height = 1080
+size = 49982
