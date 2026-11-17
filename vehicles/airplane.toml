@@ -1,0 +1,19 @@
+spec_version = 1
+id = "airplane"
+type = "vehicle"
+name = "airplane"
+authors = ["LefTab"]
+abstract = "Functional aircraft for KSA"
+description = '''
+It has little fuel but it does appear to work pretty wel!
+Maneuvers by engine gimbal so it needs thrust to work.
+
+Give full throttle and activate the stage. Fly vertically until your high enough and enjoy!'''
+license = "CC-BY-4.0"
+tags = ["aircraft"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/airplane"
+
+[releases]
+ksamods = "airplane"
