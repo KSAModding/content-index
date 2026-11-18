@@ -3,11 +3,11 @@ id = "KSA-Simplified-Chinese-Localization"
 type = "mod"
 name = "KSA-Chinese-Localization"
 authors = ["fchvvjchvccj-cmyk"]
-abstract = "KSA 2026.11.10.5801 简体中文差分汉化（不含游戏本体）。下载 ZIP 解压后双击“简体中文启动.cmd”，选择含 KSA.exe 的目录；安装、英文切换和还原详见 README。"
+abstract = "KSA 2026.11.10.5901 简体中文差分汉化（不含游戏本体）。下载 ZIP 解压后双击“简体中文启动.cmd”，选择含 KSA.exe 的目录；安装、英文切换和还原详见 README。"
 description = """
 大家好！
 
-我为 Kitten Space Agency（KSA） 制作了一份免费的简体中文汉化补丁，适用于游戏版本 2026.11.10.5801（Windows）。
+我为 Kitten Space Agency（KSA） 制作了一份免费的简体中文汉化补丁，适用于游戏版本 2026.11.10.5901（Windows）。
 
 汉化内容
 
@@ -56,17 +56,6 @@ description = """
 license = "MIT"
 tags = ["user-interface"]
 
-[install]
-steps = [
-  "正常退出游戏，确认游戏版本为 2026.11.10.5801。",
-  "打开本 mod 的安装文件夹 KSA-Simplified-Chinese-Localization，双击“简体中文启动.cmd”。",
-  "首次运行时粘贴包含 KSA.exe 的文件夹路径并按回车。安装器会校验版本、备份原始文件、安装汉化，并以中文启动游戏。",
-]
-uninstall = [
-  "正常退出游戏，在本 mod 文件夹中双击“还原原始游戏.cmd”，恢复被汉化替换的原始文件。",
-  "还原完成后再删除本 mod 文件夹。",
-]
-
 [releases]
 github = "fchvvjchvccj-cmyk/KSA-Chinese-Localization"
 
@@ -78,6 +67,17 @@ bugtracker = "https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/issu
 
 [compatibility]
 game_min = "2026.11.10.5801"
+
+[install]
+steps = [
+  "正常退出游戏，确认游戏版本为 2026.11.10.5801。",
+  "打开本 mod 的安装文件夹 KSA-Simplified-Chinese-Localization，双击“简体中文启动.cmd”。",
+  "首次运行时粘贴包含 KSA.exe 的文件夹路径并按回车。安装器会校验版本、备份原始文件、安装汉化，并以中文启动游戏。",
+]
+uninstall = [
+  "正常退出游戏，在本 mod 文件夹中双击“还原原始游戏.cmd”，恢复被汉化替换的原始文件。",
+  "还原完成后再删除本 mod 文件夹。",
+]
 
 [images.icon]
 url = "https://raw.githubusercontent.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/main/icon-512.png"
