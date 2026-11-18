@@ -4,7 +4,7 @@ id = "PawPrints"
 type = "mod"
 name = "PawPrints"
 authors = ["Dymnd"]
-tags = ["user-interface"]
+tags = ["tools"]
 abstract = "Create blueprint-style craft drawings inside Kitten Space Agency, with projected and exploded views, annotations, and performance blocks."
 # Project, bundled texture decoder and fonts; full terms accompany the ZIP.
 license = "MIT AND OFL-1.1"
