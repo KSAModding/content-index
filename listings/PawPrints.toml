@@ -27,3 +27,11 @@ os = ["windows"]
 id = "StarMap"
 min = "0.5.4"
 max = "0.5.4"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/DymndLab/PawPrints/4b841ec24fde383ccc385ff1090663695d92cf9d/images/listing/icon.jpg"
+sha256 = "6d7b1fda2270c5ba065855e224063ce6f25071df5dcab4de5c1301c4fda6db1a"
+width = 1024
+height = 1024
+size = 248981
+license = "MIT"
