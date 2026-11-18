@@ -1,0 +1,28 @@
+# Authored Borea listing; compatibility reflects the verified preview.
+spec_version = 1
+id = "PawPrints"
+type = "mod"
+name = "PawPrints"
+authors = ["Dymnd"]
+abstract = "Create blueprint-style craft drawings inside Kitten Space Agency, with projected and exploded views, annotations, and performance blocks."
+# Project, bundled texture decoder and fonts; full terms accompany the ZIP.
+license = "MIT AND OFL-1.1"
+
+[releases]
+github = "DymndLab/PawPrints"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/pawprints-technical-drawings-creation-for-ksa-craft.1726/"
+repository = "https://github.com/DymndLab/PawPrints"
+bugtracker = "https://github.com/DymndLab/PawPrints/issues"
+
+[compatibility]
+# Tested preview bounds; see docs/ksa-5901-testing.md for coverage limits.
+game_min = "2026.11.16.5901"
+game_max = "2026.11.16.5901"
+os = ["windows"]
+
+[loader]
+id = "StarMap"
+min = "0.5.4"
+max = "0.5.4"
