@@ -182,13 +182,13 @@ enabled = true
 
 ## Dependencies
 
-- [StarMap](https://github.com/StarMapLoader/StarMap): Mod loader, required at runtime (see Installation). Tested version 0.4.6.
+- [StarMap](https://github.com/StarMapLoader/StarMap): Mod loader, required at runtime (see Installation). Tested version 0.5.4.
 
 ## Build dependencies
 
 Required only to build the mod from source. Targets **.NET 10**.
 
-- [StarMap.API](https://github.com/StarMapLoader/StarMap) from NuGet, tested version 0.3.6.
+- [StarMap.API](https://github.com/StarMapLoader/StarMap) from NuGet, tested version 0.5.4.
 - [Lib.Harmony](https://www.nuget.org/packages/Lib.Harmony) from NuGet, tested version 2.4.2.
 
 The native guidance solvers are built from the vendored sources with Rust and Zig, see [native-build.md](https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/blob/main/docs/guidance/native-build.md).
@@ -238,11 +238,11 @@ bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer
 discussions = "https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/discussions"
 
 [compatibility]
-game_min = "2026.11.10.5801"
+game_min = "2026.11.16.5901"
 
 [loader]
 id = "StarMap"
-min = "0.4.5"
+min = "0.5.4"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/cb965edca9f65f38008d2f3bef4b83254f9ecf2f/images/listing/icon.png"
