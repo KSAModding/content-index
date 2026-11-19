@@ -1,0 +1,98 @@
+spec_version = 1
+id = "AccelerationAbsorbers"
+type = "mod"
+name = "AccelerationAbsorbers"
+authors = ["AMPW"]
+abstract = "Reduces the experienced acceleration"
+description = """
+# Acceleration Absorbers
+
+![Acceleration Absorbers cover](ksa-image:cover)
+
+Powered modules that absorb acceleration loads in Kitten Space Agency. The
+in-game dashboard shows the controlled vehicle's G-forces, installed absorber
+capacity, electricity use, and power-limit warnings. Requires StarMap.
+
+Inspired by the
+[Andruckabsorber](https://www.perrypedia.de/wiki/Andruckabsorber) from Perry
+Rhodan.
+
+## Parts and ratings
+
+There are six gameplay form factors: Compact Radial, Heavy Radial, and 1 m,
+2 m, 3 m, and 4 m Inline. The Heavy Radial is also available in caged and
+cage-free cosmetic versions; both have identical gameplay values.
+
+Every form factor comes in the same four maximum G ratings:
+
+- **4 G (Green)**
+- **8 G (Cyan)**
+- **12 G (Amber)**
+- **16 G (Violet)**
+
+## Absorption and power limits
+
+The G rating is the module's maximum absorption. Actual absorption depends on
+the vehicle mass and requested G-load. Requested power is calculated per module:
+
+```text
+requested power = BasePower + vehicle mass (tonnes) × commanded G × k
+k = PowerPerGLoad × PowerPerTonne
+```
+
+`MaxPower` caps the electrical draw. When a module reaches that cap, it
+delivers less G than its rating. The table shows the cap for each rating and
+form factor; power values are per module.
+
+All variants have a **10–30 ms response delay**. This is negligible for most
+builds, but during abrupt, extreme acceleration changes the unabsorbed portion
+can temporarily exceed the vehicle's structural limit.
+
+| Part | 4 G [Green] | 8 G [Cyan] | 12 G [Amber] | 16 G [Violet] |
+|---|---:|---:|---:|---:|
+| Compact Radial | 2.5 kW | 3.325 kW | 4.175 kW | 5 kW |
+| Heavy Radial | 15 kW | 19.95 kW | 25.05 kW | 30 kW |
+| 1 m Inline | 5 kW | 6.65 kW | 8.35 kW | 10 kW |
+| 2 m Inline | 25 kW | 33.25 kW | 41.75 kW | 50 kW |
+| 3 m Inline | 80 kW | 106.4 kW | 133.6 kW | 160 kW |
+| 4 m Inline | 250 kW | 332.5 kW | 417.5 kW | 500 kW |
+
+All listed G ratings, power settings, and delay bounds are configurable per
+part in its `AccelerationAbsorber` XML component.
+
+**Balance note:** These parts were designed for much higher electricity
+availability, not the current power system in KSA `2026.11.16.5901` (as of
+`2026-11-19`).
+"""
+license = "GPL-3.0"
+tags = ["parts", "gameplay"]
+
+[releases]
+github = "AMPW-german/AccelerationAbsorbers"
+spacedock = 4861
+authority = "github"
+since = "0.2.0"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/acceleration-absorbers.1743/"
+homepage = "https://github.com/AMPW-german/AccelerationAbsorbers"
+repository = "https://github.com/AMPW-german/AccelerationAbsorbers"
+spacedock = "https://spacedock.info/mod/4861/AccelerationAbsorbers"
+bugtracker = "https://github.com/AMPW-german/AccelerationAbsorbers/issues"
+discussions = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/acceleration-absorbers.1743/"
+
+[compatibility]
+game_min = "2026.11.16.5901"
+
+[loader]
+id = "StarMap"
+min = "0.5.4"
+
+[[images.description]]
+id = "cover"
+url = "https://raw.githubusercontent.com/AMPW-german/AccelerationAbsorbers/main/aa_cover_1080p.png"
+sha256 = "ed045e56d93445f7c35240cf050ce91e4d5442408ec32d8f79a4adaf9a28c43b"
+width = 1920
+height = 1080
+size = 835570
+source = "https://raw.githubusercontent.com/AMPW-german/AccelerationAbsorbers/main/aa_cover.png"
