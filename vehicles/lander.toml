@@ -7,7 +7,9 @@ abstract = "lunar lander with a cargo bay"
 description = '''
 ## Screenshots
 
-![Screenshot 1](ksa-image:screenshot-28)'''
+![Screenshot 1](ksa-image:screenshot-28)
+
+![Screenshot 2](ksa-image:screenshot-29)'''
 license = "CC-BY-4.0"
 
 [links]
@@ -29,7 +31,7 @@ kind = "required"
 [images]
 
 [images.icon]
-url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/lander/icon-YMvt1t16Uh0WtVbS.webp"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/lander/icon-cWLXFEVKH6gf2yKA.webp"
 size = 35326
 width = 512
 height = 512
@@ -42,3 +44,11 @@ sha256 = "082d21e87978a515bab54eb037477d77f9ac9b982a1bc8585bba96450a735b98"
 width = 1920
 height = 804
 size = 161110
+
+[[images.description]]
+id = "screenshot-29"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/lander/i3pDm4Dz9TP3LMBG.webp"
+sha256 = "7194a2ee010662c9362d84e9b824d51fa26b8a2e11caa4139fadef5a57bfaf50"
+width = 649
+height = 652
+size = 24480
