@@ -245,11 +245,11 @@ id = "StarMap"
 min = "0.5.4"
 
 [images.icon]
-url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/cb965edca9f65f38008d2f3bef4b83254f9ecf2f/images/listing/icon.png"
-sha256 = "0ceea1543c0c012298a0e79ea302102db099e8d743a869ef75997f970bb0526d"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/24a2d409dffae0dd0392224b06f5403ec495c249/images/listing/icon.png"
+sha256 = "a45f5ab7f6292dcce67575875ecaa5aaad8d75da276e899b65b0c6e7597e9701"
 width = 512
 height = 512
-size = 155604
+size = 14685
 
 [[images.description]]
 id = "multi-pass"
