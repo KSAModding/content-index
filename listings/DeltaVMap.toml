@@ -140,11 +140,11 @@ id = "StarMap"
 min = "0.5.3"
 
 [images.icon]
-url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-DeltaVMap/9a9aec3df09875a8d4a06e2c70ad750afdfd9c6d/images/listing/icon.png"
-sha256 = "4398ef0f34630970db35ad9bea0208deb0ee1a734a882b1417f6b32a8361db3b"
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-DeltaVMap/9a204a06a3c0511d2de3aa5a53a60d2f6572329f/images/listing/icon.png"
+sha256 = "0f5f6176ff7588fb33d81d9f4ddbc0c952e8b9d6026471ba80e0aa2c05823e4f"
 width = 512
 height = 512
-size = 28496
+size = 25271
 
 [[images.description]]
 id = "delta-v-map"
