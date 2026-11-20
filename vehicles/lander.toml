@@ -1,0 +1,74 @@
+spec_version = 1
+id = "lander"
+type = "vehicle"
+name = "lander"
+authors = ["just a normal Expie"]
+abstract = "lunar lander with a cargo bay"
+description = '''
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-28)
+
+![Screenshot 2](ksa-image:screenshot-29)
+
+![Screenshot 3](ksa-image:screenshot-30)
+
+![Screenshot 4](ksa-image:screenshot-31)'''
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/lander"
+
+[releases]
+ksamods = "lander"
+
+[[dependencies]]
+id = "PurrlineFacet"
+min = "1.1.0"
+kind = "required"
+
+[[dependencies]]
+id = "PurrlineTessera"
+min = "1.1.1"
+kind = "required"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/lander/icon-WERQErzYoscf4mLZ.webp"
+size = 35326
+width = 512
+height = 512
+sha256 = "548e113b026af64dd6415d2d825dcaef38854dd1c96706e59376fee9b1056b05"
+
+[[images.description]]
+id = "screenshot-28"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/lander/RtEZ4RL56snB7nee.webp"
+sha256 = "082d21e87978a515bab54eb037477d77f9ac9b982a1bc8585bba96450a735b98"
+width = 1920
+height = 804
+size = 161110
+
+[[images.description]]
+id = "screenshot-29"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/lander/i3pDm4Dz9TP3LMBG.webp"
+sha256 = "7194a2ee010662c9362d84e9b824d51fa26b8a2e11caa4139fadef5a57bfaf50"
+width = 649
+height = 652
+size = 24480
+
+[[images.description]]
+id = "screenshot-30"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/lander/XVVNXNILxVrM89Em.webp"
+sha256 = "d51fa59711d0e59d996c87b7ef32317c8473fab8e0d145376dba6b4f12b11944"
+width = 701
+height = 942
+size = 38302
+
+[[images.description]]
+id = "screenshot-31"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/lander/oK58uDartyMP4063.webp"
+sha256 = "fe6cdeafbc5311c4f033729d0122b3c374e53f37f7153bef85ee5449ff88edaf"
+width = 709
+height = 1006
+size = 56666
