@@ -9,7 +9,9 @@ description = '''
 
 ![Screenshot 1](ksa-image:screenshot-28)
 
-![Screenshot 2](ksa-image:screenshot-29)'''
+![Screenshot 2](ksa-image:screenshot-29)
+
+![Screenshot 3](ksa-image:screenshot-30)'''
 license = "CC-BY-4.0"
 
 [links]
@@ -31,7 +33,7 @@ kind = "required"
 [images]
 
 [images.icon]
-url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/lander/icon-cWLXFEVKH6gf2yKA.webp"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/lander/icon-uHQ6kXvR9H1MDP2C.webp"
 size = 35326
 width = 512
 height = 512
@@ -52,3 +54,11 @@ sha256 = "7194a2ee010662c9362d84e9b824d51fa26b8a2e11caa4139fadef5a57bfaf50"
 width = 649
 height = 652
 size = 24480
+
+[[images.description]]
+id = "screenshot-30"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/lander/XVVNXNILxVrM89Em.webp"
+sha256 = "d51fa59711d0e59d996c87b7ef32317c8473fab8e0d145376dba6b4f12b11944"
+width = 701
+height = 942
+size = 38302
