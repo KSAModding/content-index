@@ -1,0 +1,23 @@
+spec_version = 1
+id = "lander"
+type = "vehicle"
+name = "lander"
+authors = ["just a normal Expie"]
+abstract = "lunar lander with a cargo bay"
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/lander"
+
+[releases]
+ksamods = "lander"
+
+[[dependencies]]
+id = "PurrlineFacet"
+min = "1.1.0"
+kind = "required"
+
+[[dependencies]]
+id = "PurrlineTessera"
+min = "1.1.1"
+kind = "required"
