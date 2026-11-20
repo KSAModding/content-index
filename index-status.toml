@@ -40,3 +40,9 @@ id = "SillyFighterIII"
 state = "delisted"
 since = "2026-11-20T22:57:05Z"
 reason = "Vehicle not support anymore"
+
+[[entries]]
+id = "PodRacer"
+state = "delisted"
+since = "2026-11-20T22:55:13Z"
+reason = "Use newer version"
