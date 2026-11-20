@@ -35,4 +35,8 @@
 # address's cache floor plus the client's poll interval. Mirrors and anyone
 # reading this repository directly are outside the index's reach.
 
-entries = []
+[[entries]]
+id = "SillyFighterIII"
+state = "delisted"
+since = "2026-11-20T22:57:05Z"
+reason = "Vehicle not support anymore"
