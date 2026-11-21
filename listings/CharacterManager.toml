@@ -26,7 +26,7 @@ spacedock = "https://spacedock.info/mod/4757/Character%20Manager"
 bugtracker = "https://github.com/paulo-santana/KSA-Character-Manager/issues"
 
 [compatibility]
-game_min = "2026.11.10.5801"
+game_min = "2026.11.16.5901"
 
 [loader]
 id = "StarMap"
