@@ -244,6 +244,10 @@ game_min = "2026.11.16.5901"
 id = "StarMap"
 min = "0.5.4"
 
+[[dependencies]]
+id = "KSAero"
+kind = "recommends"
+
 [images.icon]
 url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/4cb0e0f3b9dc663cada43161eb3cf9ada1d942c1/images/listing/icon.png"
 sha256 = "ee75bc8a18de0a7f1dce65b87fb8b2a5ae25537e53418ffa71b1f1e116418a01"
