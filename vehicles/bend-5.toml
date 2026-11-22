@@ -1,0 +1,18 @@
+spec_version = 1
+id = "bend-5"
+type = "vehicle"
+name = "BEND-5"
+authors = ["tomservo"]
+abstract = "REMEMBER ME"
+description = '''
+REMEMBER ME.
+
+Also be sure to turn off the mouth engine if you want to lift off from Luna surface.  Beware.'''
+license = "CC0-1.0"
+tags = ["bender"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/bend-5"
+
+[releases]
+ksamods = "bend-5"
