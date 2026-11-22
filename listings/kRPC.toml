@@ -60,11 +60,11 @@ spacedock = "https://spacedock.info/mod/4747/kRPC"
 bugtracker = "https://github.com/krpc/krpc/issues"
 
 [compatibility]
-game_min = "2026.10.25.5707"
+game_min = "2026.11.16.5901"
 
 [loader]
 id = "StarMap"
-min = "0.4.8"
+min = "0.5.4"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/krpc/krpc/3d27cc71b2bfe9826db93958b6dd491aab71ca01/media/logo-square.png"
