@@ -1,0 +1,49 @@
+spec_version = 1
+id = "bend-5"
+type = "vehicle"
+name = "BEND-5"
+authors = ["tomservo"]
+abstract = "REMEMBER ME"
+description = '''
+REMEMBER ME.
+
+Also be sure to turn off the mouth engine if you want to lift off from Luna surface.  Beware.
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-32)
+
+![Screenshot 2](ksa-image:screenshot-33)'''
+license = "CC0-1.0"
+tags = ["bender"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/bend-5"
+
+[releases]
+ksamods = "bend-5"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/bend-5/icon-DkFEQEoyPhFCUyUT.webp"
+size = 23066
+width = 512
+height = 512
+sha256 = "c7e764dedf8edf25ee9ab35a75f3c45a4d75356faeec51d5ac426f31343ebb28"
+
+[[images.description]]
+id = "screenshot-32"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/bend-5/MMHzQ1gTJJh0XMge.webp"
+sha256 = "0a1004bba364801addd2128db76a427f0dca981f3a7a32bd6d9fd8a776c002a6"
+width = 1920
+height = 1020
+size = 131128
+
+[[images.description]]
+id = "screenshot-33"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/bend-5/E7U3RjHZr2moVHQl.webp"
+sha256 = "04f302329b1dd214520b2fbd23984fa88ed3e3c29a2f4ef751de3178bc2a98d1"
+width = 1920
+height = 1020
+size = 24406
