@@ -4,7 +4,7 @@ type = "mod"
 name = "NodeLock"
 authors = ["Dymnd"]
 abstract = "Lock attachment nodes while placing parts, with battery and tank bay compatibility included."
-description = "Tap Tab over a yellow attachment node to lock it, rotate with WASD/QE, then click to attach. Tab unlocks. Includes battery and spherical tank bay connector adjustments. Load after PurrlineTessera if installed. Inheritance is experimental."
+description = "Keep a part snapped to the attachment node you choose while rotating it into place. Hover over a node and tap Tab to lock it, rotate with WASD/QE, then click to attach. Tap Tab again to unlock. Includes bay compatibility for radial batteries and spherical tanks."
 license = "MIT"
 tags = ["editor"]
 [releases]
