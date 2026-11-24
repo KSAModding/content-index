@@ -1,0 +1,23 @@
+spec_version = 1
+id = "Ringwingshuttle"
+type = "vehicle"
+name = "Spaceplane"
+authors = ["LefTab"]
+abstract = "Functional spaceplane from liftoff to reentry"
+description = '''
+Features room for 2 kittens, a docking port, solar panels, parachutes, and plenty of rcs propellant for your orbital maneuvering needs.
+Also has a probe core.
+
+INSTRUCTIONS:
+
+Goes to orbit as any normal rocket.
+Reenter by burning your RCS retrograde, then align for reentry using OVEL OUT with ROLL set to NORM.
+You'll start losing speed at about ~75 km altitude. At round ~30 km you can start gliding around by switching to SURF RATE'''
+license = "CC-BY-4.0"
+tags = ["aircraft", "spaceplane", "shuttle"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/Ringwingshuttle"
+
+[releases]
+ksamods = "Ringwingshuttle"
