@@ -1,0 +1,18 @@
+spec_version = 1
+id = "sillygoobshuttle"
+type = "vehicle"
+name = "Silly Shuttle V1"
+authors = ["squirrel"]
+abstract = "Kitten Space Shuttle + Launchpad"
+description = '''
+A rather capable space-station building shuttle, for all your exploration needs. Carries 4 crew, (two nestled inside the forward cargo bay) and an external APAS-95 docking port.
+
+Comes with a launchpad! There is a second engine on the fuel tank for stability, which must be turned off at about 120km or it will spin uncontrollably. OMS pods are just RCS thrusters, and be sure to deplete your hypergolics to about 4 tons of MMH to reenter safely. Use RCS to guide you back down towards the base. Theres no landing gear yet so once you hit about 10km altitude and are under 200 mps pitch up and deploy your parachutes. good luck'''
+license = "CC-BY-4.0"
+tags = ["shuttle", "station", "columbia"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/sillygoobshuttle"
+
+[releases]
+ksamods = "sillygoobshuttle"
