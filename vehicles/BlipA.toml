@@ -1,0 +1,36 @@
+spec_version = 1
+id = "BlipA"
+type = "vehicle"
+name = "Blip-A V1"
+authors = ["Nova"]
+abstract = "Blip-A from Project Hail Mary"
+description = '''
+Movie version, not to scale with the hail mary ship i made.
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-23)'''
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/BlipA"
+
+[releases]
+ksamods = "BlipA"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/BlipA/icon-brVHFOZG5YQ80uPe.webp"
+size = 51050
+width = 512
+height = 512
+sha256 = "742d66b61f534fca5d6942737c89eb743f8cd5e81a0852513d9e2976d975a354"
+
+[[images.description]]
+id = "screenshot-23"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/BlipA/PxGcYE5nQ7svLTBp.webp"
+sha256 = "c9b4178658e14eb78caba5906f639150284cd3ecad8bfcc1885af08a1994581d"
+width = 1582
+height = 415
+size = 121176

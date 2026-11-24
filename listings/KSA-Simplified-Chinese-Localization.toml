@@ -1,0 +1,76 @@
+spec_version = 1
+id = "KSA-Simplified-Chinese-Localization"
+type = "mod"
+name = "KSA-Chinese-Localization"
+authors = ["fchvvjchvccj-cmyk"]
+abstract = "KSA Windows 简体中文差分汉化（不含游戏本体）。请按游戏版本选择对应安装包；管理器解包后仍需手动运行中文启动脚本。"
+description = """
+大家好！这是免费的 Kitten Space Agency（KSA）Windows 简体中文差分汉化补丁。
+
+管理器当前可安装 v1.0.0，适用于 2026.11.10.5801。如果游戏已更新到 2026.11.16.5901，请使用下方 5901 直链，不要在新版上装 v1.0.0。
+
+## 游戏 2026.11.16.5901
+
+本版补译任务与物资补给规划、生命保障、乘员倒计时、探测器核心供电及辐射提示。包含 4,362 条词典记录、全部 379 条原生语言记录、265 个部件模板、66 条资源描述与 104 条资源提示。中文与英文各通过 2,577 项后台运行库检查；没有启动游戏进行画面验证。
+
+- [5901 直下 ZIP（手动安装）](https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/releases/download/2026.11.16.5901/KSA-zh-CN-2026.11.16.5901.zip)
+- [5801 旧版（仅限 2026.11.10.5801）](https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/releases/tag/v1.0.0)
+
+## 安装、切换与还原
+
+1. 退出游戏，核实游戏版本与汉化对应。手动下载时完整解压，使用 Borea 等管理器时打开该模组安装目录。
+2. 双击 `简体中文启动.cmd`。管理器只负责解包，不会替你运行汉化脚本。首次运行时选择包含 `KSA.exe` 的目录。
+3. 使用 `原版英文启动.cmd` 切换英文；卸载前用 `还原原始游戏.cmd` 恢复当前游戏版本的原始文件。备份位于游戏目录的 `.ksa-zh-backup`，请保留。
+
+本包不含游戏本体、完整游戏 DLL 或 Windows 字体。只为对应的原版文件应用差分，安装器拒绝其他版本和未知文件。不会修改存档或飞行物理。
+
+汉化免费，欢迎在 [GitHub Issues](https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/issues) 反馈，安装失败可附上 `检查汉化包.cmd` 的报错。
+
+如果这份汉化对你有帮助，欢迎扫码赞赏支持：
+
+![赞赏码](ksa-image:donate-qrcode)
+
+祝大家飞行愉快！🚀🐱"""
+license = "MIT"
+tags = ["user-interface"]
+
+[releases]
+github = "fchvvjchvccj-cmyk/KSA-Chinese-Localization"
+tag_prefix = "v"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/kitten-space-agency-simplified-chinese-localization-for-game-version-2026-11-10-5801-free-no-game-files-included.1599/"
+homepage = "https://forums.ahwoo.com/members/huishou-kong-chun.4924/"
+repository = "https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization"
+bugtracker = "https://github.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/issues"
+
+[compatibility]
+game_min = "2026.11.10.5801"
+game_max = "2026.11.10.5801"
+os = ["windows"]
+
+[install]
+steps = [
+  "正常退出游戏，确认游戏版本与下载的汉化版本一致。",
+  "打开本 mod 的安装文件夹 KSA-Simplified-Chinese-Localization，双击“简体中文启动.cmd”。",
+  "首次运行时粘贴包含 KSA.exe 的文件夹路径并按回车。安装器会校验版本、备份原始文件、安装汉化，并以中文启动游戏。",
+]
+uninstall = [
+  "正常退出游戏，在本 mod 文件夹中双击“还原原始游戏.cmd”，恢复被汉化替换的原始文件。",
+  "还原完成后再删除本 mod 文件夹。",
+]
+
+[images.icon]
+url = "https://raw.githubusercontent.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/main/icon-512.png"
+sha256 = "e70e81454d3880e7c95b207357231f9b1023a9ce6bdef250681bd4ff1875f3eb"
+width = 512
+height = 512
+size = 134630
+
+[[images.description]]
+id = "donate-qrcode"
+url = "https://raw.githubusercontent.com/fchvvjchvccj-cmyk/KSA-Chinese-Localization/975ef3357f3f7f6ccaf85742e792c08566de0a86/%E7%BB%99%E6%88%91%E6%89%93%E8%B5%8F%E4%B8%80%E7%82%B9%E5%90%A7%EF%BC%8C%E6%B1%89%E5%8C%96%E4%B8%8D%E6%98%93.jpg"
+sha256 = "8d3379d95357bdad18d072f9f28785a30b7e12ac0ea99a484374d6a0d099a37f"
+width = 1171
+height = 1171
+size = 189602

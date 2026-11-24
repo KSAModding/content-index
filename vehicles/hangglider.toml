@@ -1,0 +1,38 @@
+spec_version = 1
+id = "hangglider"
+type = "vehicle"
+name = "Pararocket"
+authors = ["LefTab"]
+abstract = "A paraglider, with a rocket attached!"
+description = '''
+Works surprisingly well.
+Turn by rolling with Q and E, then pitching with W and S
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-27)'''
+license = "CC-BY-4.0"
+tags = ["aircraft"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/hangglider"
+
+[releases]
+ksamods = "hangglider"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/hangglider/icon-9jxdONoc0B6nuThQ.webp"
+size = 13998
+width = 512
+height = 512
+sha256 = "2810236a0ca3727bf8763aae11d39a2f035ad50966dc0b9c68bf3b4e990b1d4f"
+
+[[images.description]]
+id = "screenshot-27"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/hangglider/WmezyvaVDxJgQOwy.webp"
+sha256 = "f8a264d84bca81962e2110bcabe9e96026f8c6d043350b5298c28857cdaeca41"
+width = 1920
+height = 1080
+size = 127572
