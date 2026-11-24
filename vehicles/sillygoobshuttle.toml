@@ -15,7 +15,9 @@ Comes with a launchpad! There is a second engine on the fuel tank for stability,
 
 ![Screenshot 2](ksa-image:screenshot-35)
 
-![Screenshot 3](ksa-image:screenshot-36)'''
+![Screenshot 3](ksa-image:screenshot-36)
+
+![Screenshot 4](ksa-image:screenshot-37)'''
 license = "CC-BY-4.0"
 tags = ["shuttle", "station", "columbia"]
 
@@ -28,7 +30,7 @@ ksamods = "sillygoobshuttle"
 [images]
 
 [images.icon]
-url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/icon-vtesm9cJs2qSYAP1.webp"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/icon-kRc0V7Q46vZbMS6S.webp"
 size = 21430
 width = 512
 height = 512
@@ -57,3 +59,11 @@ sha256 = "a2300b437ae23c80e0de68af467cec10e2d64eb393dcb93e4dfb0c513128e448"
 width = 1920
 height = 1109
 size = 140426
+
+[[images.description]]
+id = "screenshot-37"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/T6L9995MczvLFPl4.webp"
+sha256 = "596a956cb9e3ff5819135d2902d101721caa1654b3d3fb44c9a07d96b4c8719f"
+width = 1920
+height = 1080
+size = 23152
