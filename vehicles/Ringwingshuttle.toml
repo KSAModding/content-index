@@ -12,7 +12,11 @@ INSTRUCTIONS:
 
 Goes to orbit as any normal rocket.
 Reenter by burning your RCS retrograde, then align for reentry using OVEL OUT with ROLL set to NORM.
-You'll start losing speed at about ~75 km altitude. At round ~30 km you can start gliding around by switching to SURF RATE'''
+You'll start losing speed at about ~75 km altitude. At round ~30 km you can start gliding around by switching to SURF RATE
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-40)'''
 license = "CC-BY-4.0"
 tags = ["aircraft", "spaceplane", "shuttle"]
 
@@ -21,3 +25,20 @@ homepage = "https://ksamods.gg/vehicles/Ringwingshuttle"
 
 [releases]
 ksamods = "Ringwingshuttle"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Ringwingshuttle/icon-MbGsjdNBxTm6tYck.webp"
+size = 11276
+width = 512
+height = 512
+sha256 = "68b9221c785bf27cd9cf42c8643c7b429200f126fcb3ec30b72f685b23fea962"
+
+[[images.description]]
+id = "screenshot-40"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Ringwingshuttle/B26XGEsr807FWPTo.webp"
+sha256 = "a4f81c0f8f919e9381233bc8c69c41943123d36b4f1daa7620812ac6bfeb5023"
+width = 1920
+height = 1080
+size = 59924
