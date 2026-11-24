@@ -7,7 +7,11 @@ abstract = "Kitten Space Shuttle + Launchpad"
 description = '''
 A rather capable space-station building shuttle, for all your exploration needs. Carries 4 crew, (two nestled inside the forward cargo bay) and an external APAS-95 docking port.
 
-Comes with a launchpad! There is a second engine on the fuel tank for stability, which must be turned off at about 120km or it will spin uncontrollably. OMS pods are just RCS thrusters, and be sure to deplete your hypergolics to about 4 tons of MMH to reenter safely. Use RCS to guide you back down towards the base. Theres no landing gear yet so once you hit about 10km altitude and are under 200 mps pitch up and deploy your parachutes. good luck'''
+Comes with a launchpad! There is a second engine on the fuel tank for stability, which must be turned off at about 120km or it will spin uncontrollably. OMS pods are just RCS thrusters, and be sure to deplete your hypergolics to about 4 tons of MMH to reenter safely. Use RCS to guide you back down towards the base. Theres no landing gear yet so once you hit about 10km altitude and are under 200 mps pitch up and deploy your parachutes. good luck
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-34)'''
 license = "CC-BY-4.0"
 tags = ["shuttle", "station", "columbia"]
 
@@ -16,3 +20,20 @@ homepage = "https://ksamods.gg/vehicles/sillygoobshuttle"
 
 [releases]
 ksamods = "sillygoobshuttle"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/icon-uNyzLxelDdnd3Ehg.webp"
+size = 21430
+width = 512
+height = 512
+sha256 = "96378892c5bea22bd1c143cd79c2d1d6743cae8e1683c6ba3d2ce7f04877c841"
+
+[[images.description]]
+id = "screenshot-34"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/tvHlrA5CP7QalUaJ.webp"
+sha256 = "a65a511fdc532c8f62c5f8c06706516a26361f98b2d3970844af6d0caf2bd09a"
+width = 1920
+height = 1080
+size = 153640
