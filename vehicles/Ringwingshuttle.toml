@@ -20,7 +20,9 @@ You'll start losing speed at about ~75 km altitude. At round ~30 km you can star
 
 ![Screenshot 2](ksa-image:screenshot-41)
 
-![Screenshot 3](ksa-image:screenshot-42)'''
+![Screenshot 3](ksa-image:screenshot-42)
+
+![Screenshot 4](ksa-image:screenshot-43)'''
 license = "CC-BY-4.0"
 tags = ["aircraft", "spaceplane", "shuttle"]
 
@@ -33,7 +35,7 @@ ksamods = "Ringwingshuttle"
 [images]
 
 [images.icon]
-url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Ringwingshuttle/icon-wkycklt3nekgJHOg.webp"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Ringwingshuttle/icon-xZaUS2ZcpzaFC1u8.webp"
 size = 11276
 width = 512
 height = 512
@@ -62,3 +64,11 @@ sha256 = "170daf12b454587ae1fcd6a20fc4c62019c31ef05e40d6305ba28106888132f7"
 width = 1920
 height = 988
 size = 94994
+
+[[images.description]]
+id = "screenshot-43"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Ringwingshuttle/tCRnn0xHOuxvWLsL.webp"
+sha256 = "b8261eea9ad98c19a160c31833cf321634c8700f768fbcd1eee27fd49d636f50"
+width = 1920
+height = 988
+size = 44566
