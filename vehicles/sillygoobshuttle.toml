@@ -7,7 +7,21 @@ abstract = "Kitten Space Shuttle + Launchpad"
 description = '''
 A rather capable space-station building shuttle, for all your exploration needs. Carries 4 crew, (two nestled inside the forward cargo bay) and an external APAS-95 docking port.
 
-Comes with a launchpad! There is a second engine on the fuel tank for stability, which must be turned off at about 120km or it will spin uncontrollably. OMS pods are just RCS thrusters, and be sure to deplete your hypergolics to about 4 tons of MMH to reenter safely. Use RCS to guide you back down towards the base. Theres no landing gear yet so once you hit about 10km altitude and are under 200 mps pitch up and deploy your parachutes. good luck'''
+Comes with a launchpad! There is a second engine on the fuel tank for stability, which must be turned off at about 120km or it will spin uncontrollably. OMS pods are just RCS thrusters, and be sure to deplete your hypergolics to about 4 tons of MMH to reenter safely. Use RCS to guide you back down towards the base. Theres no landing gear yet so once you hit about 10km altitude and are under 200 mps pitch up and deploy your parachutes. good luck
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-35)
+
+![Screenshot 2](ksa-image:screenshot-34)
+
+![Screenshot 3](ksa-image:screenshot-39)
+
+![Screenshot 4](ksa-image:screenshot-36)
+
+![Screenshot 5](ksa-image:screenshot-37)
+
+![Screenshot 6](ksa-image:screenshot-38)'''
 license = "CC-BY-4.0"
 tags = ["shuttle", "station", "columbia"]
 
@@ -16,3 +30,60 @@ homepage = "https://ksamods.gg/vehicles/sillygoobshuttle"
 
 [releases]
 ksamods = "sillygoobshuttle"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/icon-kZw3WCFikz4yxsck.webp"
+size = 17340
+width = 512
+height = 512
+sha256 = "ed1bf767377be20784ad0e76d212a04d2e14d6c22f040dd19739fc1c4f6a7d0e"
+
+[[images.description]]
+id = "screenshot-35"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/AVyhVyhThMwSDdDG.webp"
+sha256 = "6937f105f968b91d77f5fb116418206a6e89e22a5838eb483b5603c7fae49d0d"
+width = 1920
+height = 1080
+size = 122724
+
+[[images.description]]
+id = "screenshot-34"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/tvHlrA5CP7QalUaJ.webp"
+sha256 = "a65a511fdc532c8f62c5f8c06706516a26361f98b2d3970844af6d0caf2bd09a"
+width = 1920
+height = 1080
+size = 153640
+
+[[images.description]]
+id = "screenshot-39"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/chYFELaJs57854Fm.webp"
+sha256 = "57d47196d65aa421e93853068c299a3792e362d569f20459b9d2796968aea2c7"
+width = 1920
+height = 1080
+size = 70070
+
+[[images.description]]
+id = "screenshot-36"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/iDVoZFl4E1hxkjR0.webp"
+sha256 = "a2300b437ae23c80e0de68af467cec10e2d64eb393dcb93e4dfb0c513128e448"
+width = 1920
+height = 1109
+size = 140426
+
+[[images.description]]
+id = "screenshot-37"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/T6L9995MczvLFPl4.webp"
+sha256 = "596a956cb9e3ff5819135d2902d101721caa1654b3d3fb44c9a07d96b4c8719f"
+width = 1920
+height = 1080
+size = 23152
+
+[[images.description]]
+id = "screenshot-38"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/sillygoobshuttle/GQ0diG9qKgcOcQHz.webp"
+sha256 = "95adac0f8d0ab37ec67eed1ce4d57837aee6326c19e682c6af4ee2716834071a"
+width = 1920
+height = 1080
+size = 35330
