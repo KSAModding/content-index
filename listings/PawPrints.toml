@@ -6,6 +6,16 @@ name = "PawPrints"
 authors = ["Dymnd"]
 tags = ["tools"]
 abstract = "Create blueprint-style craft drawings inside Kitten Space Agency, with projected and exploded views, annotations, and performance blocks."
+description = """
+Turn the craft in your Vehicle Editor into a blueprint you can save, edit and share.
+
+- Start with a blank sheet, use a template, or drag views into a snapping grid. Choose first- or third-angle projection and scale linked views together.
+- Create exploded views of a whole craft or a subassembly. Add part labels, flagnotes, dimensions, performance tables and a custom title block.
+- Pick a paper theme, add wear, or place a kitten or banana for scale.
+- Save an editable drawing to reopen later. Preview your final 4K PNG and its file size before saving it.
+
+Load a craft in the Vehicle Editor and choose **Editor > Open PawPrint Editor** or press **Ctrl+Alt+P**.
+"""
 # Project, bundled texture decoder and fonts; full terms accompany the ZIP.
 license = "MIT AND OFL-1.1"
 
