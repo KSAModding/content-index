@@ -1,0 +1,99 @@
+spec_version = 1
+id = "Spaceplanev2"
+type = "vehicle"
+name = "Spaceplane v2"
+authors = ["LefTab"]
+abstract = "New wing improves atmospheric flight"
+description = '''
+This wing removes the need for timewarp to control the attitude! The old design needed at least x2 timewarp which either changes the flight physics or makes the rcs more powerful, or something else? Either way, this one seems to work better.
+
+Features room for 2 kittens, a docking port, solar panels, parachutes, and plenty of rcs propellant for your orbital maneuvering needs.
+Also has a probe core.
+
+INSTRUCTIONS:
+
+Goes to orbit as any normal rocket.
+Reenter by burning your RCS retrograde, then align for reentry using OVEL OUT with ROLL set to NORM.
+You'll start losing speed at about ~75 km altitude. At round ~30 km you can start gliding around by switching to SURF RATE
+Fly around as you please, and use the drogue and main chutes to land, preferably in water (landing on land might cause unscheduled disassembly)
+
+I find docking is easiest when controlling from the docking port by right clicking, then using the docking camera.
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-44)
+
+![Screenshot 2](ksa-image:screenshot-45)
+
+![Screenshot 3](ksa-image:screenshot-46)
+
+![Screenshot 4](ksa-image:screenshot-47)
+
+![Screenshot 5](ksa-image:screenshot-48)
+
+![Screenshot 6](ksa-image:screenshot-49)'''
+license = "CC-BY-4.0"
+tags = ["aircraft", "spaceplane", "shuttle"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/Spaceplanev2"
+
+[releases]
+ksamods = "Spaceplanev2"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Spaceplanev2/icon-PO5gzcr1ZBuNFxtP.webp"
+size = 16492
+width = 512
+height = 512
+sha256 = "b52525417c1ce1e07e446d1e38240e00aa8ef086ea1d8e6228a91e3d0ece7801"
+
+[[images.description]]
+id = "screenshot-44"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Spaceplanev2/W3wJFzNz6pmDr0lQ.webp"
+sha256 = "35a16c9d89ffe377cdbaace6a26e69f3b38a75b872d82b08146057e0f76b0573"
+width = 1920
+height = 988
+size = 108818
+
+[[images.description]]
+id = "screenshot-45"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Spaceplanev2/ludk6gQN0YouI6dH.webp"
+sha256 = "de57926e3366fb7560e6f15186a684cc655e87d7139e10c5fb9b56d5910d0a3e"
+width = 1920
+height = 988
+size = 26058
+
+[[images.description]]
+id = "screenshot-46"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Spaceplanev2/7w9vm27J1DEJAbDS.webp"
+sha256 = "bb98c881db2287cbd3bd1f587bf6bf34c0e101367893063432de7cb3b91d81db"
+width = 1920
+height = 988
+size = 78624
+
+[[images.description]]
+id = "screenshot-47"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Spaceplanev2/GXcuZpftBFMYEhk7.webp"
+sha256 = "0b45bf553edab52347d3a0e7787a89826b834c26eb887c7d7805606c09c88419"
+width = 1920
+height = 988
+size = 17538
+
+[[images.description]]
+id = "screenshot-48"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Spaceplanev2/on9xpjhGRMwUR0nx.webp"
+sha256 = "3f311a2ec437876fb5a2856075050a54d261dcc3339ba9f9e077eef7ab41fd41"
+width = 1920
+height = 988
+size = 16236
+
+[[images.description]]
+id = "screenshot-49"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Spaceplanev2/i3PDNgC9VQAxvwB1.webp"
+sha256 = "3976de14006d42871b0074491916f06bd8dfaaaf821d9b50957b33fe5d69d394"
+width = 1920
+height = 988
+size = 27320
