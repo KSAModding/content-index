@@ -3,7 +3,7 @@ id = "kRPC"
 type = "mod"
 name = "kRPC"
 authors = ["djungelorm"]
-abstract = "Control the game from your own scripts, written in Python, C#, C++, C, Java, Lua and more."
+abstract = "Control the game with scripts in Python, C#, C++, C, Java, Lua, JavaScript, HTTP requests and more"
 description = """
 kRPC lets you control Kitten Space Agency from scripts running outside the game. A server mod inside the game exposes the game's API, and your scripts call it over a network connection, from the same computer or another one.
 
@@ -30,18 +30,22 @@ vehicle.control.engine_on = False
 
 **Features**
 
-- Client libraries for Python, C#, C++, C, Java and Lua, the same ones kRPC uses for Kerbal Space Program
+- Client libraries for Python, C#, C++, C, Java, JavaScript and Lua
+- An HTTP API with JSON arguments and results, to call the game from curl, a web page or any language
 - A gRPC server, to generate a client for many other languages
+- Support for microcontrollers, such as Arduino
 - APIs covering vehicles, parts, engines, crew, flight data, orbits, burns, reference frames, auto-pilot, and more
 - Streams and events, for efficient telemetry and waiting
 - Server side functions that run your code inside the game
+- kFS support, to build, load, start and stop programs on the game's flight software
 - APIs for saving and loading, the camera, on-screen messages, and drawing lines and user interface windows in the game
 
 kRPC for KSA is experimental, and its API may change between releases.
 
 - [Documentation](https://krpc.github.io/krpc/experimental/ksa/)
 - [Source](https://github.com/krpc/krpc)
-- [Issues](https://github.com/krpc/krpc/issues)"""
+- [Issues](https://github.com/krpc/krpc/issues)
+- [Discord](https://discord.gg/c8c36UM)"""
 license = "LGPL-3.0-or-later"
 tags = ["tools"]
 
