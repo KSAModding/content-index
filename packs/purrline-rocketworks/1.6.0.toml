@@ -1,0 +1,70 @@
+spec_version = 1
+id = "purrline-rocketworks"
+type = "modpack"
+name = "Purrline Rocketworks"
+authors = ["Maxi"]
+version = "1.6.0"
+released_at = "2026-11-26T10:28:15Z"
+abstract = "The Purrline Rocketworks part mods in one pack: the Prisma launcher, the Fairings set, the Facet satellite kit, the Tessera lunar lander kit, the Andoya Spaceport launch site and the propane they burn."
+description = '''
+Fly Prisma from its own launch site, put Facet satellites into orbit and build Tessera landers for the Moon.
+
+**Prisma by Purrline Rocketworks** 1.3.1 by Maxi
+A two-stage launcher with nine Altair engines that each have their own engine controller and gimbal, an upper stage with powered avionics, a 2 m fairing and a launch ground set.
+
+**Fairings by Purrline Rocketworks** 1.0.2 by Maxi
+Payload fairings with white and black carbon looks, base rings and hammerhead bases. Equipment no longer snaps to the halves that are jettisoned in flight. The shared 2 m parts match Prisma 1.3.1.
+
+**Facet by Purrline Rocketworks** 1.1.1 by Maxi
+A rideshare rack with 3U, 6U and 12U cube satellites and a kit for small satellites and probes. The bus and cubes have powered avionics and radiation protection. Two new wings track the Sun.
+
+**Tessera by Purrline Rocketworks** 1.1.2 by Maxi
+A modular lunar lander kit with Methalox tanks, the Mizar engine, decks, panels and landing legs. Build an uncrewed lander with the Avionics Box or take two kittens in the Crew Cabin. The Floodlight mounts on a surface, tilts and lights a wide area.
+
+**Andoya Spaceport** 1.1.1 by Maxi
+A launch site in northern Norway with a pad on a quay, a tower and a tank farm. StarMap enables the optional lamps and shadows.
+
+**Extended Propellants** 1.0.2 by Maxi
+Liquid propane and the liquid oxygen and propane reaction that the Prisma engines burn.
+
+Validated against KSA build 2026.11.25.5949.
+'''
+license = "MIT AND CC-BY-4.0"
+tags = ["parts"]
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/purrline-rocketworks-mod-pack.1647/"
+
+[compatibility]
+game_min = "2026.11.25.5949"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-PurrlinePrisma/6b1759fd9ce509088c9f00fa43d552ff92e3d6e2/images/logo/purrline-pack-icon.png"
+sha256 = "af2810d4c2e9ab4b3b8a5006a505cd042ed71e3f0b8064a26b0f22140fa77909"
+width = 512
+height = 512
+size = 18720
+
+[[mods]]
+id = "PurrlinePrisma"
+version = "1.3.1"
+
+[[mods]]
+id = "PurrlineFairings"
+version = "1.0.2"
+
+[[mods]]
+id = "ExtendedPropellants"
+version = "1.0.2"
+
+[[mods]]
+id = "PurrlineFacet"
+version = "1.1.1"
+
+[[mods]]
+id = "PurrlineTessera"
+version = "1.1.2"
+
+[[mods]]
+id = "AndoyaSpaceport"
+version = "1.1.1"
