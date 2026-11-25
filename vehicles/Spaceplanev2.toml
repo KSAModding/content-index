@@ -1,0 +1,15 @@
+spec_version = 1
+id = "Spaceplanev2"
+type = "vehicle"
+name = "Spaceplane v2"
+authors = ["LefTab"]
+abstract = "New wing improves atmospheric flight"
+description = "This wing removes the need for timewarp to control the attitude! The old design needed at least x2 timewarp which either changes the flight physics or makes the rcs more powerful, or something else? Either way, this one seems to work better."
+license = "CC-BY-4.0"
+tags = ["aircraft", "spaceplane", "shuttle"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/Spaceplanev2"
+
+[releases]
+ksamods = "Spaceplanev2"
