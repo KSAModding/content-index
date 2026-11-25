@@ -15,8 +15,8 @@ repository = "https://github.com/DymndLab/NodeLock"
 bugtracker = "https://github.com/DymndLab/NodeLock/issues"
 forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/nodelock-attachment-node-tool-for-ksa.1771/"
 [compatibility]
-game_min = "2026.11.16.5901"
-game_max = "2026.11.16.5901"
+game_min = "2026.11.25.5949"
+game_max = "2026.11.25.5949"
 os = ["windows"]
 [loader]
 id = "StarMap"
