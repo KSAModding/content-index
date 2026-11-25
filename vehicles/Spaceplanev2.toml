@@ -17,7 +17,9 @@ This wing removes the need for timewarp to control the attitude! The old design 
 
 ![Screenshot 4](ksa-image:screenshot-47)
 
-![Screenshot 5](ksa-image:screenshot-48)'''
+![Screenshot 5](ksa-image:screenshot-48)
+
+![Screenshot 6](ksa-image:screenshot-49)'''
 license = "CC-BY-4.0"
 tags = ["aircraft", "spaceplane", "shuttle"]
 
@@ -30,7 +32,7 @@ ksamods = "Spaceplanev2"
 [images]
 
 [images.icon]
-url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Spaceplanev2/icon-Gdzbrww7NjJIxpET.webp"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Spaceplanev2/icon-PO5gzcr1ZBuNFxtP.webp"
 size = 16492
 width = 512
 height = 512
@@ -75,3 +77,11 @@ sha256 = "3f311a2ec437876fb5a2856075050a54d261dcc3339ba9f9e077eef7ab41fd41"
 width = 1920
 height = 988
 size = 16236
+
+[[images.description]]
+id = "screenshot-49"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Spaceplanev2/i3PDNgC9VQAxvwB1.webp"
+sha256 = "3976de14006d42871b0074491916f06bd8dfaaaf821d9b50957b33fe5d69d394"
+width = 1920
+height = 988
+size = 27320
