@@ -7,6 +7,18 @@ abstract = "New wing improves atmospheric flight"
 description = '''
 This wing removes the need for timewarp to control the attitude! The old design needed at least x2 timewarp which either changes the flight physics or makes the rcs more powerful, or something else? Either way, this one seems to work better.
 
+Features room for 2 kittens, a docking port, solar panels, parachutes, and plenty of rcs propellant for your orbital maneuvering needs.
+Also has a probe core.
+
+INSTRUCTIONS:
+
+Goes to orbit as any normal rocket.
+Reenter by burning your RCS retrograde, then align for reentry using OVEL OUT with ROLL set to NORM.
+You'll start losing speed at about ~75 km altitude. At round ~30 km you can start gliding around by switching to SURF RATE
+Fly around as you please, and use the drogue and main chutes to land, preferably in water (landing on land might cause unscheduled disassembly)
+
+I find docking is easiest when controlling from the docking port by right clicking, then using the docking camera.
+
 ## Screenshots
 
 ![Screenshot 1](ksa-image:screenshot-44)
