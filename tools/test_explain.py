@@ -114,13 +114,13 @@ class Release(unittest.TestCase):
             found.text,
         )
 
-    def test_no_archive_names_the_assets_without_the_tag_prefix(self):
+    def test_no_archive_names_the_assets_with_and_without_the_tag_prefix(self):
         found = explain.explain(
             "listings/gatOS.toml: the latest release gatos-v1.0.0 (tag_prefix `gatos-`) cannot be "
             "stamped: the release carries no archive to download"
         )
         self.assertIn("Release `gatos-v1.0.0` has no zip", found.text)
-        self.assertIn("`gatOS.zip`, `gatOS-1.0.0.zip` or `gatOS_1.0.0.zip`", found.text)
+        self.assertIn("`gatOS.zip`, `gatOS-1.0.0.zip`, `gatOS_1.0.0.zip` or `gatOS-gatos-v1.0.0.zip`", found.text)
 
     def test_several_archives_none_named_after_the_listing(self):
         found = explain.explain(
