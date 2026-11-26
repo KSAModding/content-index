@@ -9,7 +9,7 @@ description = '''
 
 A camera mod for Kitten Space Agency. Pick a camera with one click, or build a take with a timeline and film your flight.
 
-This mod is written against the [StarMap loader](https://github.com/StarMapLoader/StarMap). It is tested against KSA build 2026.11.16.5901 only.
+This mod is written against the [StarMap loader](https://github.com/StarMapLoader/StarMap). Validated against KSA build version 2026.11.25.5949.
 
 ## Features
 
