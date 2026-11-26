@@ -189,7 +189,7 @@ enabled = true
 Required only to build the mod from source. Targets **.NET 10**.
 
 - [StarMap.API](https://github.com/StarMapLoader/StarMap) from NuGet, tested version 0.5.4.
-- [Lib.Harmony](https://www.nuget.org/packages/Lib.Harmony) from NuGet, tested version 2.4.2.
+- [Lib.Harmony](https://www.nuget.org/packages/Lib.Harmony) from NuGet, version 2.4.3.
 
 The native guidance solvers are built from the vendored sources with Rust and Zig, see [native-build.md](https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer/blob/main/docs/guidance/native-build.md).
 
