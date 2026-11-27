@@ -1,0 +1,13 @@
+spec_version = 1
+id = "TinyGMKIV"
+type = "vehicle"
+name = "Tiny G MK IV"
+authors = ["Goddchen"]
+abstract = "Lightest Rocket to LEO (5.81t)"
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/TinyGMKIV"
+
+[releases]
+ksamods = "TinyGMKIV"
