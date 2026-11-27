@@ -8,7 +8,11 @@ description = """
 The Sparrow is a reusable two-stage rocket for Kitten Space Agency. The flight software flies the whole mission:
 ascent, staging, boostback or drone ship recovery, and a propulsive landing of the first stage.
 
+![The Sparrow booster after landing on the drone ship](ksa-image:hero)
+
 What's included:
+
+![Everything included in Sterling Orbital](ksa-image:whats-included)
 
 - Parts: first stage (clean and sooted liveries), interstage with built-in attitude thrusters, second stage, payload
   adapter, fairing halves, grid fins, landing legs, the octaweb with nine Anvil 1D engines, and the Anvil Vac
@@ -17,6 +21,8 @@ What's included:
 - Flight software: mission control panel (Sterling Orbital menu or Ctrl+Shift+F), launch webcast, booster guidance
   and landing, grid fin aerodynamics, landing leg suspension, engine sets (9 / 3 / 1), first-stage soot after the
   entry and landing burns.
+
+![Exploded view of the Sparrow stack](ksa-image:exploded)
 
 Automated flights launch from KSC (LC-39A) for now.
 
@@ -48,3 +54,27 @@ sha256 = "1527d1110790c73468df8e453f5ba1020a7e15b37e2988af8677fab34adabcce"
 width = 512
 height = 512
 size = 24701
+
+[[images.description]]
+id = "hero"
+url = "https://raw.githubusercontent.com/SterlingOrbital/SterlingOrbital/752b7234bf02690791b24b84d064af101b6ecaa9/images/sparrow_hero.jpg"
+sha256 = "85193dffb47dfdf79f891df9ac7d919d1534d1e153daca3330e8ae70aa201ae2"
+width = 2048
+height = 1152
+size = 224664
+
+[[images.description]]
+id = "whats-included"
+url = "https://raw.githubusercontent.com/SterlingOrbital/SterlingOrbital/752b7234bf02690791b24b84d064af101b6ecaa9/images/sparrow_whats_included.jpg"
+sha256 = "626297d41fe0805b32cd1767cb013d9b0278a2f3295761f3db190e1c990020d3"
+width = 2048
+height = 1152
+size = 190031
+
+[[images.description]]
+id = "exploded"
+url = "https://raw.githubusercontent.com/SterlingOrbital/SterlingOrbital/752b7234bf02690791b24b84d064af101b6ecaa9/images/sparrow_exploded.jpg"
+sha256 = "8fcdd6074bcd4e822ec9c6fbf35f665442c9da0b8197a7e54951bbba86147f74"
+width = 2048
+height = 1152
+size = 134803
