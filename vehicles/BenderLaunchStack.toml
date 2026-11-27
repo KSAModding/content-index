@@ -1,0 +1,13 @@
+spec_version = 1
+id = "BenderLaunchStack"
+type = "vehicle"
+name = "Bender Launch Stack"
+authors = ["Tomservo"]
+abstract = "Tomservo's Bender on a launch stack"
+license = "CC-BY-4.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/BenderLaunchStack"
+
+[releases]
+ksamods = "BenderLaunchStack"
