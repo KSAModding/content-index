@@ -4,6 +4,10 @@ type = "vehicle"
 name = "Tiny G MK IV"
 authors = ["Goddchen"]
 abstract = "Lightest Rocket to LEO (5.81t)"
+description = '''
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-52)'''
 license = "CC-BY-4.0"
 
 [links]
@@ -11,3 +15,20 @@ homepage = "https://ksamods.gg/vehicles/TinyGMKIV"
 
 [releases]
 ksamods = "TinyGMKIV"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/TinyGMKIV/icon-KtEI6vlw7sOvpa3J.webp"
+size = 9296
+width = 512
+height = 512
+sha256 = "dd30b77325207a5bbd922fa5fb081372708059a48decfc190b171782db9ef980"
+
+[[images.description]]
+id = "screenshot-52"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/TinyGMKIV/sRr5CTBSBoD9ggPS.webp"
+sha256 = "c32b0f837fc010ef06fb966ea98a07104eeb2cc53e576f937771350f4d61f4c5"
+width = 1920
+height = 1080
+size = 48000
