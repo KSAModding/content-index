@@ -815,15 +815,14 @@ def _values(match):
     values = {key: _code(value) for key, value in match.groupdict().items() if value is not None}
     found = match.groupdict()
     if found.get("id") is not None and found.get("tag") is not None:
-        # The names the release host looks for, with the tag without its tag_prefix and a leading v.
-        tag, prefix = found["tag"], found.get("prefix") or ""
-        if prefix and tag.startswith(prefix):
-            tag = tag[len(prefix):]
+        full_tag, prefix = found["tag"], found.get("prefix") or ""
+        has_prefix = bool(prefix and full_tag.startswith(prefix))
+        tag = full_tag[len(prefix):] if has_prefix else full_tag
         identifier, version = found["id"], tag.lstrip("vV")
-        values["assets"] = (
-            f"{_code(identifier + '.zip')}, {_code(f'{identifier}-{version}.zip')} "
-            f"or {_code(f'{identifier}_{version}.zip')}"
-        )
+        names = [f"{identifier}.zip", f"{identifier}-{version}.zip", f"{identifier}_{version}.zip"]
+        if has_prefix:
+            names.append(f"{identifier}-{full_tag}.zip")
+        values["assets"] = ", ".join(map(_code, names[:-1])) + f" or {_code(names[-1])}"
     login = found.get("login")
     if login is not None:
         values["topic"] = _code(ownership.TOPIC.format(login=login.lower()))

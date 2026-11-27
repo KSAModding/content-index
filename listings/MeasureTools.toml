@@ -7,6 +7,8 @@ abstract = "Click-to-measure ruler and protractor tools for Kitten Space Agency.
 description = '''
 This mod is written against the [StarMap loader](https://github.com/StarMapLoader/StarMap).
 
+Validated against KSA build version 2026.11.25.5949.
+
 ![Measuring in the map view](ksa-image:map-view)
 
 ## Features
