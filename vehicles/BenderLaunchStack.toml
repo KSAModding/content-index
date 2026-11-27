@@ -4,6 +4,10 @@ type = "vehicle"
 name = "Bender Launch Stack"
 authors = ["Tomservo"]
 abstract = "Tomservo's Bender on a launch stack"
+description = '''
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-50)'''
 license = "CC-BY-4.0"
 
 [links]
@@ -11,3 +15,20 @@ homepage = "https://ksamods.gg/vehicles/BenderLaunchStack"
 
 [releases]
 ksamods = "BenderLaunchStack"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/BenderLaunchStack/icon-lYH0c3IQPQr5Hjna.webp"
+size = 29444
+width = 512
+height = 512
+sha256 = "8f9057c2f300fca3647e5f45fd55b52a8828ca3724e1ecf0c23cb2f1fdf969e2"
+
+[[images.description]]
+id = "screenshot-50"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/BenderLaunchStack/iXEhwU4tyHQDQI44.webp"
+sha256 = "7a11210f966d743ba6f9706b37b745c364debe48639579d58b9d089b01d9f83e"
+width = 752
+height = 782
+size = 72874
