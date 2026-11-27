@@ -17,14 +17,21 @@ when nothing needs you.
   warp-to.
 - **A line-drawn navball** with every marker, heading, pitch, roll and their rates.
 - **Engine deck**: delta-v, TWR, stage; ignite, shutdown, stage, RCS.
-- **Staging list** with each stage's delta-v, TWR, Isp and burn time.
+- **Staging list** with each stage's delta-v, TWR, Isp and burn time, and what it fires
+  (engines with their fuel, decouplers, parachutes). Drag an action to another stage, or a
+  stage to reorder, in flight.
 - **Crew as wireframe cats**, with life support, power, radiation, and every vessel's next
   crew deadline.
 - **Autopilot**, **burn control**, a **map-view burn editor**, a **target card**, and EVA
   controls.
-- **Three modes** (P): CLEAN (the webcast look), FLIGHT (panels fold to one line), FULL.
+- **Three modes** (P): CLEAN (the webcast look), FLIGHT (panels fold to short headers), FULL.
+- **Six colours**: white, amber, orange, cyan, green or pink (Mods → ModernUI colour).
 
 Every control does what the stock button does, through the same game code.
+
+![Staging: hover an action to see it on the rocket, drag it to another stage, drag a stage to reorder](ksa-image:Staging)
+
+![The HUD in each colour: white, amber, orange, cyan, green, pink](ksa-image:Colours)
 
 ![Ascent in CLEAN mode](ksa-image:Clean)
 
@@ -63,11 +70,11 @@ size = 14050
 
 [[images.description]]
 id = "Flight"
-url = "https://github.com/ericnondahl/ModernUI/blob/main/images/flight.jpg?raw=true"
-sha256 = "9eaef96730d2ebe60a924053e21eb590b7cdcd0f431c3023a76c24b90d7a4e14"
+url = "https://github.com/ericnondahl/ModernUI/blob/main/images/flight-v2.jpg?raw=true"
+sha256 = "2860db44e64a81e24cff5ee92e56ab4e60980e23ef86dbda95dfa040cfdbd10d"
 width = 1920
 height = 1080
-size = 186043
+size = 265149
 
 [[images.description]]
 id = "Clean"
@@ -100,3 +107,19 @@ sha256 = "47a33ab950e16036ad1c9f8feac0fcf65c6f9121960324864e9dc433a28fc476"
 width = 1920
 height = 1080
 size = 200222
+
+[[images.description]]
+id = "Staging"
+url = "https://github.com/ericnondahl/ModernUI/blob/main/images/staging.jpg?raw=true"
+sha256 = "544adc876ef63098a09e67db0a29c0f4b63d2b691e4f9c3c4b55013ddaed54fe"
+width = 1530
+height = 450
+size = 78306
+
+[[images.description]]
+id = "Colours"
+url = "https://github.com/ericnondahl/ModernUI/blob/main/images/colours.jpg?raw=true"
+sha256 = "a2cf52b0bf51e4cc2cc897211140f9773394ca4d2992d8179459fbaba243e3f4"
+width = 1738
+height = 1523
+size = 526641
