@@ -1,0 +1,22 @@
+spec_version = 1
+id = "TestModdedNuclearVehicle"
+type = "vehicle"
+name = "Test Modded Nuclear Vehicle"
+authors = ["MrJeranimo"]
+abstract = "Test Modded Rocket, Carries two nuclear bombs"
+description = '''
+This is a test vehicle to see if mod requirements work correctly for ksamods.gg and Borea.
+
+This is a rocket that is built for suborbital flight and carries two nuclear bombs to meet all your destruction needs. The nuclear bombs are from KSArmory.'''
+license = "MIT"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/TestModdedNuclearVehicle"
+
+[releases]
+ksamods = "TestModdedNuclearVehicle"
+
+[[dependencies]]
+id = "KSArmory"
+min = "0.10.0"
+kind = "required"

@@ -159,6 +159,14 @@ function extraStep(error) {
   return error.propertyName;
 }
 
+// A misspelt github or spacedock is read as a share host key, so its error
+// says why, in the words of check_schema.SHARE_KEY_HINT.
+function shareKeyHint(schema, error) {
+  const found = /^\/releases\/([^/]+)$/.exec(error.instancePath);
+  if (!found || Object.hasOwn(schema.properties.releases.properties, found[1])) return "";
+  return `; ${pyRepr(found[1])} is not github or spacedock, so the index reads it as a share host, whose value is the id of the listing`;
+}
+
 export function schemaMessages(validate, document) {
   if (validate(document)) {
     return [];
@@ -173,7 +181,7 @@ export function schemaMessages(validate, document) {
   const found = [];
   for (const error of kept) {
     const where = pointer(document, error.instancePath) || "the document";
-    const text = explain(error);
+    const text = explain(error) + shareKeyHint(validate.schema, error);
     const unique = where + "\n" + text;
     if (seen.has(unique)) {
       continue;
@@ -553,6 +561,49 @@ export function curatedTags(tagsText) {
   return entries.filter((entry) => isObject(entry) && typeof entry.tag === "string");
 }
 
+// RFC 0094: any key of [releases] besides these names a share host, a table of hosts.toml.
+const FIXED_HOSTS = ["github", "spacedock"];
+const NOT_HOSTS = ["authority", "since", "tag_prefix"];
+
+export function shareHosts(hostsText) {
+  const document = hostsText ? parseDocument(hostsText) : {};
+  return Object.fromEntries(Object.entries(document).filter(([, table]) => isObject(table)));
+}
+
+// The rules tools/check_hosts.py runs on the share host keys of one document, with its words.
+export function hostRules(document, hosts) {
+  const releases = document.releases;
+  if (!isObject(releases)) return [];
+  const found = [];
+  const shares = Object.keys(releases).filter((key) => !FIXED_HOSTS.includes(key) && !NOT_HOSTS.includes(key));
+  for (const key of shares) {
+    const table = Object.hasOwn(hosts, key) ? hosts[key] : null;
+    if (!isObject(table) || table.kind !== "share") {
+      found.push(message(ERROR, `releases.${key}`, `'${key}' is not a share host that hosts.toml registers`));
+      continue;
+    }
+    const types = (Array.isArray(table.types) ? table.types : []).filter((name) => typeof name === "string");
+    if (!types.includes(document.type)) {
+      found.push(message(ERROR, `releases.${key}`,
+        `the share host '${key}' takes ${types.join(", ") || "no type"}, and this document is a ${document.type}`));
+    }
+    if (releases[key] !== document.id) {
+      found.push(message(ERROR, `releases.${key}`,
+        `a share host is named with the id of the listing, '${document.id}', and not ${pyRepr(releases[key])}`));
+    }
+  }
+  const named = Object.keys(releases).filter((key) => !NOT_HOSTS.includes(key));
+  const authority = releases.authority;
+  if (shares.length && named.length > 1 && authority === undefined) {
+    found.push(message(ERROR, "releases",
+      `the section names several hosts, so it needs an 'authority' key that names one of ${[...named].sort().join(", ")}`));
+  }
+  if (typeof authority === "string" && !FIXED_HOSTS.includes(authority) && !named.includes(authority)) {
+    found.push(message(ERROR, "releases.authority", `'${authority}' is not a host this section names`));
+  }
+  return found;
+}
+
 export function normalizeTag(entry) {
   return entry.toLowerCase().replace(/[\s_]+/gu, "-").replace(/^-+|-+$/gu, "");
 }
@@ -781,16 +832,18 @@ export function gameMaxNotes(document, gameVersions) {
   return [message(NOTE, "compatibility.game_max", gameMaxText(bound))];
 }
 
-export function createChecker({ schema, tagsText }) {
+export function createChecker({ schema, tagsText, hostsText = "" }) {
   const ajv = new Ajv2020({ allErrors: true, strict: false, verbose: true });
   const validate = ajv.compile(schema);
   const contentId = ajv.compile(schema.$defs.contentId);
   const vocabulary = curatedTags(tagsText);
   const curated = vocabulary.map((entry) => entry.tag);
   const pattern = threadPattern(schema);
+  const hosts = shareHosts(hostsText);
   return {
     vocabulary,
     curated,
+    hosts,
     threadPattern: pattern,
     tagPattern: new RegExp(schema.$defs.tag.pattern, "u"),
     maxDescriptionImages: schema.properties.images.properties.description.maxItems,
@@ -799,6 +852,7 @@ export function createChecker({ schema, tagsText }) {
       return [
         ...schemaMessages(validate, document),
         ...documentRules(document),
+        ...hostRules(document, hosts),
         ...licenseRules(document),
         ...imageRules(document),
         ...tagNotes(document, curated),

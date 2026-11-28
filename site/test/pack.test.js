@@ -7,7 +7,7 @@ import { parseDocument, writeDocument } from "../js/toml.js";
 import { emptyForm, formFromDocument, documentFromForm, sectionsOf, nounOf, releaseTime } from "../js/model.js";
 import {
   memberChoices, versionChoices, defaultVersion, pinNotes, gameMinNotes, packOf, ownIds, raiseVersion, nextPackForm, freeVersion, newerNotes, nextVersionNotes, forumLines,
-  memberMessages, missingDependencies,
+  memberMessages, missingDependencies, memberSection,
 } from "../js/pack.js";
 import { pullRequestLink, copyAndOpen, documentPath, rawPackUrl, URL_LIMIT, PASTE_NEW } from "../js/github.js";
 
@@ -410,9 +410,9 @@ test("switching the type back to mod keeps the mod fields the author typed", () 
 });
 
 test("a pack shows the pack sections and hides releases, loader, dependencies and install", () => {
-  assert.deepEqual(sectionsOf("modpack"), { releases: false, loader: false, launch: false, dependencies: false, pack: true, members: true });
-  assert.deepEqual(sectionsOf("mod"), { releases: true, loader: true, launch: false, dependencies: true, pack: false, members: false });
-  assert.deepEqual(sectionsOf("mod-loader"), { releases: true, loader: false, launch: true, dependencies: true, pack: false, members: false });
+  assert.deepEqual(sectionsOf("modpack"), { releases: false, loader: false, launch: false, dependencies: false, pack: true, members: true, share: false });
+  assert.deepEqual(sectionsOf("mod"), { releases: true, loader: true, launch: false, dependencies: true, pack: false, members: false, share: false });
+  assert.deepEqual(sectionsOf("mod-loader"), { releases: true, loader: false, launch: true, dependencies: true, pack: false, members: false, share: false });
 });
 
 test("the page calls what is listed a mod, a mod loader or a pack", () => {
@@ -572,4 +572,76 @@ test("the forum list has one line per member in the words Borea writes", () => {
     "DeltaVMap 9.9.9 - Not listed in the content index",
   ]);
   assert.deepEqual(forumLines({ type: "modpack", mods: [{ id: "DeltaVMap", version: "1.2.6" }, { id: "Compendium" }] }, index).at(-1), null);
+});
+
+const sharing = indexFacts({
+  ...snapshot,
+  vehicles: [
+    {
+      id: "ExampleRover",
+      authored: { type: "vehicle", name: "Example Rover" },
+      releases: [{ version: "1.0.0", release_status: "stable", dependencies: [{ id: "DeltaVMap", kind: "required", min: "1.2.7", source: "authored" }] }],
+    },
+    {
+      id: "OddRover",
+      authored: { type: "vehicle" },
+      releases: [{ version: "2.0.0", release_status: "stable", dependencies: [{ id: "KittenExtensions", kind: "required", source: "authored" }] }],
+    },
+    { id: "RetiredRover" },
+  ],
+  saves: [{ id: "MoonBase", authored: { type: "save", name: "Moon Base" }, index_status: { state: "delisted" }, releases: [{ version: "1.0.0", release_status: "stable" }] }],
+}, checker.threadPattern);
+
+test("the picker offers listed vehicles and saves with their type, and places each in its section", () => {
+  assert.deepEqual(memberChoices(sharing).filter(([id]) => id.endsWith("Rover")), [
+    ["ExampleRover", "Example Rover (ExampleRover, vehicle)"],
+    ["OddRover", "OddRover (vehicle)"],
+  ]);
+  assert.ok(!memberChoices(sharing).some(([id]) => id === "MoonBase" || id === "RetiredRover"));
+  assert.deepEqual(versionChoices(sharing, "OddRover"), [["2.0.0", "2.0.0 (stable, cannot be pinned, because it needs 'KittenExtensions')"]]);
+  assert.equal(defaultVersion(sharing, "ExampleRover"), "1.0.0");
+  assert.equal(memberSection(sharing, "examplerover"), "vehicles");
+  assert.equal(memberSection(sharing, "DeltaVMap"), "mods");
+  assert.equal(memberSection(sharing, "NotListed"), "mods");
+});
+
+test("Add the missing dependencies pins the mods a vehicle needs under [[mods]]", () => {
+  const document = { type: "modpack", vehicles: [{ id: "ExampleRover", version: "1.0.0" }] };
+  assert.deepEqual(levels(memberMessages(document, sharing), ERROR), [
+    "vehicles[0]: 'ExampleRover' 1.0.0 requires 'DeltaVMap' 1.2.7 or newer, and the pack does not pin it",
+  ]);
+  assert.deepEqual(missingDependencies(document, sharing), { pins: [{ id: "DeltaVMap", version: "1.2.7" }], notes: [] });
+});
+
+test("a pack form writes each member into its section, and a loaded pack with vehicles comes back unchanged", () => {
+  const form = packForm();
+  form.members.push({ id: "ExampleRover", version: "1.0.0", section: "vehicles" }, { id: "", version: "", section: "saves" });
+  const document = documentFromForm(form, null);
+  assert.deepEqual(document.mods, [{ id: "DeltaVMap", version: "1.2.7" }, { id: "Compendium", version: "0.9.13" }]);
+  assert.deepEqual(document.vehicles, [{ id: "ExampleRover", version: "1.0.0" }]);
+  assert.equal(document.saves, undefined);
+  const base = { ...document, saves: [{ id: "MoonBase", version: "1.0.0" }, "kept as it is"] };
+  const loaded = formFromDocument(base);
+  assert.deepEqual(loaded.members.map((entry) => entry.section), ["mods", "mods", "vehicles", "saves", "saves"]);
+  assert.deepEqual(documentFromForm(loaded, base), base);
+  loaded.type = "mod";
+  for (const key of ["mods", "vehicles", "saves"]) assert.equal(documentFromForm(loaded, null)[key], undefined, key);
+});
+
+test("a vehicle pin counts for the game_min proposal and gets the note of a gone download", () => {
+  const rover = (version, gameMin, gone) => ({
+    version, release_status: "stable", game_min: gameMin, game_min_revision: Number(gameMin.split(".")[3]),
+    download: gone ? { unavailable_since: "2026-10-01T00:00:00Z" } : {},
+  });
+  const facts = indexFacts({
+    ...snapshot,
+    vehicles: [{ id: "NewRover", authored: { type: "vehicle" }, releases: [rover("1.0.0", "2026.10.19.5638", true), rover("1.1.0", "2026.10.19.5638", false)] }],
+  }, checker.threadPattern);
+  const document = { type: "modpack", mods: [{ id: "Compendium", version: "0.9.13" }], vehicles: [{ id: "NewRover", version: "1.0.0" }], compatibility: { game_min: "2026.9" } };
+  assert.deepEqual(pinNotes(document, facts).map((entry) => [entry.path, entry.text]), [
+    ["vehicles[0]", "'NewRover' 1.0.0 is no longer downloadable since 2026-10-01, so the page does not offer it; the pin stays as it is"],
+  ]);
+  assert.deepEqual(gameMinNotes(document, facts).map((entry) => entry.text), [
+    "the pinned releases need at least '2026.10.19.5638', the highest game_min among them, so that is the proposed oldest game version",
+  ]);
 });

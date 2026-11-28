@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { createChecker, addTag, licenseErrors, semverCompare, releaseListRules, gameMaxNotes, ERROR, NOTE } from "../js/rules.js";
+import { createChecker, addTag, licenseErrors, semverCompare, releaseListRules, gameMaxNotes, hostRules, shareHosts, ERROR, NOTE } from "../js/rules.js";
 import { indexFacts, newestStable, gameVersionChoices } from "../js/snapshot.js";
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
@@ -238,15 +238,6 @@ test("a schema message is placed at the field it names", () => {
   assert.equal(missing.field, "links.forums");
 });
 
-const saveGated = (JSON.parse(read("../../schemas/authored.schema.json")).properties.type.not?.enum || []).includes("save");
-
-test("the rollout gate refuses a save with its title, as check_schema.explain words it", { skip: !saveGated && "the gate no longer holds saves" }, () => {
-  const save = { spec_version: 1, id: "ExampleSave", type: "save", name: "Example Save", authors: ["Example Author"], abstract: "A save.", license: "CC-BY-4.0" };
-  assert.deepEqual(texts(checker.offline(save), ERROR), [
-    "type: 'save' is a type that the index does not accept yet, because no release host for it exists (RFC 0085 Rollout)",
-  ]);
-});
-
 test("the tags of a vehicle or a save are free-form and give no note", () => {
   for (const type of ["vehicle", "save"]) {
     for (const tags of [[], ["rover"], ["parts", "rover"]]) {
@@ -278,6 +269,96 @@ test("a typed curated tag in another case selects the curated tag", () => {
 test("a typed tag that is already there is not added twice", () => {
   assert.deepEqual(addAll(["Physics"], ["physics"]), ["physics"]);
   assert.deepEqual(addAll(["", "   "], ["physics"]), ["physics"]);
+});
+
+// The same cases and words as Documents in tools/test_check_hosts.py.
+const HOSTS = shareHosts(
+  '[ksamods]\nkind = "share"\nstorage = "ksamods-content/share"\ntypes = ["vehicle", "save"]\n# a comment\n',
+);
+const SAVES_ONLY = { ksamods: { ...HOSTS.ksamods, types: ["save"] } };
+
+function vehicle(releases) {
+  return { id: "ExampleRover", type: "vehicle", releases };
+}
+
+function hostLines(document, hosts = HOSTS) {
+  return hostRules(document, hosts).map((entry) => `${entry.path}: ${entry.text}`);
+}
+
+test("hosts.toml gives its tables", () => {
+  assert.deepEqual(Object.keys(HOSTS), ["ksamods"]);
+  assert.deepEqual(shareHosts(""), {});
+  assert.deepEqual(shareHosts("# no host yet\n"), {});
+});
+
+// A host without GitHub storage by RFC 0104, with the fixed keys of DATA_HOST in tools/test_check_hosts.py.
+test("a host with data, downloads and key is offered like a host with storage", () => {
+  const hosts = shareHosts(
+    '[ksamods]\nkind = "share"\ndata = "https://data.ksamods.gg/share/"\ndownloads = ["https://files.ksamods.gg/"]\n' +
+      'key = "MCowBQYDK2VwAyEAAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8="\n' +
+      'retired_keys = ["MCowBQYDK2VwAyEAICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj8="]\ntypes = ["vehicle"]\n',
+  );
+  assert.deepEqual(hosts.ksamods.downloads, ["https://files.ksamods.gg/"]);
+  assert.equal(hosts.ksamods.retired_keys.length, 1);
+  assert.deepEqual(hostLines(vehicle({ ksamods: "ExampleRover" }), hosts), []);
+  assert.deepEqual(hostLines({ id: "ExampleRover", type: "save", releases: { ksamods: "ExampleRover" } }, hosts), [
+    "releases.ksamods: the share host 'ksamods' takes vehicle, and this document is a save",
+  ]);
+});
+
+test("a vehicle on a registered share host passes", () => {
+  assert.deepEqual(hostLines(vehicle({ ksamods: "ExampleRover" })), []);
+});
+
+test("a share host key that hosts.toml does not register is refused", () => {
+  assert.deepEqual(hostLines(vehicle({ otherhost: "ExampleRover" })), [
+    "releases.otherhost: 'otherhost' is not a share host that hosts.toml registers",
+  ]);
+  assert.deepEqual(hostLines(vehicle({ ksamods: "ExampleRover" }), {}), [
+    "releases.ksamods: 'ksamods' is not a share host that hosts.toml registers",
+  ]);
+  assert.deepEqual(hostLines(vehicle({ constructor: "ExampleRover" })), [
+    "releases.constructor: 'constructor' is not a share host that hosts.toml registers",
+  ]);
+});
+
+test("a vehicle on a share host that takes only saves is refused", () => {
+  assert.deepEqual(hostLines(vehicle({ ksamods: "ExampleRover" }), SAVES_ONLY), [
+    "releases.ksamods: the share host 'ksamods' takes save, and this document is a vehicle",
+  ]);
+  const mod = { id: "ExampleMod", type: "mod", releases: { ksamods: "ExampleMod" } };
+  assert.match(hostLines(mod)[0], /this document is a mod$/);
+});
+
+test("a share host is named with the id of the listing", () => {
+  for (const value of ["OtherRover", "examplerover"]) {
+    assert.deepEqual(hostLines(vehicle({ ksamods: value })), [
+      `releases.ksamods: a share host is named with the id of the listing, 'ExampleRover', and not '${value}'`,
+    ]);
+  }
+});
+
+test("a share host next to another host needs an authority that the section names", () => {
+  assert.deepEqual(hostLines(vehicle({ ksamods: "ExampleRover", github: "a/b" })), [
+    "releases: the section names several hosts, so it needs an 'authority' key that names one of github, ksamods",
+  ]);
+  assert.deepEqual(hostLines(vehicle({ ksamods: "ExampleRover", github: "a/b", authority: "ksamods" })), []);
+  assert.deepEqual(hostLines(vehicle({ github: "a/b", authority: "ksamods" })), [
+    "releases.authority: 'ksamods' is not a host this section names",
+  ]);
+  const fixed = vehicle({ github: "a/b", spacedock: 4, authority: "github", since: "1.0", tag_prefix: "x-" });
+  assert.deepEqual(hostLines(fixed, {}), []);
+});
+
+test("the checker runs the share host rules with the hosts.toml it was given", () => {
+  const schema = JSON.parse(read("../../schemas/authored.schema.json"));
+  const tagsText = read("../../tags.toml");
+  const document = mod({ releases: { ksamods: "TestMod" } });
+  const unregistered = createChecker({ schema, tagsText }).offline(document);
+  assert.ok(unregistered.some((entry) => entry.path === "releases.ksamods" && entry.text.includes("is not a share host")));
+  const hostsText = '[ksamods]\nkind = "share"\ntypes = ["vehicle"]\n';
+  const registered = createChecker({ schema, tagsText, hostsText }).offline(document);
+  assert.ok(registered.some((entry) => entry.text === "the share host 'ksamods' takes vehicle, and this document is a mod"));
 });
 
 test("an entry that cannot become a tag is refused with its name", () => {

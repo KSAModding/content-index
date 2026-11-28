@@ -1,0 +1,35 @@
+spec_version = 1
+id = "GS2FuelModuleMKI"
+type = "vehicle"
+name = "GS-2 Fuel Module MK I"
+authors = ["Goddchen"]
+abstract = "A fuel module for the Goddchen Station 2."
+description = '''
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-9)'''
+license = "CC-BY-4.0"
+tags = ["station"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/GS2FuelModuleMKI"
+
+[releases]
+ksamods = "GS2FuelModuleMKI"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/GS2FuelModuleMKI/icon-yUK9WYbI7w0nYU3E.webp"
+size = 3894
+width = 512
+height = 512
+sha256 = "956610343a29a167307a463c45453eca4c43cfb1e0670789869601fa5da8e40e"
+
+[[images.description]]
+id = "screenshot-9"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/GS2FuelModuleMKI/b6MQpMcx5FlK703o.webp"
+sha256 = "243549107022a57fae8f92e7d1b63b9a1482c09009c383b79ee51ce3b53aaf1b"
+width = 1024
+height = 1024
+size = 12426

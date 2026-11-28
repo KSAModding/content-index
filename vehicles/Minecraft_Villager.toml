@@ -1,0 +1,37 @@
+spec_version = 1
+id = "Minecraft_Villager"
+type = "vehicle"
+name = "Villager"
+authors = ["Kiwi Shark"]
+abstract = "A villager from Minecraft."
+description = '''
+It's a villager from Minecraft. Made from trusses, solar panels, imagination, and more. A gimmick vehicle, doesn't do much but look goofy.
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-2)'''
+license = "CC-BY-4.0"
+tags = ["villager", "minecraft", "meme"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/Minecraft_Villager"
+
+[releases]
+ksamods = "Minecraft_Villager"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Minecraft_Villager/icon-JnkdfDWgqqpRITBR.webp"
+size = 23312
+width = 512
+height = 512
+sha256 = "5e6565b0276eda18974ef92f49f1476ecca8da260145f64af88799b4f725ddde"
+
+[[images.description]]
+id = "screenshot-2"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Minecraft_Villager/1DlMoIpLSiR96LlM.webp"
+sha256 = "67de3e9588ba09c695d37b01245c1bb86d50ea184b523b343e3561c4a9c35f92"
+width = 1491
+height = 1016
+size = 107952

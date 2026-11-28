@@ -14,12 +14,9 @@ just a word that appears somewhere in it. A fragment of "id" alone is satisfied
 by any message containing "valid", which pins nothing.
 """
 
-import copy
 import sys
 import tomllib
 from pathlib import Path
-
-from jsonschema import Draft202012Validator
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -81,8 +78,6 @@ authors = ["Nobody"]
 abstract = "A vehicle that exists only in this test file."
 license = "CC-BY-4.0"
 """
-
-GATE = "is a type that the index does not accept yet, because no release host for it exists (RFC 0085 Rollout)"
 
 PACK_MEMBER = '[[mods]]\nid = "AdvancedFlightComputer"\nversion = "0.7.0"\n'
 
@@ -194,8 +189,14 @@ REJECTED = [
     ("releases naming two hosts without an authority", mod(append='\n[releases]\ngithub = "a/b"\nspacedock = 4253\n'), "releases: 'authority' is a required property"),
     ("authority naming a host that is not there", mod(append='\n[releases]\ngithub = "a/b"\nauthority = "spacedock"\n'), "releases: 'spacedock' is a required property"),
     ("releases with no host at all", mod(append='\n[releases]\nauthority = "github"\n'), "releases: {'authority': 'github'} is not valid under any"),
-    ("unknown release host", mod(append='\n[releases]\ncurseforge = 12\n'), "releases: Additional properties are not allowed ('curseforge'"),
-    ("unknown authority", mod(append='\n[releases]\ngithub = "a/b"\nauthority = "forums"\n'), "releases.authority: 'forums' is not one of"),
+    ("unknown release host", mod(append='\n[releases]\nCurseForge = 12\n'), "releases: Additional properties are not allowed ('CurseForge'"),
+    ("a share host key with capital letters", mod(append='\n[releases]\nKSAMods = "TestMod"\n'), "releases: Additional properties are not allowed ('KSAMods'"),
+    ("a share host key with a number as its value", mod(append='\n[releases]\nksamods = 12\n'), "releases.ksamods: 12 is not of type 'string'"),
+    ("a misspelt spacedock", mod(append='\n[releases]\nspacdock = 4253\n'), "releases.spacdock: 4253 is not of type 'string'; 'spacdock' is not github or spacedock, so the index reads it as a share host"),
+    ("a misspelt github", mod(append='\n[releases]\ngihub = "a/b"\n'), "releases.gihub: 'a/b' is not 1 to 64 ASCII letters, digits, '.', '_' or '-', starting and ending with a letter or digit; 'gihub' is not github or spacedock"),
+    ("a share host key whose value is not an id", mod(append='\n[releases]\nksamods = "Test Mod"\n'), "releases.ksamods: 'Test Mod' is not 1 to 64 ASCII letters"),
+    ("unknown authority", mod(append='\n[releases]\ngithub = "a/b"\nauthority = "Forums"\n'), "releases.authority: 'Forums' is not a host key"),
+    ("a section with a share host authority and no host", mod(append='\n[releases]\nauthority = "ksamods"\n'), "releases: {'authority': 'ksamods'} is not valid under any"),
     ("spacedock id as a string", mod(append='\n[releases]\nspacedock = "4253"\n'), "releases.spacedock: '4253' is not of type 'integer'"),
     ("spacedock id of zero", mod(append="\n[releases]\nspacedock = 0\n"), "releases.spacedock: 0 is less than the minimum"),
     ("since that is not a version", mod(append='\n[releases]\ngithub = "a/b"\nsince = "latest"\n'), "releases.since: 'latest' is not a version such as 1.2.3, 0.5 or 2.0.0-rc.1"),
@@ -203,7 +204,7 @@ REJECTED = [
     ("since with four numbers", mod(append='\n[releases]\ngithub = "a/b"\nsince = "1.2.3.4"\n'), "releases.since: '1.2.3.4' is not a version"),
     ("since written as a number", mod(append='\n[releases]\ngithub = "a/b"\nsince = 1.2\n'), "releases.since: 1.2 is not of type 'string'"),
     ("since with no host", mod(append='\n[releases]\nsince = "1.2"\n'), "releases: {'since': '1.2'} is not valid under any"),
-    ("since as the authority", mod(append='\n[releases]\ngithub = "a/b"\nsince = "1.2"\nauthority = "since"\n'), "releases.authority: 'since' is not one of"),
+    ("since as the authority", mod(append='\n[releases]\ngithub = "a/b"\nsince = "1.2"\nauthority = "since"\n'), "releases.authority: 'since' is not a host key"),
     ("an empty tag_prefix", mod(append='\n[releases]\ngithub = "a/b"\ntag_prefix = ""\n'), "releases.tag_prefix: '' is not a non-empty ASCII string without whitespace"),
     ("a tag_prefix with a space", mod(append='\n[releases]\ngithub = "a/b"\ntag_prefix = "gatos v"\n'), "releases.tag_prefix: 'gatos v' is not a non-empty ASCII string"),
     ("a tag_prefix with a trailing newline", mod(append='\n[releases]\ngithub = "a/b"\ntag_prefix = "gatos-\\n"\n'), "releases.tag_prefix: 'gatos-\\n' is not a non-empty ASCII string"),
@@ -363,7 +364,7 @@ REJECTED = [
     ("a pack timestamp without a zone", pack(replace=("T12:00:00Z", "T12:00:00")), "released_at: '2026-08-05T12:00:00' is not a UTC date and time such as 2026-08-05T12:00:00Z"),
     ("a pack timestamp on no calendar", pack(replace=("2026-08-05T12:00:00Z", "2026-13-45T12:00:00Z")), "released_at: '2026-13-45T12:00:00Z' is not a real date"),
 
-    # Vehicles and saves (RFC 0085), refused by the rollout gate and by their own rules
+    # Vehicles and saves (RFC 0085), refused by their own rules
     ("a document without a type still needs links", MOD_KEYS.replace('type = "mod"\n', ""), "the document: 'links' is a required property"),
     ("a document without a type still needs compatibility", MOD_KEYS.replace('type = "mod"\n', ""), "the document: 'compatibility' is a required property"),
     ("a mod without links", MOD_KEYS + "\n[compatibility]\n" + GAME_MIN + "\n", "the document: 'links' is a required property"),
@@ -385,15 +386,16 @@ REJECTED = [
     ("a save with a loader", VEHICLE.replace('type = "vehicle"', 'type = "save"') + '\n[loader]\nid = "StarMap"\nmin = "0.4"\n', "loader: this key is not allowed here"),
 ]
 
-# Vehicles and saves that their own rules accept. While the rollout gate holds
-# their type, the gate line is their only error, and without the gate they pass.
-GATED_ACCEPTED = [
+# Vehicles and saves that their own rules accept.
+VEHICLES_AND_SAVES = [
     ("a minimal vehicle", VEHICLE),
     ("a minimal save", VEHICLE.replace('type = "vehicle"', 'type = "save"')),
     ("a vehicle with a forums link and a dependency", VEHICLE + "\n[links]\n" + FORUMS + '\n\n[[dependencies]]\nid = "TestMod"\nkind = "required"\nmin = "1.4"\n'),
     ("a vehicle with links but no forums thread", VEHICLE + '\n[links]\nrepository = "https://github.com/a/b"\n'),
     ("a vehicle with only game_max", VEHICLE + '\n[compatibility]\ngame_max = "2026.7.5.4892"\n'),
     ("a vehicle with the install keys it may have", VEHICLE + '\n[install]\nroot = "Test Rover"\nsteps = ["Open the vehicle in the editor."]\nuninstall = []\n'),
+    ("a vehicle on a share host", VEHICLE + '\n[releases]\nksamods = "TestRover"\n'),
+    ("a vehicle on a share host with a GitHub mirror", VEHICLE + '\n[releases]\nksamods = "TestRover"\ngithub = "a/b"\nauthority = "ksamods"\nsince = "1.0"\n'),
     ("a vehicle with a host, tags, an icon and every dependency kind", VEHICLE + 'tags = ["rover"]\nstatus = "deprecated"\nsuperseded_by = "TestRover2"\n\n[releases]\ngithub = "a/b"\ntag_prefix = "TestRover-v"\n\n[[dependencies]]\nkind = "recommends"\nany_of = [{ id = "A" }, { id = "B" }]\n' + ICON),
 ]
 
@@ -479,6 +481,25 @@ def untitled_patterns(node, where="#"):
     return found
 
 
+def untyped_nots(node, where="#"):
+    """The places of every "not" with a pattern that does not also name the string type.
+
+    A pattern holds for every value that is not a string, so such a "not"
+    refuses a number with its title, such as 1234 is a reserved name.
+    """
+    found = []
+    if isinstance(node, dict):
+        rule = node.get("not")
+        if isinstance(rule, dict) and "pattern" in rule and rule.get("type") != "string":
+            found.append(f"{where}/not")
+        for key, value in node.items():
+            found.extend(untyped_nots(value, f"{where}/{key}"))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            found.extend(untyped_nots(value, f"{where}/{index}"))
+    return found
+
+
 def main():
     checker = check_schema.validator()
     failures = []
@@ -488,33 +509,21 @@ def main():
     for where in untitled_patterns(checker.schema):
         failures.append(f"the pattern at {where} has no title and no example")
 
+    checked += 1
+    for where in untyped_nots(checker.schema):
+        failures.append(f"the not at {where} has a pattern but does not name the string type")
+
     for path in sorted(VALID.glob("*.toml")):
         checked += 1
         errors = failures_for(path.read_text(encoding="utf-8"), checker)
         if errors:
             failures.append(f"{path.name} should be valid, but: " + "; ".join(errors))
 
-    for name, text in ACCEPTED:
+    for name, text in ACCEPTED + VEHICLES_AND_SAVES:
         checked += 1
         errors = failures_for(text, checker)
         if errors:
             failures.append(f"'{name}' should be accepted, but: " + "; ".join(errors))
-
-    schema = copy.deepcopy(checker.schema)
-    gate = schema["properties"]["type"].pop("not", None)
-    ungated = Draft202012Validator(schema)
-    for name, text in GATED_ACCEPTED:
-        checked += 1
-        content_type = tomllib.loads(text)["type"]
-        errors = failures_for(text, checker)
-        if gate and content_type in gate["enum"]:
-            if errors != [f"<case>: type: '{content_type}' {GATE}"]:
-                failures.append(f"'{name}' should be refused by the gate alone, but: " + "; ".join(errors))
-        elif errors:
-            failures.append(f"'{name}' should be accepted, but: " + "; ".join(errors))
-        errors = failures_for(text, ungated)
-        if errors:
-            failures.append(f"'{name}' should be accepted without the gate, but: " + "; ".join(errors))
 
     seen = set()
     for name, text, expected in REJECTED:

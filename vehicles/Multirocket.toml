@@ -1,0 +1,34 @@
+spec_version = 1
+id = "Multirocket"
+type = "vehicle"
+name = "Multirocket"
+authors = ["Onyx"]
+abstract = "Rocket"
+description = '''
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-11)'''
+license = "CC0-1.0"
+
+[links]
+homepage = "https://ksamods.gg/vehicles/Multirocket"
+
+[releases]
+ksamods = "Multirocket"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Multirocket/icon-L9olBU0x6utGT4k5.webp"
+size = 5472
+width = 512
+height = 512
+sha256 = "a1ccce676c901202c08ba5acd8956ed299cf62f0641423aab197292a122e016c"
+
+[[images.description]]
+id = "screenshot-11"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Multirocket/dxkvBelZ3nuVV7lg.webp"
+sha256 = "44b8f394ed1717d350cb476220faa66fa061323c09ffb9bf4793cadccb5ef58d"
+width = 1024
+height = 1024
+size = 17556

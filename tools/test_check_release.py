@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 import zipfile
+from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -648,6 +649,149 @@ class VehiclesWithTheRealStamper(unittest.TestCase):
         self.assertEqual(outcome.outcome, check_release.PASS, outcome.messages)
         self.assertEqual(outcome.messages, ["the latest release 1.0.0 stamps cleanly"])
         self.assertEqual(http.fetched, ["https://example.invalid/ExampleRover.zip"])
+
+
+class ShareHosts:
+    """The hosts module of a stamper that reads share hosts (RFC 0094)."""
+
+    HostError = HostError
+
+    def __init__(self, authority=None, build_error=None, registry_error=None):
+        self.authority = authority
+        self.build_error = build_error
+        self.registry_error = registry_error
+        self.built = []
+        self.roots = []
+
+    def registered(self, root):
+        self.roots.append(root)
+        if self.registry_error:
+            raise self.registry_error
+        return {"ksamods": {"kind": "share"}}
+
+    def build(self, section, http, listing_id=None, content_type=None, registry=None):
+        self.built.append((section, listing_id, content_type, registry))
+        if self.build_error:
+            raise self.build_error
+        return self.authority, []
+
+
+SHARED = {"id": "ExampleRover", "type": "vehicle", "releases": {"ksamods": "ExampleRover"}}
+
+
+class ShareHost(unittest.TestCase):
+    def inspect(self, document, hosts):
+        return check_release.inspect(document, FolderStamper(), hosts, [], None, lambda content_type: {})
+
+    def test_the_type_and_the_tables_of_hosts_toml_reach_the_stamper(self):
+        hosts = ShareHosts(FakeHost([FakeRelease("v1.0.0", "1.0.0", "2026-08-01T00:00:00Z")]))
+        outcome = self.inspect(SHARED, hosts)
+        self.assertEqual(outcome.outcome, check_release.PASS, outcome.messages)
+        self.assertEqual(hosts.roots, [check_release.ROOT])
+        self.assertEqual(
+            hosts.built,
+            [({"ksamods": "ExampleRover"}, "ExampleRover", "vehicle", {"ksamods": {"kind": "share"}})],
+        )
+
+    def test_a_mod_reaches_the_stamper_with_its_type_too(self):
+        hosts = ShareHosts(FakeHost())
+        check_release.inspect(MOD, FakeStamper(), hosts, [], None)
+        self.assertEqual(hosts.built[0][2], "mod")
+
+    def test_a_share_host_the_stamper_refuses_is_rejected(self):
+        error = StampError("[releases] names `otherhost`, which is neither github nor spacedock")
+        outcome = self.inspect(SHARED, ShareHosts(build_error=error))
+        self.assertEqual((outcome.outcome, outcome.messages), (check_release.REJECT, [str(error)]))
+
+    def test_a_table_the_stamper_cannot_read_is_no_verdict(self):
+        outcome = self.inspect(SHARED, ShareHosts(build_error=HostError("the host `ksamods` is of kind 'mirror'")))
+        self.assertEqual(outcome.outcome, check_release.COULD_NOT_EVALUATE)
+        self.assertIn("is of kind 'mirror'", outcome.messages[0])
+
+    def test_a_hosts_toml_that_does_not_read_is_no_verdict(self):
+        outcome = self.inspect(SHARED, ShareHosts(registry_error=HostError("hosts.toml does not read")))
+        self.assertEqual(outcome.outcome, check_release.COULD_NOT_EVALUATE)
+        self.assertIn("hosts.toml does not read", outcome.messages[0])
+
+    def test_a_stamper_that_reads_no_share_host_is_no_verdict(self):
+        hosts = FakeHosts(FakeHost())
+        outcome = self.inspect(SHARED, hosts)
+        self.assertEqual(
+            (outcome.outcome, outcome.messages),
+            (check_release.COULD_NOT_EVALUATE, ["the stamper of content-index-releases cannot read a share host yet"]),
+        )
+
+    def test_that_stamper_still_inspects_a_listing_without_a_share_host(self):
+        outcome = inspect(MOD, host=FakeHost([FakeRelease("v1.0.0", "1.0.0", "2026-08-01T00:00:00Z")]))
+        self.assertEqual(outcome.outcome, check_release.PASS)
+
+
+class ShareHostWithTheRealStamper(unittest.TestCase):
+    """The size limit of a share host, as the stamper of content-index-releases applies it."""
+
+    @classmethod
+    def setUpClass(cls):
+        root = Path(os.environ.get("CONTENT_INDEX_RELEASES") or check_release.DEFAULT_RELEASES)
+        if not (root / "tools" / "stamp_release.py").is_file():
+            raise unittest.SkipTest("content-index-releases is not checked out next to this repository")
+        cls.stamp_release, cls.hosts = check_release.load_stamper(root)
+        if not hasattr(cls.hosts, "registered"):
+            raise unittest.SkipTest("the checkout of content-index-releases reads no share host yet")
+
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        (Path(folder.name) / "hosts.toml").write_text(
+            '[ksamods]\nkind = "share"\nstorage = "ksamods-content/share"\ntypes = ["vehicle"]\n'
+            "max_bytes = { vehicle = 1048576 }\n",
+            encoding="utf-8",
+        )
+        patch = mock.patch.object(check_release, "ROOT", Path(folder.name))
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def inspect(self, size):
+        hosts = self.hosts
+        listing = {"id": "ExampleRover", "type": "vehicle", "releases": [{"version": "1.0.0", "status": "stable"}]}
+        release = {
+            "published_at": "2026-10-01T00:00:00Z",
+            "assets": [{
+                "name": "ExampleRover-1.0.0.zip",
+                "state": "uploaded",
+                "size": size,
+                "content_type": "application/zip",
+                "browser_download_url": "https://github.com/ksamods-content/share/releases/download/x/ExampleRover-1.0.0.zip",
+            }],
+        }
+        archives = []
+
+        class Http:
+            def get(self, url, **_):
+                body = listing if "/contents/" in url else release
+                return hosts.Response(200, {}, json.dumps(body).encode())
+
+            def archive(self, url, **_):
+                archives.append(url)
+                raise hosts.HostError("not downloaded in this test")
+
+            def log(self, message):
+                pass
+
+        outcome = check_release.inspect(
+            SHARED, self.stamp_release, hosts, [], Http(), lambda content_type: {}
+        )
+        return outcome, archives
+
+    def test_an_archive_above_max_bytes_of_its_type_is_rejected_unread(self):
+        outcome, archives = self.inspect(2 * 1048576)
+        self.assertEqual(outcome.outcome, check_release.REJECT, outcome.messages)
+        self.assertIn("above the 1 MiB limit", outcome.messages[0])
+        self.assertEqual(archives, [])
+
+    def test_an_archive_within_the_limit_is_downloaded(self):
+        outcome, archives = self.inspect(1048576)
+        self.assertEqual(outcome.outcome, check_release.COULD_NOT_EVALUATE, outcome.messages)
+        self.assertEqual(len(archives), 1)
 
 
 class CouldNotEvaluate(unittest.TestCase):

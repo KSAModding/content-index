@@ -1,7 +1,7 @@
 # Ask the generated half to rebuild the published snapshot.
 #
 # Everything here is part of that snapshot, so a merged listing, a new pack
-# version or a steward writing index-status.toml has to reach clients in one
+# version or a steward writing index-status.toml, hosts.toml or tags.toml has to reach clients in one
 # build rather than at the next hourly one (RFC 0033).
 name: snapshot dispatch
 
@@ -14,6 +14,8 @@ on:
       - saves/**
       - packs/**
       - index-status.toml
+      - hosts.toml
+      - tags.toml
 
 # The job authenticates as the org App, so the workflow token needs nothing.
 permissions: {}
@@ -25,7 +27,8 @@ concurrency:
 jobs:
   dispatch:
     name: dispatch
-    runs-on: ubuntu-latest
+    # A fixed image, so a change of the latest label does not change the job.
+    runs-on: ubuntu-24.04
     # The key of the org App is a secret of this environment, which only main may use.
     environment: index-bot
     timeout-minutes: 5
@@ -33,7 +36,7 @@ jobs:
       - uses: actions/create-github-app-token@v3
         id: app-token
         with:
-          app-id: ${{ vars.INDEX_APP_ID }}
+          client-id: ${{ vars.INDEX_APP_CLIENT_ID }}
           private-key: ${{ secrets.INDEX_APP_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
           repositories: content-index-releases

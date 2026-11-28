@@ -1,0 +1,34 @@
+spec_version = 1
+id = "NodeLock"
+type = "mod"
+name = "NodeLock"
+authors = ["Dymnd"]
+abstract = "Lock attachment nodes while placing parts, with battery and tank bay compatibility included."
+description = "Keep a part snapped to the attachment node you choose while rotating it into place. Hover over a node and tap Tab to lock it, rotate with WASD/QE, then click to attach. Tap Tab again to unlock. Includes bay compatibility for radial batteries and spherical tanks."
+license = "MIT"
+tags = ["editor"]
+[releases]
+github = "DymndLab/NodeLock"
+tag_prefix = "v"
+[links]
+repository = "https://github.com/DymndLab/NodeLock"
+bugtracker = "https://github.com/DymndLab/NodeLock/issues"
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/nodelock-attachment-node-tool-for-ksa.1771/"
+[compatibility]
+game_min = "2026.11.25.5949"
+game_max = "2026.11.25.5949"
+os = ["windows"]
+[loader]
+id = "StarMap"
+min = "0.5.4"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/DymndLab/NodeLock/d14878aa8746316201e3eceee6578f519d51bda2/art/icon.png"
+sha256 = "00dea32c91718b62689bc45cc705250a3ad093925dd8eabfec7e1f6113a76c9b"
+width = 512
+height = 512
+size = 141552
+
+[[dependencies]]
+id = "PurrlineTessera"
+kind = "optional"

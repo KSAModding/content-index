@@ -30,7 +30,9 @@ KINDS = ((LISTING_KIND, LISTING), (PACK_KIND, PACK), (VEHICLE_KIND, VEHICLE), (S
 
 WRITING = ("added", "modified")
 
-Change = namedtuple("Change", "path status previous_path", defaults=[None])
+# blob is the git blob id of the file at the head, as the pull request files
+# API gives it, which the share host proof of RFC 0094 hashes.
+Change = namedtuple("Change", "path status previous_path blob", defaults=[None, None])
 
 
 def changes(paths, status="added"):

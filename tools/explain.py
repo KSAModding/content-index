@@ -725,18 +725,31 @@ RULES = [
     ),
     (
         re.compile(
-            r"^\S+: mods\[\d+\]: '(?P<id>[^']*)' is not a listed mod, and a pack pins only listed "
-            r"mods"
+            r"^\S+: (?:mods|vehicles|saves)\[\d+\]: '(?P<id>[^']*)' is not a listed "
+            r"(?:mod|vehicle|save), and (?:a pack|\[\[(?:vehicles|saves)\]\]) pins only listed "
         ),
-        "A pack can hold only mods that have a listing in the index, under the same id. Check "
+        "A pack can hold only content that has a listing in the index, under the same id. Check "
         "the spelling of {id}, or wait until its listing is in the index.",
         False,
     ),
     (
-        re.compile(r"^\S+: mods\[\d+\]: '(?P<id>[^']*)' has no stamped release (?P<version>\S+)"),
+        re.compile(
+            r"^\S+: (?:mods|vehicles|saves)\[\d+\]: '(?P<id>[^']*)' is listed as a "
+            r"(?P<type>mod|vehicle|save), and (?:a pack|\[\[(?:vehicles|saves)\]\]) pins only "
+        ),
+        "{id} is listed as a {type}, and a pack pins each kind in its own list: mods under "
+        "`[[mods]]`, vehicles under `[[vehicles]]` and saves under `[[saves]]`. Move the entry "
+        "into the list of its kind.",
+        False,
+    ),
+    (
+        re.compile(
+            r"^\S+: (?:mods|vehicles|saves)\[\d+\]: '(?P<id>[^']*)' has no stamped release "
+            r"(?P<version>\S+)"
+        ),
         "The index has no release {version} of {id}. Write a version that is in the index, "
         "with all three numbers, such as `1.2.0` for a release tagged v1.2. The versions are "
-        f"the file names in the folder of the mod in [the release files]({RELEASE_FOLDERS}).",
+        f"the file names in the folder of {{id}} in [the release files]({RELEASE_FOLDERS}).",
         False,
     ),
     (
@@ -802,15 +815,14 @@ def _values(match):
     values = {key: _code(value) for key, value in match.groupdict().items() if value is not None}
     found = match.groupdict()
     if found.get("id") is not None and found.get("tag") is not None:
-        # The names the release host looks for, with the tag without its tag_prefix and a leading v.
-        tag, prefix = found["tag"], found.get("prefix") or ""
-        if prefix and tag.startswith(prefix):
-            tag = tag[len(prefix):]
+        full_tag, prefix = found["tag"], found.get("prefix") or ""
+        has_prefix = bool(prefix and full_tag.startswith(prefix))
+        tag = full_tag[len(prefix):] if has_prefix else full_tag
         identifier, version = found["id"], tag.lstrip("vV")
-        values["assets"] = (
-            f"{_code(identifier + '.zip')}, {_code(f'{identifier}-{version}.zip')} "
-            f"or {_code(f'{identifier}_{version}.zip')}"
-        )
+        names = [f"{identifier}.zip", f"{identifier}-{version}.zip", f"{identifier}_{version}.zip"]
+        if has_prefix:
+            names.append(f"{identifier}-{full_tag}.zip")
+        values["assets"] = ", ".join(map(_code, names[:-1])) + f" or {_code(names[-1])}"
     login = found.get("login")
     if login is not None:
         values["topic"] = _code(ownership.TOPIC.format(login=login.lower()))

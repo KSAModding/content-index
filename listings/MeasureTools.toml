@@ -7,6 +7,8 @@ abstract = "Click-to-measure ruler and protractor tools for Kitten Space Agency.
 description = '''
 This mod is written against the [StarMap loader](https://github.com/StarMapLoader/StarMap).
 
+Validated against KSA build version 2026.11.25.5949.
+
 ![Measuring in the map view](ksa-image:map-view)
 
 ## Features
@@ -89,11 +91,11 @@ spacedock = "https://spacedock.info/mod/4319/MeasureTools"
 bugtracker = "https://github.com/Maximilian-Nesslauer/KSA-MeasureTools/issues"
 
 [compatibility]
-game_min = "2026.10.19.5638"
+game_min = "2026.11.16.5901"
 
 [loader]
 id = "StarMap"
-min = "0.4.5"
+min = "0.5.3"
 
 [images.icon]
 url = "https://raw.githubusercontent.com/Maximilian-Nesslauer/KSA-MeasureTools/20fdea29d4346a32007b26ad871271ce0e2e190e/images/listing/icon.png"

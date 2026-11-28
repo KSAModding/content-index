@@ -114,13 +114,13 @@ class Release(unittest.TestCase):
             found.text,
         )
 
-    def test_no_archive_names_the_assets_without_the_tag_prefix(self):
+    def test_no_archive_names_the_assets_with_and_without_the_tag_prefix(self):
         found = explain.explain(
             "listings/gatOS.toml: the latest release gatos-v1.0.0 (tag_prefix `gatos-`) cannot be "
             "stamped: the release carries no archive to download"
         )
         self.assertIn("Release `gatos-v1.0.0` has no zip", found.text)
-        self.assertIn("`gatOS.zip`, `gatOS-1.0.0.zip` or `gatOS_1.0.0.zip`", found.text)
+        self.assertIn("`gatOS.zip`, `gatOS-1.0.0.zip`, `gatOS_1.0.0.zip` or `gatOS-gatos-v1.0.0.zip`", found.text)
 
     def test_several_archives_none_named_after_the_listing(self):
         found = explain.explain(
@@ -386,14 +386,17 @@ def entry(where, document):
     return check_index.Entry(Path(where), where, holder, identifier, document)
 
 
-def pack_members(*pins):
+def pack_members(*pins, section="mods"):
     with tempfile.TemporaryDirectory() as folder:
         releases = Path(folder)
-        (releases / "Lib").mkdir()
-        (releases / "Lib" / "1.0.0.json").write_text("{}", encoding="utf-8")
+        for name in ("Lib", "Rover"):
+            (releases / name).mkdir()
+            (releases / name / "1.0.0.json").write_text("{}", encoding="utf-8")
+        rover = {"id": "Rover", "type": "vehicle"}
         entries = [
             entry("listings/Lib.toml", dict(MOD, id="Lib")),
-            entry(PACK_WHERE, dict(PACK, mods=[{"id": name, "version": version} for name, version in pins])),
+            check_index.Entry(Path("vehicles/Rover.toml"), "vehicles/Rover.toml", ("vehicle", "Rover"), "Rover", rover),
+            entry(PACK_WHERE, dict(PACK, **{section: [{"id": name, "version": version} for name, version in pins]})),
         ]
         return check_index.check_members(entries, [PACK_WHERE], set(), releases)
 
@@ -846,6 +849,16 @@ CASES = [
     ]), "a dependency has to be a mod")),
     ("Check the spelling of `Lib2`", False, lambda: one(pack_members(("Lib2", "1.0.0")), "Lib2")),
     ("The index has no release `9.9.9` of `Lib`", False, lambda: one(pack_members(("Lib", "9.9.9")), "9.9.9")),
+    ("Check the spelling of `Craft`", False, lambda: one(pack_members(("Craft", "1.0.0"), section="vehicles"), "Craft")),
+    ("Check the spelling of `Base`", False, lambda: one(pack_members(("Base", "1.0.0"), section="saves"), "Base")),
+    ("The index has no release `9.9.9` of `Rover`", False, lambda: one(
+        pack_members(("Rover", "9.9.9"), section="vehicles"), "9.9.9")),
+    ("`Lib` is listed as a `mod`, and a pack pins each kind in its own list", False, lambda: one(
+        pack_members(("Lib", "1.0.0"), section="vehicles"), "Lib")),
+    ("`Rover` is listed as a `vehicle`, and a pack pins each kind in its own list", False, lambda: one(
+        pack_members(("Rover", "1.0.0")), "Rover")),
+    ("Move the entry into the list of its kind", False, lambda: one(
+        pack_members(("Rover", "1.0.0"), section="saves"), "Rover")),
     ("Mods of one family can share a forum thread", False, lambda: one(index_notes(), "forums")),
     ("of at most 280 characters", False, lambda: one(index_notes(), "abstract")),
     ("Keep it only when the content is known to break", False, lambda: one(game_max_notes())),
@@ -975,7 +988,7 @@ class Constants(unittest.TestCase):
         # decide.py imports explain on a runner with no pip install.
         code = (
             f"import sys; sys.path.insert(0, {str(Path(__file__).parent)!r}); import explain; "
-            "print(sorted(set(sys.modules) & {'jsonschema', 'license_expression', 'markdown_it'}))"
+            "print(sorted(set(sys.modules) & {'cryptography', 'jsonschema', 'license_expression', 'markdown_it'}))"
         )
         result = subprocess.run(
             [sys.executable, "-I", "-c", code], capture_output=True, text=True, check=True

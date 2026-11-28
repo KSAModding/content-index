@@ -1,0 +1,47 @@
+# Authored Borea listing; compatibility reflects the verified preview.
+spec_version = 1
+id = "PawPrints"
+type = "mod"
+name = "PawPrints"
+authors = ["Dymnd"]
+tags = ["tools"]
+abstract = "Create blueprint-style craft drawings inside Kitten Space Agency, with projected and exploded views, annotations, and performance blocks."
+description = """
+Turn the craft in your Vehicle Editor into a blueprint you can save, edit and share.
+
+- Start with a blank sheet, use a template, or drag views into a snapping grid. Choose first- or third-angle projection and scale linked views together.
+- Create exploded views of a whole craft or a subassembly. Add part labels, flagnotes, dimensions, performance tables and a custom title block.
+- Pick a paper theme, add wear, or place a kitten or banana for scale.
+- Save an editable drawing to reopen later. Preview your final 4K PNG and its file size before saving it.
+
+Load a craft in the Vehicle Editor and choose **Editor > Open PawPrint Editor** or press **Ctrl+Alt+P**.
+"""
+# Project, bundled texture decoder and fonts; full terms accompany the ZIP.
+license = "MIT AND OFL-1.1"
+
+[releases]
+github = "DymndLab/PawPrints"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/pawprints-technical-drawings-creation-for-ksa-craft.1726/"
+repository = "https://github.com/DymndLab/PawPrints"
+bugtracker = "https://github.com/DymndLab/PawPrints/issues"
+
+[compatibility]
+# Tested KSA build for PawPrints 0.6.0.
+game_min = "2026.11.25.5949"
+game_max = "2026.11.25.5949"
+os = ["windows"]
+
+[loader]
+id = "StarMap"
+min = "0.5.4"
+max = "0.5.4"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/DymndLab/PawPrints/4b841ec24fde383ccc385ff1090663695d92cf9d/images/listing/icon.jpg"
+sha256 = "6d7b1fda2270c5ba065855e224063ce6f25071df5dcab4de5c1301c4fda6db1a"
+width = 1024
+height = 1024
+size = 248981
+license = "MIT"

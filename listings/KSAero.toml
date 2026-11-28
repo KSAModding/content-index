@@ -3,14 +3,18 @@ id = "KSAero"
 type = "mod"
 name = "KSAero"
 authors = ["cairn5"]
-abstract = "Better Aerodynamics for Kitten Space Agency"
+abstract = "All-moving fins for Kitten Space Agency, flown on the game's own aerodynamics."
 description = """
-A deliberately simple aerodynamics mod for Kitten Space Agency, to stand in until the game has real aero. It replaces stock's atmospheric drag with a body-of-revolution model that has angle-of-attack drag, lift with a stall, and a transonic drag rise. Rotational dynamics are left exactly as stock.
+Adds all-moving fins (1 m, 2 m and 3 m) that attach to a hull like a landing leg. Each blade turns about its span axis, up to 45 degrees either way at 30 degrees a second.
 
-![Airflow around a cylinder](ksa-image:aeroflow)
+The fins fly on the game's own panel aerodynamics: KSAero turns the fin's panels in the game's aero mesh as the blade moves, so the vehicle is never re-meshed and the fins get the same flow, shielding and loads as the rest of the craft.
+
+KSAero registers its fins with [Advanced Flight Computer](https://github.com/Maximilian-Nesslauer/KSA-AdvancedFlightComputer), whose attitude control and landing guidance fly them. Without it, nothing moves the fins.
+
+Earlier versions (0.1.x up to 0.1.2) replaced the game's drag with a simple body-of-revolution model. The game's own aerodynamics now does better, so that model is gone.
 """
 license = "MIT"
-tags = ["gameplay", "aerodynamics"]
+tags = ["parts", "gameplay"]
 
 [releases]
 github = "cairn5/KSAero"
@@ -24,24 +28,12 @@ spacedock = "https://spacedock.info/mod/4647/KSAero"
 bugtracker = "https://github.com/cairn5/KSAero/issues"
 
 [compatibility]
-game_min = "2026.10.7.5541"
-game_max = "2026.10.7.5541"
+game_min = "2026.11.16.5901"
 
 [loader]
 id = "StarMap"
 min = "0.4.7"
 
-[images.icon]
-url = "https://raw.githubusercontent.com/cairn5/KSAero/3e7e26c9c694a563048261bd6e426e817377d404/images/cylinderflow.png"
-sha256 = "f39739d61ee1a3203d007de070d1e6cb8d833b99f3108caa6d79d8cf24874739"
-width = 360
-height = 314
-size = 181346
-
-[[images.description]]
-id = "aeroflow"
-url = "https://raw.githubusercontent.com/cairn5/KSAero/3e7e26c9c694a563048261bd6e426e817377d404/images/cylinderflow.png"
-sha256 = "f39739d61ee1a3203d007de070d1e6cb8d833b99f3108caa6d79d8cf24874739"
-width = 360
-height = 314
-size = 181346
+[[dependencies]]
+id = "AdvancedFlightComputer"
+kind = "recommends"

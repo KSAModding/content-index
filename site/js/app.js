@@ -1,12 +1,12 @@
 import { createChecker, addTag, ERROR, NOTE, ABSTRACT_LIMIT } from "./rules.js";
 import { parseDocument, writeDocument } from "./toml.js";
-import { indexFacts, gameVersionChoices, SNAPSHOT_URL } from "./snapshot.js";
-import { emptyForm, emptyRecord, formFromDocument, documentFromForm, isFixedLink, sectionsOf, nounOf, releaseTime, PLATFORMS } from "./model.js";
+import { indexFacts, gameVersionChoices, readTypeFile, withTypeFiles, SNAPSHOT_URL, TYPE_FILES } from "./snapshot.js";
+import { emptyForm, emptyRecord, formFromDocument, documentFromForm, isFixedLink, namedHosts, sectionsOf, nounOf, releaseTime, typeChoices, PLATFORMS } from "./model.js";
 import { measure, readCapped, LIMITS, MEASURE_FACTOR, ICON, DESCRIPTION } from "./images.js";
 import { renderPreview } from "./markdown.js";
 import { inspectArchive, StampError } from "./archive.js";
 import {
-  pullRequestLink, copyAndOpen, rawListingUrl, rawPackUrl, rawOwnerUrl, repositoryApiUrl, prefillFromRepository, listingPath, packPath, ownerPath, documentPath,
+  pullRequestLink, copyAndOpen, rawListingUrl, rawPackUrl, rawOwnerUrl, repositoryApiUrl, prefillFromRepository, listingPath, packPath, ownerPath, documentPath, folderOf,
 } from "./github.js";
 import {
   TEXTS, kindText, kindChoices, isListedLoader, boundChoices, newestBound, canNeedNewest, canAddBounds, dependencyCandidates,
@@ -14,7 +14,7 @@ import {
 } from "./dependencies.js";
 import {
   memberChoices, versionChoices, defaultVersion, pinNotes, gameMinNotes, packOf, ownIds, nextPackForm, freeVersion, newerNotes, nextVersionNotes, forumLines,
-  memberMessages, missingDependencies,
+  memberMessages, missingDependencies, memberSection,
 } from "./pack.js";
 import { isLogin, userApiUrl, ownerRecordText, accountFromAnswer, packIdState, firstClaimText, FREE } from "./owner.js";
 
@@ -23,10 +23,13 @@ const TIMEOUT = 20000;
 const SECTION_INPUTS = { links: "link-forums", compatibility: "game-min" };
 const MANUAL = new Set(["msg-load", "msg-prefill", "msg-output", "msg-pr", "msg-forum-list", "msg-owner", "msg-owner-file", "msg-members-fix", "archive-result", "msg-declared"]);
 const ROW_MESSAGES = ["link", "dependency", "member"];
+const PIN_PATH = /^(mods|vehicles|saves)\[(\d+)\]$/;
 
 const $ = (id) => document.getElementById(id);
 
 let checker = null;
+// The types the deployed schema accepts, or null before it loads.
+let types = null;
 let index = null;
 let snapshotState = "loading";
 let state = { mode: "new", baseText: null, base: null, form: emptyForm() };
@@ -210,7 +213,7 @@ function bindStatic() {
   });
   $("add-listed-dependency").addEventListener("click", addListedDependency);
   $("add-member").addEventListener("click", () => {
-    state.form.members.push({ id: "", version: "" });
+    state.form.members.push({ id: "", version: "", section: "mods" });
     renderMembers();
     refresh();
     $("members").lastElementChild.querySelector("select").focus();
@@ -317,12 +320,24 @@ function renderMode() {
   for (const radio of document.querySelectorAll("input[name=mode]")) radio.checked = radio.value === state.mode;
   $("load").hidden = !editing;
   $("id").readOnly = Boolean(base);
-  // A listing cannot become a pack, or a pack a listing, because each lives at a path of its own.
-  for (const option of $("type").options) option.disabled = Boolean(base) && (option.value === "modpack") !== Boolean(pack);
+  renderTypeOptions();
+  // A loaded document keeps the folder it lives in, so a listing cannot become a pack or a vehicle.
+  for (const option of $("type").options) option.disabled = Boolean(base) && folderOf(option.value) !== folderOf(base.type);
   $("editing").hidden = !base;
   $("editing").textContent = pack
     ? `Making the next version of the pack ${pack.id} after ${pack.version}. It is a new file, and the id cannot change.`
-    : base ? `Changing ${listingPath(state.form.id)}. The id cannot change.` : "";
+    : base ? `Changing ${listingPath(state.form.id, base.type)}. The id cannot change.` : "";
+}
+
+// The static options stand until the schema loads. A type the schema does not
+// accept stays in the list while the form holds it, and its check says why.
+function renderTypeOptions() {
+  if (!types) return;
+  const offered = types.includes(state.form.type) ? types : [...types, state.form.type];
+  if ([...$("type").options].map((option) => option.value).join() !== offered.join()) {
+    $("type").replaceChildren(...offered.map((type) => element("option", { value: type, text: type })));
+  }
+  $("hint-type-share").hidden = !offered.some((type) => sectionsOf(type).share);
 }
 
 function renderFields() {
@@ -377,6 +392,8 @@ function renderTypeSections() {
   $("pack-steps").hidden = !shown.pack;
   for (const word of document.querySelectorAll(".noun")) word.textContent = nounOf(state.form.type);
   for (const part of document.querySelectorAll(".not-pack")) part.hidden = shown.pack;
+  for (const part of document.querySelectorAll(".share-only")) part.hidden = !shown.share;
+  for (const part of document.querySelectorAll(".not-share")) part.hidden = shown.share;
   // The topic note of a prefill is about a release host, which a pack does not have.
   $("organization-note").hidden = shown.pack || !$("organization-note").textContent;
 }
@@ -612,8 +629,9 @@ function renderMembers() {
     const version = selectField("Release", entry.version, releases(), (value) => {
       entry.version = value;
     }, remove);
-    const mod = selectField("Mod", entry.id, [["", "Choose a mod"], ...memberChoices(index, entry.id)], (value) => {
+    const mod = selectField("Member", entry.id, [["", "Choose a mod, a vehicle or a save"], ...memberChoices(index, entry.id)], (value) => {
       entry.id = value;
+      entry.section = memberSection(index, value);
       entry.version = defaultVersion(index, value);
       fillSelect(version.querySelector("select"), releases(), entry.version);
     });
@@ -623,7 +641,7 @@ function renderMembers() {
 
 function addMissing() {
   const { pins } = missingDependencies(current.document, index);
-  state.form.members.push(...pins.map(({ id, version }) => ({ id, version })));
+  state.form.members.push(...pins.map(({ id, version }) => ({ id, version, section: "mods" })));
   renderMembers();
   refresh();
 }
@@ -894,9 +912,9 @@ function place(entry) {
       const number = filledRows(state.form.dependencies)[Number(dependency[1])];
       if (number !== undefined) return $("dependencies").querySelector(`[data-dependency="${number}"]`);
     }
-    const member = /^mods\[(\d+)\]$/.exec(path);
+    const member = PIN_PATH.exec(path);
     if (member) {
-      const number = filledRows(state.form.members)[Number(member[1])];
+      const number = memberRows(member[1])[Number(member[2])];
       if (number !== undefined) return $("members").querySelector(`[data-member="${number}"]`);
     }
     const target = $(`msg-${path}`);
@@ -912,6 +930,11 @@ function filledRows(entries) {
     if (entry.kept !== undefined || entry.id.trim()) rows.push(number);
   });
   return rows;
+}
+
+// The rows of one pack section, which the written document numbers on its own.
+function memberRows(section) {
+  return filledRows(state.form.members).filter((number) => (state.form.members[number].section || "mods") === section);
 }
 
 function extraMessages() {
@@ -930,7 +953,7 @@ function extraMessages() {
   }
   if (tagError) found.push({ level: ERROR, path: "tags", text: tagError });
   if (archiveFile && current.document.type !== "modpack") {
-    for (const problem of inspectArchive(archiveFile.names, current.document).problems) {
+    for (const problem of inspectArchive(archiveFile.names, current.document, archiveFile.files).problems) {
       found.push({ level: ERROR, path: "archive", text: problem });
     }
   }
@@ -956,7 +979,8 @@ function renderMessages() {
 }
 
 function movePin(path, version) {
-  const number = filledRows(state.form.members)[Number(/^mods\[(\d+)\]$/.exec(path)[1])];
+  const [, section, row] = PIN_PATH.exec(path);
+  const number = memberRows(section)[Number(row)];
   if (number === undefined) return;
   state.form.members[number].version = version;
   renderMembers();
@@ -1112,6 +1136,19 @@ function currentLink() {
   return pullRequestLink(documentPath(current.document, encodeURIComponent), current.text, loadedBase());
 }
 
+// The choice offers the hosts the section names, and also a written value that
+// names none of them, so the author sees it and can change it.
+function renderAuthority(hosts) {
+  const select = $("authority");
+  const written = state.form.authority;
+  const offered = written && !hosts.includes(written) ? [...hosts, written] : hosts;
+  if ([...select.options].slice(1).map((option) => option.value).join() !== offered.join()) {
+    select.replaceChildren(select.options[0], ...offered.map((host) => element("option", { value: host, text: host })));
+  }
+  select.value = written;
+  $("authority-field").hidden = hosts.length < 2;
+}
+
 function refresh() {
   if (!checker) return;
   const base = loadedBase();
@@ -1132,9 +1169,10 @@ function refresh() {
   current.messages = current.messages.filter((entry) => !(explained.has(entry.path) && SPDX_SHAPE.test(entry.text)));
   const count = Array.from(state.form.abstract.trim()).length;
   $("abstract-count").textContent = `${count} of ${ABSTRACT_LIMIT}.`;
-  $("authority-field").hidden = !(state.form.github.trim() && state.form.spacedock.trim());
+  const hosts = namedHosts(state.form);
+  renderAuthority(hosts);
   $("tag-prefix-field").hidden = !state.form.github.trim();
-  $("since-field").hidden = !(state.form.github.trim() || state.form.spacedock.trim());
+  $("since-field").hidden = !hosts.length;
   renderMessages();
   renderMemberFix();
   renderDeclared();
@@ -1176,8 +1214,8 @@ async function fetchRaw(url, path) {
   }
 }
 
-function fetchListing(id) {
-  return fetchRaw(rawListingUrl(id), listingPath(id));
+function fetchListing(id, type) {
+  return fetchRaw(rawListingUrl(id, type), listingPath(id, type));
 }
 
 async function packVersionTaken(id, version) {
@@ -1189,7 +1227,7 @@ async function packVersionTaken(id, version) {
 async function checkBase() {
   if (state.mode !== "edit" || !state.base || packBase()) return;
   const { base, baseText } = state;
-  const answer = await fetchListing(base.id);
+  const answer = await fetchListing(base.id, base.type);
   if (state.base !== base || answer.text === baseText) return;
   const reload = element("button", {
     type: "button",
@@ -1200,8 +1238,8 @@ async function checkBase() {
     },
   });
   const text = answer.error
-    ? `The page could not check whether ${listingPath(base.id)} changed on main since you loaded it. ${answer.error}`
-    : `${listingPath(base.id)} changed on main since you loaded it, and pasting this file would undo that change. Load it again and redo your changes.`;
+    ? `The page could not check whether ${listingPath(base.id, base.type)} changed on main since you loaded it. ${answer.error}`
+    : `${listingPath(base.id, base.type)} changed on main since you loaded it, and pasting this file would undo that change. Load it again and redo your changes.`;
   $("msg-load").replaceChildren(line(NOTE, text), reload);
 }
 
@@ -1217,15 +1255,16 @@ async function loadListing() {
     return;
   }
   const id = holder ? holder.id : typed;
-  say("msg-load", null, `Loading ${listingPath(id)}.`);
-  const answer = await fetchListing(id);
+  const type = holder ? holder.type : "mod";
+  say("msg-load", null, `Loading ${listingPath(id, type)}.`);
+  const answer = await fetchListing(id, type);
   if (answer.error) {
-    // Only the snapshot tells a pack id from a listing id.
-    say("msg-load", ERROR, answer.missing && !index ? `${answer.error} A pack loads once the index snapshot has loaded.` : answer.error);
+    // Only the snapshot tells a pack, a vehicle or a save id from a listing id.
+    say("msg-load", ERROR, answer.missing && !index ? `${answer.error} A pack, a vehicle or a save loads once the index snapshot has loaded.` : answer.error);
     return;
   }
   const base = parseBase(answer.text, "listing");
-  if (base) useBase(answer.text, base, formFromDocument(base), `Loaded ${listingPath(id)}.`);
+  if (base) useBase(answer.text, base, formFromDocument(base), `Loaded ${listingPath(id, type)}.`);
 }
 
 function parseBase(text, kind) {
@@ -1364,14 +1403,16 @@ function renderArchiveResult() {
     $("archive-result").replaceChildren(...lines);
     return;
   }
-  const result = inspectArchive(archiveFile.names, current.document);
+  const result = inspectArchive(archiveFile.names, current.document, archiveFile.files);
   if (result.root !== null) {
     const where = result.root ? `'${result.root}'` : "the archive root";
     const matches = current.document.type === "mod" && result.root === current.document.id;
     lines.push(line(null, `The install root is ${where}${result.derived ? ", derived from the archive" : ""}${matches ? ", and it matches the id" : ""}.`));
   }
+  if (result.folder) lines.push(line(null, `It installs as the folder '${result.folder}', the name in its meta.toml.`));
   for (const launch of result.launches) lines.push(line(null, `${launch} is in the archive.`));
   for (const problem of result.problems) lines.push(line(ERROR, problem));
+  for (const note of result.notes) lines.push(line(NOTE, note));
   $("archive-result").replaceChildren(...lines);
 }
 
@@ -1569,8 +1610,14 @@ async function start() {
   restore();
   status("Loading the rules of the index.");
   try {
-    const [schemaText, tagsText] = await Promise.all([loadText("rules/authored.schema.json"), loadText("rules/tags.toml")]);
-    checker = createChecker({ schema: JSON.parse(schemaText), tagsText });
+    const [schemaText, tagsText, hostsText] = await Promise.all([
+      loadText("rules/authored.schema.json"),
+      loadText("rules/tags.toml"),
+      loadText("rules/hosts.toml"),
+    ]);
+    const schema = JSON.parse(schemaText);
+    checker = createChecker({ schema, tagsText, hostsText });
+    types = typeChoices(schema);
   } catch (error) {
     status(`The rules did not load, so the page cannot check anything. Reload the page. (${error.message})`);
     return;
@@ -1583,9 +1630,12 @@ async function start() {
 
 async function loadSnapshot() {
   try {
-    const response = await fetch(SNAPSHOT_URL, { cache: "no-cache", signal: AbortSignal.timeout(TIMEOUT) });
+    const keys = Object.keys(TYPE_FILES);
+    const [response, ...typed] = await Promise.all([SNAPSHOT_URL, ...keys.map((key) => TYPE_FILES[key])]
+      .map((url) => fetch(url, { cache: "no-cache", signal: AbortSignal.timeout(TIMEOUT) })));
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    index = indexFacts(await response.json(), checker.threadPattern);
+    const parts = await Promise.all(keys.map(async (key, number) => [key, await readTypeFile(typed[number], key)]));
+    index = indexFacts(withTypeFiles(await response.json(), Object.fromEntries(parts)), checker.threadPattern);
     snapshotState = "ready";
   } catch {
     index = null;

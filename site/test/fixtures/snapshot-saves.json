@@ -1,0 +1,33 @@
+{
+  "snapshot_version": 1,
+  "sources": {
+    "authored": { "repository": "KSAModding/content-index", "commit": "9fe1c0f" },
+    "generated": { "repository": "KSAModding/content-index-releases", "commit": "3a77b21" }
+  },
+  "saves": [
+    {
+      "id": "MoonBase",
+      "authored": {
+        "spec_version": 1,
+        "id": "MoonBase",
+        "type": "save",
+        "name": "Moon Base",
+        "authors": ["Maxi"],
+        "abstract": "A base on the Moon with two rovers.",
+        "license": "CC-BY-4.0",
+        "links": { "forums": "https://forums.ahwoo.com/threads/moon-base.1001/" },
+        "releases": { "github": "Maxi/KSA-Rovers", "tag_prefix": "MoonBase-" }
+      },
+      "releases": [
+        {
+          "version": "1.0.0",
+          "release_status": "stable",
+          "game_min": "2026.10.19.5638",
+          "game_min_revision": 5638,
+          "install": { "root": "Moon Base", "derived": true, "folder": "Moon Base" },
+          "dependencies": []
+        }
+      ]
+    }
+  ]
+}

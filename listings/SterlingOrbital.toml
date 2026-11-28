@@ -1,0 +1,80 @@
+spec_version = 1
+id = "SterlingOrbital"
+type = "mod"
+name = "Sterling Orbital: Sparrow Launch System"
+authors = ["Sterling Orbital"]
+abstract = "A reusable two-stage rocket with its own engines, a drone ship, and flight software that flies the whole mission and lands the booster back at the pad or at sea."
+description = """
+The Sparrow is a reusable two-stage rocket for Kitten Space Agency. The flight software flies the whole mission:
+ascent, staging, boostback or drone ship recovery, and a propulsive landing of the first stage.
+
+![The Sparrow booster after landing on the drone ship](ksa-image:hero)
+
+What's included:
+
+![Everything included in Sterling Orbital](ksa-image:whats-included)
+
+- Parts: first stage (clean and sooted liveries), interstage with built-in attitude thrusters, second stage, payload
+  adapter, fairing halves, grid fins, landing legs, the octaweb with nine Anvil 1D engines, and the Anvil Vac
+  upper-stage engine.
+- The autonomous drone ship "It Was Never Goodbye".
+- Flight software: mission control panel (Sterling Orbital menu or Ctrl+Shift+F), launch webcast, booster guidance
+  and landing, grid fin aerodynamics, landing leg suspension, engine sets (9 / 3 / 1), first-stage soot after the
+  entry and landing burns.
+
+![Exploded view of the Sparrow stack](ksa-image:exploded)
+
+Automated flights launch from KSC (LC-39A) for now.
+
+Parts derived from "Falcon 9 - SpaceX" by Stanley Creative, CC BY 4.0. Not affiliated with or endorsed by Space
+Exploration Technologies Corp.
+"""
+license = "MIT AND CC-BY-4.0"
+tags = ["parts", "gameplay", "user-interface"]
+
+[releases]
+github = "SterlingOrbital/SterlingOrbital-SparrowLaunchSystem"
+
+[links]
+forums = "https://forums.ahwoo.com/forums/kitten-space-agency/mod-releases/sterling-orbital-sparrow-launch-system-reusable-rocket-autopilot-landings.1813/"
+repository = "https://github.com/SterlingOrbital/SterlingOrbital-SparrowLaunchSystem"
+bugtracker = "https://github.com/SterlingOrbital/SterlingOrbital-SparrowLaunchSystem/issues"
+
+[compatibility]
+game_min = "2026.11.25.5949"
+os = ["windows"]
+
+[loader]
+id = "StarMap"
+min = "0.5.4"
+
+[images.icon]
+url = "https://raw.githubusercontent.com/SterlingOrbital/SterlingOrbital-SparrowLaunchSystem/e8ced5679271f81320c947109e9386362f5d6259/images/icon.png"
+sha256 = "1527d1110790c73468df8e453f5ba1020a7e15b37e2988af8677fab34adabcce"
+width = 512
+height = 512
+size = 24701
+
+[[images.description]]
+id = "hero"
+url = "https://raw.githubusercontent.com/SterlingOrbital/SterlingOrbital-SparrowLaunchSystem/752b7234bf02690791b24b84d064af101b6ecaa9/images/sparrow_hero.jpg"
+sha256 = "85193dffb47dfdf79f891df9ac7d919d1534d1e153daca3330e8ae70aa201ae2"
+width = 2048
+height = 1152
+size = 224664
+
+[[images.description]]
+id = "whats-included"
+url = "https://raw.githubusercontent.com/SterlingOrbital/SterlingOrbital-SparrowLaunchSystem/752b7234bf02690791b24b84d064af101b6ecaa9/images/sparrow_whats_included.jpg"
+sha256 = "626297d41fe0805b32cd1767cb013d9b0278a2f3295761f3db190e1c990020d3"
+width = 2048
+height = 1152
+size = 190031
+
+[[images.description]]
+id = "exploded"
+url = "https://raw.githubusercontent.com/SterlingOrbital/SterlingOrbital-SparrowLaunchSystem/752b7234bf02690791b24b84d064af101b6ecaa9/images/sparrow_exploded.jpg"
+sha256 = "8fcdd6074bcd4e822ec9c6fbf35f665442c9da0b8197a7e54951bbba86147f74"
+width = 2048
+height = 1152
+size = 134803

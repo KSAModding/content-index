@@ -7,17 +7,11 @@ import { parseDocument } from "../js/toml.js";
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const schema = JSON.parse(read("../../schemas/authored.schema.json"));
 const tagsText = read("../../tags.toml");
-const checker = createChecker({ schema, tagsText });
+// Whether hosts.toml registers a share host is no vector rule, because the
+// Python runner has no hosts.toml, so the share host of the vectors is registered here.
+const hostsText = '[ksamods]\nkind = "share"\ntypes = ["vehicle", "save"]\n';
+const checker = createChecker({ schema, tagsText, hostsText });
 const { vectors } = JSON.parse(read("../../schemas/vectors.json"));
-
-// A vector with `gated` names a type that the rollout gate of RFC 0085 holds.
-// While the schema refuses that type, the vector is refused with the title of
-// the gate, and its own verdict holds against a copy of the schema without it.
-const gate = schema.properties.type.not;
-const gated = new Set(gate ? gate.enum : []);
-const ungatedSchema = structuredClone(schema);
-delete ungatedSchema.properties.type.not;
-const ungated = createChecker({ schema: ungatedSchema, tagsText });
 
 function lines(found) {
   return found.map((entry) => `${entry.path}: ${entry.text}`);
@@ -41,19 +35,6 @@ function agrees(found, vector) {
 
 for (const vector of vectors) {
   test(`${vector.rule}: ${vector.name}`, () => {
-    const found = run(checker, vector);
-    if (gated.has(vector.gated)) {
-      const said = lines(found);
-      assert.ok(said.includes(`type: '${vector.gated}' is ${gate.title}`), said.join("\n"));
-      assert.equal(found.some((entry) => entry.level === NOTE), vector.noted, said.join("\n"));
-      return;
-    }
-    agrees(found, vector);
+    agrees(run(checker, vector), vector);
   });
-
-  if (vector.gated) {
-    test(`${vector.rule}: ${vector.name}, without the gate`, () => {
-      agrees(run(ungated, vector), vector);
-    });
-  }
 }

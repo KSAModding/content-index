@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { inspect, measure, readCapped, Invalid, ICON, DESCRIPTION } from "../js/images.js";
-import { zipNames, deriveRoot, inspectArchive } from "../js/archive.js";
+import { zipNames, deriveRoot, inspectArchive, gameFiles, PAGE_XML_LIMIT } from "../js/archive.js";
+import { readArchive } from "../js/dependencies.js";
 
 function u32(value, little = false) {
   const bytes = Buffer.alloc(4);
@@ -99,27 +100,34 @@ test("reading a body stops after the cap", async () => {
   assert.deepEqual(await readCapped(new Response(body()), 30), new Uint8Array(30));
 });
 
+// Each entry is a name, or a name and the text it stores.
 function zip(names, { note = "", prefix = "", zip64 = false } = {}) {
   const locals = [];
   const central = [];
   let offset = 0;
-  for (const name of names) {
+  for (const item of names) {
+    const [name, text] = Array.isArray(item) ? item : [item, ""];
     const encoded = Buffer.from(name, "utf8");
+    const body = Buffer.from(text, "utf8");
     const local = Buffer.alloc(30);
     local.writeUInt32LE(0x04034b50, 0);
     local.writeUInt16LE(20, 4);
     local.writeUInt16LE(0x800, 6);
+    local.writeUInt32LE(body.length, 18);
+    local.writeUInt32LE(body.length, 22);
     local.writeUInt16LE(encoded.length, 26);
     const entry = Buffer.alloc(46);
     entry.writeUInt32LE(0x02014b50, 0);
     entry.writeUInt16LE(20, 4);
     entry.writeUInt16LE(20, 6);
     entry.writeUInt16LE(0x800, 8);
+    entry.writeUInt32LE(body.length, 20);
+    entry.writeUInt32LE(body.length, 24);
     entry.writeUInt16LE(encoded.length, 28);
     entry.writeUInt32LE(offset, 42);
-    locals.push(local, encoded);
+    locals.push(local, encoded, body);
     central.push(entry, encoded);
-    offset += local.length + encoded.length;
+    offset += local.length + encoded.length + body.length;
   }
   const directory = Buffer.concat(central);
   const end = Buffer.alloc(22);
@@ -190,5 +198,89 @@ test("every launch of a loader has to be in the archive", () => {
 test("a mod archive with no layout to derive names the standard layout", () => {
   assert.deepEqual(inspectArchive(["a.dll"], { id: "MyMod", type: "mod" }).problems, [
     "the install root is neither derivable from the archive nor authored: the standard layout is one top-level directory containing mod.toml, named 'MyMod'",
+  ]);
+});
+
+// Node has no DOMParser, so the tests parse with a stub that wants one closed root element.
+const wellFormed = (text) => (/^<(\w+)[^>]*>[\s\S]*<\/\1>\s*$/.test(text.replace(/^<\?xml[^>]*\?>\s*/, "")) ? null : "no element found: line 2, column 0");
+const META = 'name = "Example Rover"\nversion = "2026.10.19.5638"\n';
+const XML = '<?xml version="1.0" encoding="utf-8"?>\n<VehicleSaveData>\n</VehicleSaveData>\n';
+const ROVER = { id: "ExampleRover", type: "vehicle" };
+
+async function shared(entries, document = ROVER) {
+  const archive = await readArchive(zip(entries), { wellFormed });
+  return inspectArchive(archive.names, document, archive.files);
+}
+
+const rover = (meta = META, xml = XML, folder = "Example Rover") => [[`${folder}/meta.toml`, meta], [`${folder}/vehicle.xml`, xml]];
+
+test("a vehicle or a save in the layout the game writes passes, and installs as its name", async () => {
+  assert.deepEqual(await shared(rover()), { root: "Example Rover", derived: true, problems: [], notes: [], launches: [], folder: "Example Rover" });
+  const atRoot = await shared([["meta.toml", META], ["vehicle.xml", XML]]);
+  assert.deepEqual([atRoot.root, atRoot.folder, atRoot.problems], ["", "Example Rover", []]);
+  const save = await shared([
+    ["Moon Base/meta.toml", 'name = "Moon Base"\nversion = "v2026.10.19.5638"\n'],
+    ["Moon Base/universe.xml", "<Universe></Universe>"],
+    ["Moon Base/mods/state.bin", "mod state"],
+  ], { id: "MoonBase", type: "save" });
+  assert.deepEqual([save.root, save.folder, save.problems, save.notes], ["Moon Base", "Moon Base", [], []]);
+});
+
+test("each archive rule of a vehicle gives the message of the stamper", async () => {
+  const cases = [
+    [[["a.txt", "x"]], "the install root is neither derivable from the archive nor authored: the standard layout is one top-level directory named after `name` in its meta.toml, holding meta.toml and vehicle.xml"],
+    [rover("name = "), /^the archive's Example Rover\/meta\.toml is not valid TOML, /],
+    [rover('version = "2026.10.19.5638"\n'), "the archive's Example Rover/meta.toml has no `name` string, which the game shows"],
+    [rover('name = "Rover!"\n', XML, "Rover!"), "`name` in the archive's Rover!/meta.toml is 'Rover!', and the name holds U+0021, and the game keeps only letters, digits, spaces, '-' and '_' (RFC 0085)"],
+    [rover('name = "Rover\'s"\n', XML, "Rover's"), "`name` in the archive's Rover's/meta.toml is \"Rover's\", and the name holds U+0027, and the game keeps only letters, digits, spaces, '-' and '_' (RFC 0085)"],
+    [rover('name = "CON"\n', XML, "CON"), "`name` in the archive's CON/meta.toml is 'CON', and the name 'CON' is a device name on Windows, which the game does not use (RFC 0085)"],
+    [rover(META, XML, "example rover"), "the archive's folder is 'example rover' and `name` in its meta.toml is 'Example Rover': the game saves into a folder named after `name`, so the casing has to match"],
+    [rover(META, XML, "Other"), "the archive's folder is 'Other', which does not match `name` 'Example Rover' in its meta.toml: the game saves into a folder named after `name`"],
+    [[["Example Rover/meta.toml", META]], "the archive has no Example Rover/vehicle.xml, so the game does not see the vehicle"],
+    [[["Example Rover/meta.toml", META], ["Example Rover/Vehicle.xml", XML]], "the archive has 'Example Rover/Vehicle.xml' and no 'Example Rover/vehicle.xml', and the game opens vehicle.xml with that exact case"],
+    [rover(META, '<!DOCTYPE x [<!ENTITY a "b">]>\n<x></x>'), "the archive's Example Rover/vehicle.xml carries a DOCTYPE, which the game never writes"],
+    [rover(META, "<VehicleSaveData>"), "the archive's Example Rover/vehicle.xml is not well-formed XML, no element found: line 2, column 0"],
+    [rover('name = "Example Rover"\nversion = "2026.10.19.5638-beta"\n'), "meta.toml says version '2026.10.19.5638-beta', which is not a game version Y.M.B.R without a suffix, and the listing authors no game_min"],
+    [rover('name = "Example Rover"\nversion = "2026.10.19.0"\n'), "meta.toml says version '2026.10.19.0', which is the game's mark of an unknown build, and the listing authors no game_min"],
+    [rover('name = "Example Rover"\n'), "meta.toml says version None, which is not a game version Y.M.B.R without a suffix, and the listing authors no game_min"],
+  ];
+  for (const [entries, expected] of cases) {
+    const { problems } = await shared(entries);
+    assert.equal(problems.length, 1, String(expected));
+    if (expected instanceof RegExp) assert.match(problems[0], expected);
+    else assert.equal(problems[0], expected);
+  }
+  const authored = await shared([["Rovers/Example Rover/vehicle.xml", XML]], { ...ROVER, install: { root: "Rovers/Example Rover" } });
+  assert.deepEqual(authored.problems, ["the archive has no Rovers/Example Rover/meta.toml, which the game reads for every folder"]);
+});
+
+test("a game_min in the listing makes a version the game does not mark a release by a build pass", async () => {
+  const result = await shared(rover('name = "Example Rover"\nversion = "dev"\n'), { ...ROVER, compatibility: { game_min: "2026.10.19.5638" } });
+  assert.deepEqual(result.problems, []);
+});
+
+test("a vehicle with other files gets a note that names them, and a save does not", async () => {
+  const accented = `thumb${String.fromCharCode(0xe9)}.png`;
+  const extra = await shared([...rover(), ["Example Rover/extra.txt", "x"], [`Example Rover/${accented}`, "x"]]);
+  assert.deepEqual(extra.problems, []);
+  const escaped = ["thumb", "\\", "u00e9.png"].join("");
+  assert.deepEqual(extra.notes, [
+    `the vehicle folder holds files besides meta.toml and vehicle.xml, which the game drops when it saves the vehicle again: "extra.txt", "${escaped}"`,
+  ]);
+  const many = await shared([...rover(), ...Array.from({ length: 22 }, (_, number) => [`Example Rover/f${number}`, "x"])]);
+  assert.match(many.notes[0], /"f19", and 2 more$/);
+});
+
+test("a game file too large for the page is left to the watcher, and one above the limit of the stamper is refused", async () => {
+  const unread = { name: "Example Rover/vehicle.xml", size: PAGE_XML_LIMIT + 1, compressed: 0, offset: 0, flags: 0, method: 0 };
+  assert.deepEqual(await gameFiles(new Blob([]), [unread], wellFormed), new Map([[unread.name, { unchecked: true }]]));
+  const huge = { ...unread, size: 256 * 1024 * 1024 + 1 };
+  assert.deepEqual(await gameFiles(new Blob([]), [huge], wellFormed), new Map([[huge.name, {
+    problem: `the archive's Example Rover/vehicle.xml is ${huge.size} bytes, above the 268435456 byte limit`,
+  }]]));
+  const archive = await readArchive(zip(rover()), { wellFormed });
+  archive.files.set("Example Rover/vehicle.xml", { unchecked: true });
+  assert.deepEqual(inspectArchive(archive.names, ROVER, archive.files).notes, [
+    "the page did not parse Example Rover/vehicle.xml, so the watcher checks that it is well-formed XML",
   ]);
 });

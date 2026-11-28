@@ -1,0 +1,37 @@
+spec_version = 1
+id = "AmongUsCrewmate"
+type = "vehicle"
+name = "Crewmate"
+authors = ["Kiwi Shark"]
+abstract = "A crewmate from Among Us."
+description = '''
+Make your KSA experience *sus* with a crewmate from Among Us. This little dude is made from some fuel tanks and imagination.  A little off-balance but it's a gimmick vehicle.
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-1)'''
+license = "CC-BY-4.0"
+tags = ["crewmate", "among-us", "meme"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/AmongUsCrewmate"
+
+[releases]
+ksamods = "AmongUsCrewmate"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/AmongUsCrewmate/icon-PO8xAtYTPqvAblDr.webp"
+size = 9656
+width = 512
+height = 512
+sha256 = "84b196b21645728e6c42e8ab9aa35ce0ffaef15b75105bbf72ff423dff19a4d7"
+
+[[images.description]]
+id = "screenshot-1"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/AmongUsCrewmate/uix8HGnCbhyKIZsy.webp"
+sha256 = "ef811c50e47f4591207d4427e213f25b896d7f0327e764f4258d99e217ff6d19"
+width = 315
+height = 417
+size = 11632

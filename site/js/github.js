@@ -5,8 +5,20 @@ export const PASTE_NEW = "The file is too long for the link. The button copies i
 export const PASTE_EDIT = "GitHub opens the old file. The button copies your new file, so replace the whole old file with it.";
 const REPOSITORY = /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?\/[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$/;
 
-export function listingPath(id) {
-  return `listings/${id}.toml`;
+// The folder of each type that is not a mod, mod loader or pack (RFC 0085).
+const FOLDERS = { vehicle: "vehicles", save: "saves" };
+
+function listingFolder(type) {
+  return Object.hasOwn(FOLDERS, type) ? FOLDERS[type] : "listings";
+}
+
+// The top folder a document of this type lives in.
+export function folderOf(type) {
+  return type === "modpack" ? "packs" : listingFolder(type);
+}
+
+export function listingPath(id, type = "mod") {
+  return `${listingFolder(type)}/${id}.toml`;
 }
 
 export function packPath(id, version) {
@@ -21,7 +33,7 @@ export function ownerPath(id) {
 // A link encodes each part, so an id or a version cannot add a folder.
 export function documentPath(document, encode = (part) => part) {
   const id = encode(String(document.id || "<id>"));
-  return document.type === "modpack" ? packPath(id, encode(String(document.version || "<version>"))) : listingPath(id);
+  return document.type === "modpack" ? packPath(id, encode(String(document.version || "<version>"))) : listingPath(id, document.type);
 }
 
 // Raw GitHub, not the contents API, which allows 60 calls an hour without a token.
@@ -29,8 +41,8 @@ export function rawFileUrl(encodedPath) {
   return `https://raw.githubusercontent.com/${INDEX_REPOSITORY}/main/${encodedPath}`;
 }
 
-export function rawListingUrl(id) {
-  return rawFileUrl(listingPath(encodeURIComponent(id)));
+export function rawListingUrl(id, type) {
+  return rawFileUrl(listingPath(encodeURIComponent(id), type));
 }
 
 export function rawPackUrl(id, version) {
@@ -47,14 +59,14 @@ export function newFileUrl(encodedPath, text) {
   return filled.length <= URL_LIMIT ? { url: filled, filled: true } : { url: base, filled: false };
 }
 
-export function editUrl(id) {
-  return `https://github.com/${INDEX_REPOSITORY}/edit/main/${listingPath(encodeURIComponent(id))}`;
+export function editUrl(id, type) {
+  return `https://github.com/${INDEX_REPOSITORY}/edit/main/${listingPath(encodeURIComponent(id), type)}`;
 }
 
 // A loaded listing is changed in place. A loaded pack version is immutable, so
 // its next version is always a new file.
 export function pullRequestLink(encodedPath, text, base = null) {
-  if (base && base.type !== "modpack") return { url: editUrl(base.id), step: PASTE_EDIT };
+  if (base && base.type !== "modpack") return { url: editUrl(base.id, base.type), step: PASTE_EDIT };
   const link = newFileUrl(encodedPath, text);
   return { url: link.url, step: link.filled ? "" : PASTE_NEW };
 }

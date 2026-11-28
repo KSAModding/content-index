@@ -1,0 +1,62 @@
+spec_version = 1
+id = "Boatmobile"
+type = "vehicle"
+name = "Boatmobile"
+authors = ["Kiwi Shark"]
+abstract = "A \"boat\" that you can drive around."
+description = '''
+My take on a "boatmobile", reminiscent of the ones in Spongebob. Some carefully scaled parts built on top of the Cadillac from Fast & Purrious. Works the same as the car by itself, just with the nautical new look.
+
+## Screenshots
+
+![Screenshot 1](ksa-image:screenshot-3)
+
+![Screenshot 2](ksa-image:screenshot-4)
+
+![Screenshot 3](ksa-image:screenshot-5)'''
+license = "CC-BY-4.0"
+tags = ["boat", "car", "spongebob", "meme"]
+
+[links]
+homepage = "https://ksamods.gg/vehicles/Boatmobile"
+
+[releases]
+ksamods = "Boatmobile"
+
+[[dependencies]]
+id = "FastAndPurrious"
+min = "0.1.12"
+kind = "required"
+
+[images]
+
+[images.icon]
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Boatmobile/icon-6yZPXkY7DyUGE7s2.webp"
+size = 21404
+width = 512
+height = 512
+sha256 = "3afed56e69b5c4d4098455fbb738a1c9191dd5c263b1bee0838d49aa987c901e"
+
+[[images.description]]
+id = "screenshot-3"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Boatmobile/fgnr9ahBIgGMelvO.webp"
+sha256 = "341fc1872b8a452fdaf4b9c272f9cc9c4b34fec4cb6a1ff8cc611dc75431976d"
+width = 1920
+height = 1080
+size = 176104
+
+[[images.description]]
+id = "screenshot-4"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Boatmobile/0CJnr5cPhZ4CDise.webp"
+sha256 = "4044d028d5b0b3ad48508c9b22d4a865daaf57bea40e5fe05d8305549c4016d5"
+width = 1920
+height = 1080
+size = 267370
+
+[[images.description]]
+id = "screenshot-5"
+url = "https://ksamods-share.fsn1.your-objectstorage.com/images/vehicle/Boatmobile/xIN7YTeFo9EKejkq.webp"
+sha256 = "cd68e10872e0827ef59d9caebf820cf2bb7d4e280d710a5af605064ebde40f86"
+width = 1920
+height = 1080
+size = 340606
