@@ -26,6 +26,8 @@ when nothing needs you.
   controls.
 - **Three modes** (P): CLEAN (the webcast look), FLIGHT (panels fold to short headers), FULL.
 - **Six colours**: white, amber, orange, cyan, green or pink (Mods → ModernUI colour).
+- **Fits any window**: full screen, borderless or windowed, down to 4:3 (the HUD gets
+  smaller on a narrow window rather than overlapping).
 
 Every control does what the stock button does, through the same game code.
 
@@ -70,11 +72,11 @@ size = 14050
 
 [[images.description]]
 id = "Flight"
-url = "https://github.com/ericnondahl/ModernUI/blob/main/images/flight-v2.jpg?raw=true"
-sha256 = "2860db44e64a81e24cff5ee92e56ab4e60980e23ef86dbda95dfa040cfdbd10d"
+url = "https://github.com/ericnondahl/ModernUI/blob/main/images/flight-v3.jpg?raw=true"
+sha256 = "a4c94c135599145133537e3f3127697f5fd94c3c627af12e8970d507acec6be1"
 width = 1920
 height = 1080
-size = 265149
+size = 203261
 
 [[images.description]]
 id = "Clean"
